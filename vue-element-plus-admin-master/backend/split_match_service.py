@@ -102,7 +102,7 @@ class SplitMatchService:
         try:
             conn = self._get_db_connection()
             if not conn:
-                return {"list": [], "total": 0}
+                return {"data": [], "columns": [], "total": 0}
             
             with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 where_conditions = []
@@ -126,11 +126,15 @@ class SplitMatchService:
                 select_params = params + [page_size, offset]
                 cursor.execute(select_sql, select_params)
                 data = cursor.fetchall()
+                
+                columns = []
+                if data and len(data) > 0:
+                    columns = list(data[0].keys())
             
-            return {"list": data, "total": total}
+            return {"data": data, "columns": columns, "total": total}
         except Exception as e:
             logger.error(f"获取表数据失败: {e}", exc_info=True)
-            return {"list": [], "total": 0}
+            return {"data": [], "columns": [], "total": 0}
         finally:
             if conn:
                 conn.close()
@@ -141,15 +145,17 @@ class SplitMatchService:
         try:
             conn = self._get_db_connection()
             if not conn:
-                return {"matched": 0, "updated": 0}
+                return {"matched_count": 0, "unmatched_count": 0, "total": 0}
             
             matched_count = 0
             updated_count = 0
+            total_count = 0
             
             with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 query = f"SELECT `通行标识ID` FROM `{table_name}` WHERE `通行标识ID` IS NOT NULL"
                 cursor.execute(query)
                 all_pass_ids = [row['通行标识ID'] for row in cursor.fetchall()]
+                total_count = len(all_pass_ids)
                 
                 pass_id_counts = {}
                 for pass_id in all_pass_ids:
@@ -165,12 +171,12 @@ class SplitMatchService:
                     updated_count = cursor.rowcount
                     conn.commit()
             
-            return {"matched": matched_count, "updated": updated_count}
+            return {"matched_count": matched_count, "unmatched_count": total_count - matched_count, "total": total_count}
         except Exception as e:
             logger.error(f"执行匹配失败: {e}", exc_info=True)
             if conn:
                 conn.rollback()
-            return {"matched": 0, "updated": 0}
+            return {"matched_count": 0, "unmatched_count": 0, "total": 0}
         finally:
             if conn:
                 conn.close()
@@ -211,4 +217,4 @@ class SplitMatchService:
         return data
     
     def match_data(self, data1, data2):
-        return 
+        return []
