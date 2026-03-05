@@ -1,0 +1,5 @@
+{
+	"dependencies": {
+		"@tanstack/vue-table": "^8.21.3"
+	}
+}
