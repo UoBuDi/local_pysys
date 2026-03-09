@@ -61,6 +61,11 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+# 添加静态文件服务
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
 # 添加CORS中间件
 app.add_middleware(
     CORSMiddleware,
@@ -2369,14 +2374,6 @@ async def shutdown_event():
         logger.info("数据库连接池已清理完成")
     except Exception as e:
         logger.error(f"清理连接池时出错: {e}", exc_info=True)
-
-# 添加静态文件服务 - 前后端不分离部署
-# 注意：静态文件挂载必须放在所有API路由定义之后
-static_dir = os.path.join(os.path.dirname(__file__), "static")
-if os.path.exists(static_dir):
-    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
-else:
-    logger.warning(f"静态文件目录不存在: {static_dir}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000);
