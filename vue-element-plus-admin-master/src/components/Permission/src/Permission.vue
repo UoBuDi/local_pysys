@@ -14,8 +14,7 @@ const currentPermission = computed(() => {
 })
 
 const hasPermission = computed(() => {
-  // 取消权限验证，所有组件都可以显示
-  return true
+  return currentPermission.value.includes(props.permission)
 })
 </script>
 

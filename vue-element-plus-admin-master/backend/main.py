@@ -109,6 +109,26 @@ class RegisterCredentials(BaseModel):
     password: str
     email: Optional[str] = None
 
+class RoleCreateRequest(BaseModel):
+    name: str
+    code: str
+    description: Optional[str] = None
+    status: int = 1
+
+class RoleUpdateRequest(BaseModel):
+    name: str
+    code: str
+    description: Optional[str] = None
+    status: int = 1
+
+class AssignRoleRequest(BaseModel):
+    user_id: int
+    role_ids: List[int]
+
+class AssignMenuRequest(BaseModel):
+    role_id: int
+    menu_ids: List[int]
+
 # 加载配置
 config = load_config()
 
@@ -768,25 +788,6 @@ async def broadcast_sync_progress():
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(broadcast_sync_progress())
-    try:
-        conn = create_db_connection("USER_DB", config) or create_db_connection("LOCAL_DB", config)
-        if conn:
-            try:
-                if not table_exists(conn, "users"):
-                    schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
-                    if os.path.exists(schema_path):
-                        with open(schema_path, "r", encoding="utf-8") as f:
-                            sql_text = f.read()
-                        statements = [s.strip() for s in sql_text.split(";") if s.strip()]
-                        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                            for stmt in statements:
-                                if not stmt.startswith("--"):
-                                    cursor.execute(stmt)
-                        conn.commit()
-            finally:
-                conn.close()
-    except Exception as e:
-        logger.error(f"初始化用户数据库失败: {e}")
 
 # 获取数据库连接的依赖项
 def get_db():

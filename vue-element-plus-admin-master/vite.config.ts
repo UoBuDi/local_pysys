@@ -145,15 +145,15 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       host: '0.0.0.0',
       hmr: {
         overlay: false
-      },
-      proxy: {
-        // 选项写法
-        '/api': {
-          target: 'http://127.0.0.1:8000',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, '')
-        }
       }
+      // 前后端不分离部署，不需要代理配置
+      // proxy: {
+      //   '/api': {
+      //     target: 'http://127.0.0.1:8000',
+      //     changeOrigin: true,
+      //     rewrite: (path) => path.replace(/^\/api/, '')
+      //   }
+      // }
     },
     optimizeDeps: {
       include: [

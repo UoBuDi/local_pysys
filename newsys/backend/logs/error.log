@@ -1,0 +1,2422 @@
+2026-03-07 09:19:26,307 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 237, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 09:31:33,369 - uvicorn.error - ERROR - [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8000): [winerror 10048] 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+2026-03-07 09:38:00,548 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 237, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 09:50:14,969 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 277, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 09:57:17,598 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 277, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:23,819 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:37,095 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:38,148 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:38,965 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:40,750 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:41,920 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:42,703 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:43,555 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:44,330 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:45,160 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:47,310 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:48,556 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:49,425 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:50,201 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:06:50,989 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:07:03,772 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:07:04,767 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:07:05,639 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:07:06,337 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:12:21,367 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 10:12:30,868 - split_match_service - ERROR - 执行匹配失败: (1054, "Unknown column 'id' in 'field list'")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 298, in execute_match
+    cursor.execute(yc_query)
+    ~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'id' in 'field list'")
+2026-03-07 11:54:29,677 - split_match_service - ERROR - 执行匹配失败: 'id'
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 360, in execute_match
+    record_id = record['id']
+                ~~~~~~^^^^^^
+KeyError: 'id'
+2026-03-07 12:01:07,735 - split_match_service - ERROR - 执行匹配失败: 'id'
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 360, in execute_match
+    record_id = record['id']
+                ~~~~~~^^^^^^
+KeyError: 'id'
+2026-03-07 14:48:28,584 - split_match_service - ERROR - 执行匹配失败: Replacement index 3 out of range for positional args tuple
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 392, in execute_match
+    sample_pass_id_sql = sql.replace('%s', "'{}'").format(*batch[:3]) + ('...' if len(batch) > 3 else '')
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+IndexError: Replacement index 3 out of range for positional args tuple
+2026-03-07 15:54:19,815 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:08:05,224 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:08:55,663 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:08:58,797 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:08:59,878 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:09:00,990 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:11:15,385 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:11:19,179 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:11:21,046 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:11:21,880 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:11:22,846 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:11:24,136 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:11:25,448 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:13:01,061 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:13:02,352 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:13:03,610 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:13:13,984 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:13:14,927 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:13:15,773 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:13:16,765 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:13:17,528 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:13:18,606 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:14:20,941 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:14:22,423 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:14:45,828 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:14:48,005 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:18:33,520 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:20:42,457 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:23:18,886 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:23:21,464 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:25:07,150 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:28:33,331 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:28:45,772 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:37:50,665 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:37:59,579 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:38:15,281 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:38:16,719 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:38:24,495 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:38:41,106 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:38:42,024 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:38:43,059 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:38:43,865 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:38:44,850 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:58:05,718 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 16:58:32,741 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:08:36,234 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:08:51,967 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:55:20,324 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:55:28,371 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:55:29,693 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:55:30,707 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:55:31,756 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:55:44,355 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:55:45,556 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:55:48,967 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:55:49,681 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:55:50,315 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:55:51,379 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:55:52,094 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-07 17:56:33,101 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-08 08:36:37,358 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-08 08:36:49,656 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-08 08:52:12,151 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+2026-03-08 08:52:17,648 - split_match_service - ERROR - 执行匹配失败: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")
+Traceback (most recent call last):
+  File "D:\local_pysys\vue-element-plus-admin-master\backend\split_match_service.py", line 353, in execute_match
+    cursor.execute(update_check_id_sql)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 148, in execute
+    result = self._query(query)
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\cursors.py", line 310, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 548, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 775, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 1156, in read
+    first_packet = self.connection._read_packet()
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\connections.py", line 725, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\local_pysys\.venv\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1267, "Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_general_ci,IMPLICIT) for operation '='")

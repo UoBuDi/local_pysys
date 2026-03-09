@@ -1,7 +1,7 @@
 # 环境
 VITE_NODE_ENV=production
 
-# 接口前缀
+# 接口前缀（前后端不分离部署，使用相对路径）
 VITE_API_BASE_PATH=
 
 # 打包路径
@@ -23,13 +23,13 @@ VITE_OUT_DIR=dist-pro
 VITE_APP_TITLE=ElementAdmin
 
 # 是否包分析
-VITE_USE_BUNDLE_ANALYZER=true
+VITE_USE_BUNDLE_ANALYZER=false
 
 # 是否全量引入element-plus样式
-VITE_USE_ALL_ELEMENT_PLUS_STYLE=false
+VITE_USE_ALL_ELEMENT_PLUS_STYLE=true
 
-# 是否开启mock
-VITE_USE_MOCK=true
+# 是否开启mock（生产环境关闭）
+VITE_USE_MOCK=false
 
 # 是否切割css
 VITE_USE_CSS_SPLIT=true
