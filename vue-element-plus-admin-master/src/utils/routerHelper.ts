@@ -8,7 +8,7 @@ import type {
 import { isUrl } from '@/utils/is'
 import { omit, cloneDeep } from 'lodash-es'
 
-const modules = import.meta.glob('../views/**/*.{vue,tsx}')
+const modules = import.meta.glob('../views/**/*.vue', { eager: false })
 
 /* Layout */
 export const Layout = () => import('@/layout/Layout.vue')
@@ -106,10 +106,12 @@ export const generateRoutesByServer = (routes: AppCustomRouteRecordRaw[]): AppRo
       }
     }
     if (route.component) {
-      const comModule = modules[`../${route.component}.vue`] || modules[`../${route.component}.tsx`]
       const component = route.component as string
+      const comModule = modules[`../views/${component}.vue`] || modules[`../views/${component}.tsx`]
+
       if (!comModule && !component.includes('#')) {
-        console.error(`未找到${route.component}.vue文件或${route.component}.tsx文件，请创建`)
+        console.error(`未找到${component}.vue文件或${component}.tsx文件，请创建`)
+        console.log('可用的模块路径:', Object.keys(modules).slice(0, 10))
       } else {
         // 动态加载路由文件，可根据实际情况进行自定义逻辑
         data.component =

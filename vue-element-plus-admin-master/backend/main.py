@@ -34,7 +34,7 @@ log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(me
 
 # 创建日志记录器
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 # 清除默认处理器
 logger.handlers.clear()
@@ -60,11 +60,6 @@ logger.addHandler(error_handler)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
-
-# 添加静态文件服务
-static_dir = os.path.join(os.path.dirname(__file__), "static")
-if os.path.exists(static_dir):
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # 添加CORS中间件
 app.add_middleware(
@@ -146,7 +141,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             raise HTTPException(status_code=500, detail="无法连接到用户数据库")
         
         try:
-            with conn.cursor() as cursor:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 # 获取用户信息
                 cursor.execute("SELECT id, username, nickname, email, department_id, status FROM users WHERE username = %s", (username,))
                 user = cursor.fetchone()
@@ -533,7 +528,7 @@ async def login(credentials: LoginCredentials):
             return JSONResponse(status_code=500, content={"code": 500, "message": "无法连接到用户数据库"})
         
         try:
-            with conn.cursor() as cursor:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 # 查询用户信息
                 sql = "SELECT id, username, password FROM users WHERE username = %s"
                 cursor.execute(sql, (credentials.username,))
@@ -604,7 +599,7 @@ async def register(credentials: RegisterCredentials):
             return JSONResponse(status_code=500, content={"code": 500, "message": "无法连接到用户数据库"})
         logger.info("数据库连接成功")
         
-        with connection.cursor() as cursor:
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查用户名是否已存在
             check_sql = "SELECT id, username FROM users WHERE username = %s"
             logger.info(f"执行查询: {check_sql} with params ({credentials.username},)")
@@ -778,7 +773,7 @@ async def startup_event():
                         with open(schema_path, "r", encoding="utf-8") as f:
                             sql_text = f.read()
                         statements = [s.strip() for s in sql_text.split(";") if s.strip()]
-                        with conn.cursor() as cursor:
+                        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                             for stmt in statements:
                                 if not stmt.startswith("--"):
                                     cursor.execute(stmt)
@@ -799,12 +794,17 @@ def get_db():
         connection.close()
 
 @app.get("/api/user/menus")
-async def get_user_menus(db = Depends(get_db)):
-    """获取用户菜单"""
+async def get_user_menus():
+    """获取用户菜单 - 取消权限验证，所有用户都可以访问"""
     try:
-        with db.cursor() as cursor:
-            cursor.execute("SELECT * FROM menus ORDER BY sort_order")
-            menus = cursor.fetchall()
+        conn = create_db_connection("USER_DB", config) or create_db_connection("LOCAL_DB", config)
+        if not conn:
+            return JSONResponse(status_code=500, content={"code": 500, "message": "无法连接到数据库"})
+        
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute("SELECT * FROM menus ORDER BY sort_order")
+                menus = cursor.fetchall()
             
             # 转换字段名，确保前端兼容性
             converted_menus = []
@@ -820,38 +820,49 @@ async def get_user_menus(db = Depends(get_db)):
                 # 转换 parent_id 为 parentId
                 if 'parent_id' in converted_menu:
                     converted_menu['parentId'] = converted_menu['parent_id']
-                # 修复 component 路径
-                if converted_menu.get('component'):
-                    if converted_menu['component'] == 'Layout':
-                        converted_menu['component'] = '#'
-                    elif converted_menu['component'].startswith('/'):
-                        converted_menu['component'] = converted_menu['component'][1:]
-                    # 修复 system-tools 为 SystemTools
-                    if converted_menu['component'].startswith('system-tools/'):
-                        converted_menu['component'] = 'SystemTools' + converted_menu['component'][12:]
+                
                 # 对于有子菜单的顶级菜单，设置component为#
-                elif converted_menu.get('parent_id') == 0:
+                if converted_menu.get('parent_id') == 0:
                     converted_menu['component'] = '#'
                 # 对于子菜单，根据路径自动设置component
                 elif converted_menu.get('parent_id') != 0:
                     path = converted_menu.get('path', '')
-                    # 根据路径映射到正确的组件
-                    if path == '/analysis':
-                        converted_menu['component'] = 'Dashboard/Analysis'
-                    elif path == '/workplace':
-                        converted_menu['component'] = 'Dashboard/Workplace'
-                    elif path == '/split-match':
-                        converted_menu['component'] = 'SystemTools/SplitMatch'
-                    elif path == '/detail-query':
-                        converted_menu['component'] = 'SystemTools/DetailQuery'
-                    elif path == '/path-match':
-                        converted_menu['component'] = 'SystemTools/PathMatch'
-                    elif path == '/sync-config':
-                        converted_menu['component'] = 'SystemTools/SyncConfig'
-                    elif path == '/sync-control':
-                        converted_menu['component'] = 'SystemTools/SyncControl'
-                    elif path == '/params-config':
-                        converted_menu['component'] = 'SystemTools/ParamsConfig'
+                    # 如果数据库中已经有component字段，优先使用
+                    if converted_menu.get('component'):
+                        component = converted_menu['component']
+                        if component == 'Layout':
+                            converted_menu['component'] = '#'
+                        elif component.startswith('/'):
+                            converted_menu['component'] = component[1:]
+                        # 修复 system-tools 为 SystemTools
+                        elif component.startswith('system-tools/'):
+                            converted_menu['component'] = 'SystemTools' + component[12:]
+                    else:
+                        # 根据路径映射到正确的组件
+                        if path == '/analysis':
+                            converted_menu['component'] = 'Dashboard/Analysis'
+                        elif path == '/workplace':
+                            converted_menu['component'] = 'Dashboard/Workplace'
+                        elif path == '/split-match':
+                            converted_menu['component'] = 'SystemTools/SplitMatch'
+                        elif path == '/detail-query':
+                            converted_menu['component'] = 'SystemTools/DetailQuery'
+                        elif path == '/path-match':
+                            converted_menu['component'] = 'SystemTools/PathMatch'
+                        elif path == '/config' or path == '/sync-config':
+                            converted_menu['component'] = 'SystemTools/SyncConfig'
+                        elif path == '/control' or path == '/sync-control':
+                            converted_menu['component'] = 'SystemTools/SyncControl'
+                        elif path == '/params-config':
+                            converted_menu['component'] = 'SystemTools/ParamsConfig'
+                        elif path == '/department':
+                            converted_menu['component'] = 'Authorization/Department/Department'
+                        elif path == '/user':
+                            converted_menu['component'] = 'Authorization/User/User'
+                        elif path == '/menu':
+                            converted_menu['component'] = 'Authorization/Menu/Menu'
+                        elif path == '/role':
+                            converted_menu['component'] = 'Authorization/Role/Role'
                 # 添加 meta 字段，将中文菜单名映射为国际化key
                 name = converted_menu.get('name', '')
                 title_map = {
@@ -876,7 +887,7 @@ async def get_user_menus(db = Depends(get_db)):
                     'title': title_map.get(name, name),
                     'icon': converted_menu.get('icon', ''),
                     'hidden': not converted_menu.get('visible', 1),
-                    'alwaysShow': False,
+                    'alwaysShow': converted_menu.get('alwaysShow', False),
                     'noCache': False,
                     'breadcrumb': True,
                     'affix': False,
@@ -892,6 +903,8 @@ async def get_user_menus(db = Depends(get_db)):
             # 构造树形结构
             menu_tree = build_menu_tree(converted_menus)
             return {"code": 200, "message": "success", "data": menu_tree}
+        finally:
+            conn.close()
     except Exception as e:
         logger.error(f"获取用户菜单失败: {e}")
         import traceback
@@ -907,7 +920,7 @@ async def get_departments(
 ):
     """获取部门列表"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.execute("SELECT * FROM departments ORDER BY sort_order")
             departments = cursor.fetchall()
             
@@ -937,7 +950,7 @@ async def get_departments(
 async def create_department(department: DepartmentCreateRequest, db = Depends(get_db)):
     """创建部门"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查部门名称是否已存在
             cursor.execute("SELECT id FROM departments WHERE name = %s", (department.name,))
             if cursor.fetchone():
@@ -958,7 +971,7 @@ async def create_department(department: DepartmentCreateRequest, db = Depends(ge
 async def update_department(department_id: int, department: DepartmentUpdateRequest, db = Depends(get_db)):
     """更新部门"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查部门是否存在
             cursor.execute("SELECT id FROM departments WHERE id = %s", (department_id,))
             if not cursor.fetchone():
@@ -984,7 +997,7 @@ async def update_department(department_id: int, department: DepartmentUpdateRequ
 async def delete_department(department_id: int, db = Depends(get_db)):
     """删除部门"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查部门是否存在
             cursor.execute("SELECT id FROM departments WHERE id = %s", (department_id,))
             if not cursor.fetchone():
@@ -1018,7 +1031,7 @@ async def get_users(
 ):
     """获取用户列表"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 处理department_id：空字符串转为None，否则转为整数
             dept_id = int(department_id) if department_id and department_id.isdigit() else None
             
@@ -1073,7 +1086,7 @@ async def create_user(user: UserCreateRequest, db = Depends(get_db)):
     """创建用户"""
     try:
         logger.info(f"开始创建用户，接收数据: {user.dict()}")
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查用户名是否已存在
             cursor.execute("SELECT id FROM users WHERE username = %s", (user.username,))
             if cursor.fetchone():
@@ -1101,7 +1114,7 @@ async def update_user(user_id: int, user: UserUpdateRequest, db = Depends(get_db
     """更新用户"""
     try:
         logger.info(f"开始更新用户，用户ID: {user_id}, 接收数据: {user.dict()}")
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查用户是否存在
             cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
             if not cursor.fetchone():
@@ -1149,7 +1162,7 @@ async def update_user(user_id: int, user: UserUpdateRequest, db = Depends(get_db
 async def delete_user(user_id: int, db = Depends(get_db)):
     """删除用户"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查用户是否存在
             cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
             if not cursor.fetchone():
@@ -1171,7 +1184,7 @@ async def delete_user(user_id: int, db = Depends(get_db)):
 async def get_roles(db = Depends(get_db)):
     """获取角色列表"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.execute("SELECT * FROM roles ORDER BY id")
             roles = cursor.fetchall()
             return {"code": 200, "message": "success", "data": {"list": roles, "total": len(roles)}}
@@ -1183,7 +1196,7 @@ async def get_roles(db = Depends(get_db)):
 async def create_role(role: RoleCreateRequest, db = Depends(get_db)):
     """创建角色"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查角色编码是否已存在
             cursor.execute("SELECT id FROM roles WHERE code = %s", (role.code,))
             if cursor.fetchone():
@@ -1204,7 +1217,7 @@ async def create_role(role: RoleCreateRequest, db = Depends(get_db)):
 async def update_role(role_id: int, role: RoleUpdateRequest, db = Depends(get_db)):
     """更新角色"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查角色是否存在
             cursor.execute("SELECT id FROM roles WHERE id = %s", (role_id,))
             if not cursor.fetchone():
@@ -1230,7 +1243,7 @@ async def update_role(role_id: int, role: RoleUpdateRequest, db = Depends(get_db
 async def delete_role(role_id: int, db = Depends(get_db)):
     """删除角色"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查角色是否存在
             cursor.execute("SELECT id FROM roles WHERE id = %s", (role_id,))
             if not cursor.fetchone():
@@ -1255,7 +1268,7 @@ async def delete_role(role_id: int, db = Depends(get_db)):
 async def get_menus(db = Depends(get_db)):
     """获取菜单列表"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.execute("SELECT * FROM menus ORDER BY sort_order, id")
             menus = cursor.fetchall()
             
@@ -1307,7 +1320,7 @@ def build_menu_tree(menus, parent_id=0):
 async def create_menu(menu_data: dict, db = Depends(get_db)):
     """创建菜单"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 提取字段，支持前端发送的多种格式
             parent_id = menu_data.get('parentId', menu_data.get('parent_id', 0))
             name = menu_data.get('name', menu_data.get('meta', {}).get('title', ''))
@@ -1337,7 +1350,7 @@ async def create_menu(menu_data: dict, db = Depends(get_db)):
 async def update_menu(menu_id: int, menu_data: dict, db = Depends(get_db)):
     """更新菜单"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查菜单是否存在
             cursor.execute("SELECT id FROM menus WHERE id = %s", (menu_id,))
             if not cursor.fetchone():
@@ -1372,7 +1385,7 @@ async def update_menu(menu_id: int, menu_data: dict, db = Depends(get_db)):
 async def delete_menu(menu_id: int, db = Depends(get_db)):
     """删除菜单"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查菜单是否存在
             cursor.execute("SELECT id FROM menus WHERE id = %s", (menu_id,))
             if not cursor.fetchone():
@@ -1399,7 +1412,7 @@ async def delete_menu(menu_id: int, db = Depends(get_db)):
 async def assign_user_roles(assign_request: AssignRoleRequest, db = Depends(get_db)):
     """为用户分配角色"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 先删除用户原有的角色
             cursor.execute("DELETE FROM user_roles WHERE user_id = %s", (assign_request.user_id,))
             
@@ -1420,7 +1433,7 @@ async def assign_user_roles(assign_request: AssignRoleRequest, db = Depends(get_
 async def get_user_roles(user_id: int, db = Depends(get_db)):
     """获取用户已分配的角色"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.execute("SELECT role_id FROM user_roles WHERE user_id = %s", (user_id,))
             role_ids = [row['role_id'] for row in cursor.fetchall()]
             return {"code": 200, "message": "success", "data": role_ids}
@@ -1433,7 +1446,7 @@ async def get_user_roles(user_id: int, db = Depends(get_db)):
 async def assign_role_menus(assign_request: AssignMenuRequest, db = Depends(get_db)):
     """为角色分配菜单"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 先删除角色原有的菜单
             cursor.execute("DELETE FROM role_menus WHERE role_id = %s", (assign_request.role_id,))
             
@@ -1454,7 +1467,7 @@ async def assign_role_menus(assign_request: AssignMenuRequest, db = Depends(get_
 async def get_role_menus(role_id: int, db = Depends(get_db)):
     """获取角色已分配的菜单"""
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.execute("SELECT menu_id FROM role_menus WHERE role_id = %s", (role_id,))
             menu_ids = [row['menu_id'] for row in cursor.fetchall()]
             return {"code": 200, "message": "success", "data": menu_ids}
@@ -1504,7 +1517,7 @@ def require_permission(permission: str):
                     raise HTTPException(status_code=500, detail="无法连接到用户数据库")
                 
                 try:
-                    with conn.cursor() as cursor:
+                    with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                         # 获取用户角色
                         cursor.execute("SELECT r.id FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE u.username = %s", (username,))
                         roles = cursor.fetchall()
@@ -1534,6 +1547,7 @@ def require_permission(permission: str):
 # 拆分匹配相关请求模型
 class ExecuteMatchRequest(BaseModel):
     table_name: Optional[str] = None
+    records: Optional[List[dict]] = None
 
 class UpdateMatchRequest(BaseModel):
     table_name: Optional[str] = None
@@ -1605,10 +1619,44 @@ async def get_table_data(
             page=page,
             page_size=page_size
         )
-        return {"code": 200, "message": "success", "data": result}
+        response = {"code": 200, "message": "success", "data": result}
+        if 'debug' in result:
+            response['debug'] = result['debug']
+        return response
     except Exception as e:
         logger.error(f"获取表数据失败: {e}")
         return JSONResponse(status_code=500, content={"code": 500, "message": "获取表数据失败"})
+
+@app.get("/api/split-match/export/")
+async def export_table_data(
+    table_name: Optional[str] = Query(None, description="表名"),
+    filters: Optional[str] = Query(None, description="字段筛选条件")
+):
+    """获取指定表的完整数据用于导出，支持字段筛选但不进行分页"""
+    try:
+        # 如果没有提供表名，从详单查询配置中读取
+        if not table_name:
+            table_name = config.get('DETAIL_QUERY', 'table_name') if config.has_section('DETAIL_QUERY') and config.has_option('DETAIL_QUERY', 'table_name') else None
+            if not table_name:
+                return JSONResponse(status_code=400, content={"code": 400, "message": "请先选择数据表"})
+        
+        # 解析筛选条件
+        filters_dict = None
+        if filters:
+            import json
+            try:
+                filters_dict = json.loads(filters)
+            except:
+                pass
+        
+        result = split_match_service.get_all_table_data(
+            table_name=table_name,
+            filters=filters_dict
+        )
+        return {"code": 200, "message": "success", "data": result}
+    except Exception as e:
+        logger.error(f"获取完整表数据失败: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"code": 500, "message": "获取完整表数据失败"})
 
 @app.post("/api/split-match/execute/")
 async def execute_match(request: ExecuteMatchRequest):
@@ -1621,15 +1669,38 @@ async def execute_match(request: ExecuteMatchRequest):
             if not table_name:
                 return JSONResponse(status_code=400, content={"code": 400, "message": "请先在参数配置中设置详单查询数据表"})
         
-        result = split_match_service.execute_match(table_name)
-        return {
+        # 如果有records参数，传给服务层；否则服务层会自己查询
+        records = request.records
+        
+        result = split_match_service.execute_match(table_name, records)
+        response = {
             "code": 200, 
             "message": "匹配完成", 
             "data": result
         }
+        if 'debug' in result:
+            response['debug'] = result['debug']
+        return response
     except Exception as e:
         logger.error(f"执行匹配失败: {e}")
         return JSONResponse(status_code=500, content={"code": 500, "message": f"执行匹配失败: {str(e)}"})
+
+@app.post("/api/split-match/preview/")
+async def preview_match(request: ExecuteMatchRequest):
+    """预览执行匹配将要执行的SQL语句（不实际执行）"""
+    try:
+        table_name = request.table_name
+        if not table_name:
+            table_name = config.get('DETAIL_QUERY', 'table_name') if config.has_section('DETAIL_QUERY') and config.has_option('DETAIL_QUERY', 'table_name') else None
+            if not table_name:
+                return JSONResponse(status_code=400, content={"code": 400, "message": "请先在参数配置中设置详单查询数据表"})
+        
+        records = request.records
+        result = split_match_service.preview_match(table_name, records)
+        return {"code": 200, "message": "success", "data": result}
+    except Exception as e:
+        logger.error(f"预览SQL失败: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"code": 500, "message": f"预览SQL失败: {str(e)}"})
 
 @app.post("/api/split-match/update/")
 async def update_match_data(request: UpdateMatchRequest):
@@ -2298,6 +2369,14 @@ async def shutdown_event():
         logger.info("数据库连接池已清理完成")
     except Exception as e:
         logger.error(f"清理连接池时出错: {e}", exc_info=True)
+
+# 添加静态文件服务 - 前后端不分离部署
+# 注意：静态文件挂载必须放在所有API路由定义之后
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+else:
+    logger.warning(f"静态文件目录不存在: {static_dir}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000);

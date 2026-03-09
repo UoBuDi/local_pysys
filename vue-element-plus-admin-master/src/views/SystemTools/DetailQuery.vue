@@ -8,7 +8,7 @@
       </template>
 
       <el-form :model="searchForm" :inline="true" class="search-form">
-        <el-form-item label="通行标识ID">
+        <el-form-item label="通行标识ID" class="highlight-label">
           <el-autocomplete
             v-model="searchForm.pass_id"
             :fetch-suggestions="queryPassIdSuggestions"
@@ -16,6 +16,30 @@
             clearable
             style="width: 180px"
             @select="handlePassIdSelect"
+          />
+        </el-form-item>
+        <el-form-item label="车牌号码" class="highlight-label">
+          <el-autocomplete
+            v-model="searchForm.plate_number"
+            :fetch-suggestions="queryPlateNumberSuggestions"
+            placeholder="请输入车牌号码"
+            clearable
+            style="width: 180px"
+            @select="handlePlateNumberSelect"
+          />
+        </el-form-item>
+        <el-form-item label="计费交易起止时间" class="highlight-label">
+          <el-date-picker
+            v-model="searchForm.time_range"
+            type="datetimerange"
+            range-separator="至"
+            start-placeholder="开始时间"
+            end-placeholder="结束时间"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            format="YYYY-MM-DD HH:mm:ss"
+            :default-time="defaultTime"
+            clearable
+            style="width: 380px"
           />
         </el-form-item>
         <el-form-item label="收费入口名称">
@@ -32,30 +56,6 @@
             placeholder="请输入收费出口名称"
             clearable
             style="width: 180px"
-          />
-        </el-form-item>
-        <el-form-item label="计费交易起止时间">
-          <el-date-picker
-            v-model="searchForm.time_range"
-            type="datetimerange"
-            range-separator="至"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            format="YYYY-MM-DD HH:mm:ss"
-            :default-time="defaultTime"
-            clearable
-            style="width: 380px"
-          />
-        </el-form-item>
-        <el-form-item label="车牌号码">
-          <el-autocomplete
-            v-model="searchForm.plate_number"
-            :fetch-suggestions="queryPlateNumberSuggestions"
-            placeholder="请输入车牌号码"
-            clearable
-            style="width: 180px"
-            @select="handlePlateNumberSelect"
           />
         </el-form-item>
         <el-form-item label="收费车型">
@@ -708,6 +708,32 @@ onMounted(() => {
     .search-form {
       .el-form-item {
         margin-bottom: 16px;
+      }
+
+      .highlight-label {
+        :deep(.el-form-item__label) {
+          font-weight: bold;
+          color: #409eff;
+          font-size: 14px;
+          padding: 4px 8px;
+          border-radius: 4px;
+          background-color: rgba(64, 158, 255, 0.1);
+          transition: all 0.3s ease;
+        }
+
+        &:hover :deep(.el-form-item__label) {
+          background-color: rgba(64, 158, 255, 0.2);
+          box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.3);
+        }
+
+        :deep(.el-form-item__content) {
+          transition: all 0.3s ease;
+        }
+
+        &:hover :deep(.el-form-item__content) {
+          box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+          border-radius: 4px;
+        }
       }
     }
 

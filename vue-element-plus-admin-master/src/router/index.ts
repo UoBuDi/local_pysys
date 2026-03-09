@@ -133,8 +133,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
     name: 'Guide',
     meta: {
       title: 'router.guide',
-      icon: 'vi-cib:telegram-plane',
-      hidden: true
+      icon: 'vi-cib:telegram-plane'
     },
     children: [
       {
@@ -155,8 +154,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
     meta: {
       title: 'router.component',
       icon: 'vi-bx:bxs-component',
-      alwaysShow: true,
-      hidden: true
+      alwaysShow: true
     },
     children: [
       {
@@ -422,8 +420,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
     meta: {
       title: 'router.function',
       icon: 'vi-ri:function-fill',
-      alwaysShow: true,
-      hidden: true
+      alwaysShow: true
     },
     children: [
       {
@@ -458,8 +455,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Function/Test.vue'),
         name: 'Test',
         meta: {
-          title: 'router.permission',
-          permission: ['add', 'edit', 'delete']
+          title: 'router.permission'
         }
       }
     ]
@@ -594,8 +590,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
     meta: {
       title: 'router.example',
       icon: 'vi-ep:management',
-      alwaysShow: true,
-      hidden: true
+      alwaysShow: true
     },
     children: [
       {
@@ -725,8 +720,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/SystemTools/DetailQuery.vue'),
         name: 'DetailQuery',
         meta: {
-          title: 'router.detailQuery',
-          permission: ['detailQuery:debug', 'detailQuery:export']
+          title: 'router.detailQuery'
         }
       }
     ]

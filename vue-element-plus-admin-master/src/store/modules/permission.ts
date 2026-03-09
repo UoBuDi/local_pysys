@@ -75,17 +75,15 @@ export const usePermissionStore = defineStore('permission', {
     },
     setMenuTabRouters(routers: AppRouteRecordRaw[]): void {
       this.menuTabRouters = routers
+    },
+    reset(): void {
+      this.routers = []
+      this.addRouters = []
+      this.isAddRouters = false
+      this.menuTabRouters = []
     }
   },
   persist: [
-    {
-      pick: ['routers'],
-      storage: localStorage
-    },
-    {
-      pick: ['addRouters'],
-      storage: localStorage
-    },
     {
       pick: ['menuTabRouters'],
       storage: localStorage

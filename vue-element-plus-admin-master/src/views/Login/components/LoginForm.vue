@@ -285,7 +285,7 @@ const signIn = async () => {
             addRoute(route as unknown as RouteRecordRaw)
           })
 
-          // 设置菜单权限
+          // 设置菜单权限标志，避免路由守卫重复添加
           permissionStore.setIsAddRouters(true)
 
           // 跳转到指定页面或首页

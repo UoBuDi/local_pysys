@@ -35,7 +35,7 @@
             执行匹配
           </el-button>
           <el-button @click="loadTableList"> 刷新列表 </el-button>
-          <el-button @click="handleExport"> 导出数据 </el-button>
+          <el-button @click="handleExport" :loading="exportLoading"> 导出数据 </el-button>
           <el-upload
             v-if="selectedTable"
             class="upload-demo"
@@ -133,16 +133,6 @@
           </el-form-item>
         </el-form>
       </el-form>
-
-      <div class="match-result" v-if="matchResult">
-        <el-alert
-          :title="`匹配完成`"
-          :type="matchResult.matched_count > 0 ? 'success' : 'warning'"
-          :description="`已拆回: ${matchResult.matched_count} 条, 未拆回: ${matchResult.unmatched_count} 条`"
-          show-icon
-          :closable="false"
-        />
-      </div>
 
       <!-- 虚拟表格 -->
       <div class="table-container" v-if="selectedTable">
@@ -870,12 +860,133 @@
           </span>
         </template>
       </el-dialog>
+
+      <el-card class="debug-panel" v-if="canShowDebug">
+        <template #header>
+          <div class="card-header">
+            <span>调试信息</span>
+            <el-button type="primary" link size="small" @click="showDebug = !showDebug">
+              {{ showDebug ? '收起' : '展开' }}
+            </el-button>
+          </div>
+        </template>
+
+        <div v-show="showDebug" class="debug-content">
+          <div class="match-result-debug">
+            <h4>匹配结果统计</h4>
+            <div class="match-detail">
+              <div class="match-stat">
+                <span class="stat-label">总记录数:</span>
+                <span class="stat-value">{{
+                  matchResult && matchResult.total !== undefined ? matchResult.total : 0
+                }}</span>
+              </div>
+              <div class="match-stat">
+                <span class="stat-label">已拆回:</span>
+                <span class="stat-value success">{{
+                  matchResult && matchResult.matched_count !== undefined
+                    ? matchResult.matched_count
+                    : 0
+                }}</span>
+              </div>
+              <div class="match-stat">
+                <span class="stat-label">未拆回:</span>
+                <span class="stat-value warning">{{
+                  matchResult && matchResult.unmatched_count !== undefined
+                    ? matchResult.unmatched_count
+                    : 0
+                }}</span>
+              </div>
+              <div class="match-stat">
+                <span class="stat-label">通行标识ID匹配:</span>
+                <span class="stat-value info">{{
+                  matchResult && matchResult.pass_id_matched !== undefined
+                    ? matchResult.pass_id_matched
+                    : 0
+                }}</span>
+              </div>
+              <div class="match-stat">
+                <span class="stat-label">核查通行标识匹配:</span>
+                <span class="stat-value primary">{{
+                  matchResult && matchResult.check_id_matched !== undefined
+                    ? matchResult.check_id_matched
+                    : 0
+                }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="debug-section">
+            <h4>SQL 语句预览</h4>
+            <el-input
+              :model-value="allSqlsPreview"
+              type="textarea"
+              :rows="20"
+              readonly
+              style="width: 100%; font-family: monospace"
+            />
+            <el-button
+              type="primary"
+              link
+              size="small"
+              @click="copySql(allSqlsPreview)"
+              style="margin-top: 5px"
+            >
+              复制全部SQL
+            </el-button>
+          </div>
+
+          <div class="debug-section">
+            <h4>请求参数</h4>
+            <el-input
+              :model-value="requestParams ? requestParams : ''"
+              type="textarea"
+              :rows="6"
+              readonly
+            />
+            <el-button type="primary" link size="small" @click="copySql(requestParams)">
+              复制
+            </el-button>
+          </div>
+
+          <div class="debug-statistics">
+            <el-tag type="info"
+              >总耗时:
+              {{
+                debugStatistics.total_time ? debugStatistics.total_time.toFixed(3) : '0.000'
+              }}s</el-tag
+            >
+            <el-tag type="info" style="margin-left: 10px">
+              总记录数: {{ debugStatistics.total_count || 0 }}</el-tag
+            >
+            <el-tag type="success" style="margin-left: 10px">
+              已拆回: {{ debugStatistics.matched_count || 0 }}</el-tag
+            >
+            <el-tag type="warning" style="margin-left: 10px">
+              未拆回: {{ debugStatistics.total_count - debugStatistics.matched_count || 0 }}</el-tag
+            >
+          </div>
+
+          <div class="debug-statistics" style="margin-top: 10px">
+            <el-tag type="info">数据来源: {{ debugStatistics.records_source || '-' }}</el-tag>
+            <el-tag type="success" style="margin-left: 10px">
+              有效记录数: {{ debugStatistics.records_count || 0 }}</el-tag
+            >
+            <el-tag type="primary" style="margin-left: 10px">
+              通行标识ID匹配数: {{ debugStatistics.pass_id_matched || 0 }}</el-tag
+            >
+            <el-tag type="danger" style="margin-left: 10px">
+              核查通行标识匹配数: {{ debugStatistics.check_id_matched || 0 }}</el-tag
+            >
+          </div>
+        </div>
+      </el-card>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import * as XLSX from 'xlsx'
 import JSZip from 'jszip'
 import { XMLParser } from 'fast-xml-parser'
@@ -897,15 +1008,63 @@ import {
   ElInput,
   ElUpload,
   ElImage,
-  ElRadio
+  ElRadio,
+  ElTag
 } from 'element-plus'
-import { CopyDocument, Picture } from '@element-plus/icons-vue'
-import { getSplitMatchTables, getSplitMatchData, executeSplitMatch } from '@/api/split-match'
+import { CopyDocument, Picture, Loading } from '@element-plus/icons-vue'
+import {
+  getSplitMatchTables,
+  getSplitMatchData,
+  executeSplitMatch,
+  getExportSplitMatchData,
+  previewSplitMatch
+} from '@/api/split-match'
+import { useUserStore } from '@/store/modules/user'
+
+const userStore = useUserStore()
+
+const hasPermission = (): boolean => {
+  const userInfo = userStore.getUserInfo
+  const roleList = userInfo?.roleList || []
+
+  if (roleList.includes('超级管理员') || roleList.includes('管理员')) {
+    return true
+  }
+
+  return false
+}
+
+const canShowDebug = computed(() => hasPermission())
 
 interface MatchResult {
   matched_count: number
   unmatched_count: number
   total: number
+  pass_id_matched?: number
+  check_id_matched?: number
+  debug?: {
+    total_time?: number
+    count_duration?: number
+    yc_duration?: number
+    cf_duration?: number
+    match_duration?: number
+    select_sql?: string
+    yc_query?: string
+    cf_query?: string
+    update_by_pass_id_query?: string
+    update_by_check_id_query?: string
+    records_source?: string
+    records_count?: number
+    valid_record_count?: number
+    cf_record_count?: number
+    cf_table?: string
+    pass_id_matched_count?: number
+    check_id_matched_count?: number
+    pass_id_update_count?: number
+    check_id_update_count?: number
+    pass_id_batch_count?: number
+    check_id_batch_count?: number
+  }
 }
 
 interface TableOption {
@@ -919,6 +1078,7 @@ const tableData = ref<Record<string, unknown>[]>([])
 const displayColumns = ref<string[]>([])
 const tableLoading = ref(false)
 const matchLoading = ref(false)
+const exportLoading = ref(false)
 const matchResult = ref<MatchResult | null>(null)
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -947,6 +1107,65 @@ const uploadProgress = ref(0)
 const uploadProgressText = ref('')
 const uploadLoading = ref(false)
 const extractedImagesCount = ref(0)
+
+const debugInfo = ref<any>(null)
+const requestParams = ref<string>('')
+const showDebug = ref(true)
+const sqlsPreview = ref<any[]>([])
+const debugStatistics = ref<any>({
+  total_time: 0,
+  records_source: '-',
+  records_count: 0,
+  pass_id_matched: 0,
+  check_id_matched: 0,
+  matched_count: 0,
+  total_count: 0
+})
+
+const allSqlsPreview = computed(() => {
+  if (!debugInfo.value && sqlsPreview.value.length === 0) return ''
+
+  const parts: string[] = []
+
+  // 首先使用保存的SQL预览
+  if (sqlsPreview.value && Array.isArray(sqlsPreview.value)) {
+    sqlsPreview.value.forEach((item: any) => {
+      if (item.name && item.sql) {
+        parts.push(`-- ${item.name}`)
+        parts.push(item.sql)
+        parts.push('')
+      }
+    })
+  }
+
+  // 然后使用debugInfo中的SQL（如果有的话）
+  if (debugInfo.value && debugInfo.value.sqls && Array.isArray(debugInfo.value.sqls)) {
+    debugInfo.value.sqls.forEach((item: any) => {
+      if (item.name && item.sql) {
+        parts.push(`-- ${item.name}`)
+        parts.push(item.sql)
+        parts.push('')
+      }
+    })
+  }
+
+  const additionalSqls = [
+    { key: 'update_pass_id_sql', name: '更新核查拆分字段 SQL（按通行标识ID）' },
+    { key: 'update_check_id_sql', name: '更新核查拆分字段 SQL（按核查通行标识）' },
+    { key: 'update_unmatched_sql', name: '更新未匹配记录 SQL' },
+    { key: 'count_sql', name: '查询总记录数 SQL' }
+  ]
+
+  additionalSqls.forEach(({ key, name }) => {
+    if (debugInfo.value && debugInfo.value[key]) {
+      parts.push(`-- ${name}`)
+      parts.push(debugInfo.value[key])
+      parts.push('')
+    }
+  })
+
+  return parts.join('\n')
+})
 
 // 最近输入的通行标识ID列表，最多保留10条
 const loadRecentCheckIds = (): string[] => {
@@ -978,9 +1197,7 @@ const checkSplitOptions = ref<string[]>([])
 
 const loadTableList = async () => {
   try {
-    console.log('开始获取表列表...')
     const response = await getSplitMatchTables()
-    console.log('获取表列表结果:', response)
 
     if (response && Array.isArray(response.data)) {
       tableList.value = response.data.map((tableName: string) => {
@@ -990,10 +1207,8 @@ const loadTableList = async () => {
           value: tableName
         }
       })
-      console.log('处理后的tableList:', tableList.value)
     } else {
       tableList.value = []
-      console.log('data为空，tableList设置为空数组')
     }
   } catch (error) {
     console.error('获取表列表失败:', error)
@@ -1011,15 +1226,17 @@ const loadTableData = async () => {
 
   tableLoading.value = true
   try {
-    console.log('开始获取表数据，表名:', selectedTable.value)
-    console.log('筛选条件:', filters.value)
-    const response = await getSplitMatchData({
+    const params = {
       table_name: selectedTable.value,
       filters: JSON.stringify(filters.value),
       page: currentPage.value,
       page_size: pageSize.value
-    })
-    console.log('获取表数据结果:', response)
+    }
+
+    requestParams.value = JSON.stringify(params, null, 2)
+    debugInfo.value = null
+
+    const response = await getSplitMatchData(params)
 
     let tableDataArray: any[] = []
     let columnsArray: string[] = []
@@ -1043,10 +1260,6 @@ const loadTableData = async () => {
     tableData.value = tableDataArray
     displayColumns.value = columnsArray
     total.value = totalCount
-    matchResult.value = null
-    console.log('获取到的表数据:', tableDataArray)
-    console.log('获取到的列名:', displayColumns.value)
-    console.log('数据总量:', total.value)
 
     // 处理图片字段，转换为 data URL 格式
     const processedData = tableDataArray.map((row: any) => {
@@ -1085,7 +1298,6 @@ const loadTableData = async () => {
     splitValues.add('未拆')
 
     checkSplitOptions.value = Array.from(splitValues)
-    console.log('核查拆分选项:', checkSplitOptions.value)
   } catch (error) {
     console.error('获取表数据失败:', error)
     ElMessage.error('获取表数据失败，请检查后端服务')
@@ -1098,7 +1310,6 @@ const loadTableData = async () => {
 }
 
 const handleTableChange = () => {
-  console.log('选中的表:', selectedTable.value)
   currentPage.value = 1
   matchResult.value = null
   loadTableData()
@@ -1112,11 +1323,81 @@ const handleExecuteMatch = async () => {
 
   matchLoading.value = true
   try {
-    console.log('开始执行匹配，表名:', selectedTable.value)
-    const response = await executeSplitMatch({ table_name: selectedTable.value })
-    console.log('执行匹配结果:', response)
-    if (response && typeof response === 'object') {
-      matchResult.value = response as unknown as MatchResult
+    // 1. 先获取所有记录（不带分页）
+    const exportParams = {
+      table_name: selectedTable.value,
+      filters: JSON.stringify(filters.value)
+    }
+    const exportResponse = await getExportSplitMatchData(exportParams)
+
+    if (!exportResponse || !exportResponse.data || !exportResponse.data.data) {
+      ElMessage.error('获取记录失败')
+      return
+    }
+
+    // 2. 提取所有记录的通行标识ID和核查通行标识
+    const allRecords = exportResponse.data.data
+    const recordsToMatch = allRecords.map((record: any) => ({
+      id: record.id,
+      通行标识ID: record['通行标识ID'],
+      核查通行标识: record['核查通行标识']
+    }))
+
+    // 3. 将记录传给后端执行匹配
+    const params = {
+      table_name: selectedTable.value,
+      records: recordsToMatch
+    }
+    requestParams.value = JSON.stringify(params, null, 2)
+
+    // 4. 调用预览接口获取SQL，并立即显示
+    debugInfo.value = null
+    const previewResponse = await previewSplitMatch(params)
+    console.log('预览接口响应:', previewResponse)
+    if (
+      previewResponse &&
+      previewResponse.code === 200 &&
+      previewResponse.data &&
+      previewResponse.data.sqls
+    ) {
+      sqlsPreview.value = previewResponse.data.sqls // 保存到临时变量
+      debugInfo.value = {
+        sqls: previewResponse.data.sqls
+      }
+    }
+
+    // 5. 立即执行匹配
+    const response = await executeSplitMatch(params)
+    console.log('执行匹配响应:', response)
+
+    let responseData = null
+    if (response && response.code === 200) {
+      responseData = response.data
+    }
+    console.log('responseData:', responseData)
+
+    // 合并执行结果到debugInfo，保留SQL预览
+    if (responseData) {
+      // 保存调试统计数据到临时变量
+      debugStatistics.value = {
+        total_time: responseData.debug?.total_time || 0,
+        records_source: responseData.debug?.records_source || '-',
+        records_count: responseData.debug?.records_count || 0,
+        pass_id_matched: responseData.pass_id_matched || 0,
+        check_id_matched: responseData.check_id_matched || 0,
+        matched_count: responseData.matched_count || 0,
+        total_count: responseData.total || 0
+      }
+
+      const currentSqls = debugInfo.value?.sqls
+      debugInfo.value = {
+        ...(responseData.debug || {}),
+        sqls: currentSqls // 保留之前的SQL预览
+      }
+    }
+
+    if (responseData && typeof responseData === 'object') {
+      matchResult.value = responseData as unknown as MatchResult
       ElMessage.success('匹配完成')
       loadTableData()
     } else {
@@ -1347,6 +1628,17 @@ const handleCopy = (text: string) => {
   }
 }
 
+const copySql = (sql: string) => {
+  navigator.clipboard
+    .writeText(sql)
+    .then(() => {
+      ElMessage.success('SQL 已复制到剪贴板')
+    })
+    .catch(() => {
+      ElMessage.error('复制失败')
+    })
+}
+
 const handleResetFilter = () => {
   // 清空所有筛选条件
   filters.value = {
@@ -1365,57 +1657,104 @@ const handleResetFilter = () => {
   loadTableData()
 }
 
-const handleExport = () => {
-  if (!selectedTable.value || tableData.value.length === 0) {
-    ElMessage.warning('没有数据可导出')
+const handleExport = async () => {
+  if (!selectedTable.value) {
+    ElMessage.warning('请先选择数据表')
     return
   }
 
+  exportLoading.value = true
   try {
-    // 获取表头
-    const headers = Object.keys(tableData.value[0] || {})
-
-    // 构建CSV内容
-    let csvContent = headers.join(',') + '\n'
-
-    // 添加数据行
-    tableData.value.forEach((row) => {
-      const rowData = headers.map((header) => {
-        const value = row[header]
-        // 处理包含逗号或引号的值
-        if (
-          typeof value === 'string' &&
-          (value.includes(',') || value.includes('"') || value.includes('\n'))
-        ) {
-          return '"' + value.replace(/"/g, '""') + '"'
-        }
-        return value === null || value === undefined ? '' : value
-      })
-      csvContent += rowData.join(',') + '\n'
+    // 调用后端API获取完整数据
+    const response = await getExportSplitMatchData({
+      table_name: selectedTable.value,
+      filters: JSON.stringify(filters.value)
     })
 
-    // 创建Blob对象
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    let exportData: any[] = []
+    let headers: string[] = []
+    let columnTypes: Record<string, string> = {}
 
-    // 创建下载链接
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
+    if (response && typeof response === 'object') {
+      if (response.code === 200 && response.data) {
+        exportData = Array.isArray(response.data.data) ? response.data.data : []
+        headers = Array.isArray((response.data as any).columns)
+          ? (response.data as any).columns
+          : []
+        columnTypes = (response.data as any).column_types || {}
+      } else {
+        exportData = Array.isArray(response.data) ? response.data : []
+        headers = Array.isArray((response as any).columns) ? (response as any).columns : []
+        columnTypes = (response as any).column_types || {}
+      }
+    }
 
-    // 设置文件名
-    const fileName = `${selectedTable.value}_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.csv`
+    if (exportData.length === 0) {
+      ElMessage.warning('没有数据可导出')
+      return
+    }
 
-    // 触发下载
-    link.setAttribute('href', url)
-    link.setAttribute('download', fileName)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    // 如果没有获取到列名，从数据中获取
+    if (headers.length === 0 && exportData.length > 0) {
+      headers = Object.keys(exportData[0] || {})
+    }
 
-    ElMessage.success('数据导出成功')
+    // 创建工作簿和工作表
+    const workbook = XLSX.utils.book_new()
+
+    // 准备数据
+    const worksheetData = [headers]
+
+    // 添加数据行
+    exportData.forEach((row) => {
+      const rowData = headers.map((header) => {
+        const value = row[header]
+        // 处理null和undefined
+        if (value === null || value === undefined) {
+          return ''
+        }
+        return value
+      })
+      worksheetData.push(rowData)
+    })
+
+    // 创建工作表
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData)
+
+    // 为varchar类型的列设置文本格式
+    // 在Excel中，文本格式的格式代码是"@"
+    headers.forEach((header, colIndex) => {
+      const columnType = columnTypes[header]
+      if (columnType && columnType.toLowerCase() === 'varchar') {
+        // 为该列所有单元格设置文本格式
+        for (let rowIndex = 0; rowIndex <= exportData.length; rowIndex++) {
+          const cellAddress = XLSX.utils.encode_cell({ r: rowIndex, c: colIndex })
+          if (worksheet[cellAddress]) {
+            // 设置单元格格式为文本
+            worksheet[cellAddress].z = '@'
+            // 确保值被存储为字符串
+            worksheet[cellAddress].v = String(worksheet[cellAddress].v)
+          }
+        }
+      }
+    })
+
+    // 设置列宽
+    worksheet['!cols'] = headers.map(() => ({ wch: 15 }))
+
+    // 将工作表添加到工作簿
+    XLSX.utils.book_append_sheet(workbook, worksheet, '数据')
+
+    // 生成Excel文件
+    const fileName = `${selectedTable.value}_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.xlsx`
+    XLSX.writeFile(workbook, fileName)
+
+    ElMessage.success(`数据导出成功，共${exportData.length}条记录`)
   } catch (error) {
     console.error('导出失败:', error)
     ElMessage.error('数据导出失败')
+  } finally {
+    exportLoading.value = false
   }
 }
 
@@ -1485,29 +1824,20 @@ const processDataRow = (row: any, index: number): any => {
 const detectExcelFormat = async (
   binaryData: string
 ): Promise<'drawings' | 'cellimages' | 'no_image'> => {
-  console.log('========== 开始检测Excel格式 ==========')
   try {
     const zip = new JSZip()
     const workbook = await zip.loadAsync(binaryData)
     const filePaths = Object.keys(workbook.files)
-    console.log('ZIP内所有文件数:', filePaths.length)
 
     const hasCellImages = filePaths.some((path) => path === 'xl/cellimages.xml')
     const hasCellImagesRels = filePaths.some((path) => path === 'xl/_rels/cellimages.xml.rels')
     const hasDrawings = filePaths.some((path) => path === 'xl/drawings/drawing1.xml')
     const hasDrawingsRels = filePaths.some((path) => path === 'xl/drawings/_rels/drawing1.xml.rels')
 
-    console.log(`检测到 cellimages.xml: ${hasCellImages}`)
-    console.log(`检测到 cellimages.xml.rels: ${hasCellImagesRels}`)
-    console.log(`检测到 drawing1.xml: ${hasDrawings}`)
-    console.log(`检测到 drawing1.xml.rels: ${hasDrawingsRels}`)
-
     if (!hasCellImages && !hasDrawings) {
-      console.log('========== 检测结果: 无图片 ==========')
       return 'no_image'
     }
 
-    console.log('\n========== 开始统计XML文件节点数 ==========')
     const nodeCounts: Record<string, number> = {}
 
     if (hasCellImages) {
@@ -1516,7 +1846,6 @@ const detectExcelFormat = async (
         const content = await cellImagesFile.async('text')
         const count = countXMLNodes(content)
         nodeCounts['cellimages.xml'] = count
-        console.log(`cellimages.xml 节点数: ${count}`)
       }
     }
 
@@ -1526,7 +1855,6 @@ const detectExcelFormat = async (
         const content = await cellImagesRelsFile.async('text')
         const count = countXMLNodes(content)
         nodeCounts['cellimages.xml.rels'] = count
-        console.log(`cellimages.xml.rels 节点数: ${count}`)
       }
     }
 
@@ -1536,7 +1864,6 @@ const detectExcelFormat = async (
         const content = await drawingFile.async('text')
         const count = countXMLNodes(content)
         nodeCounts['drawing1.xml'] = count
-        console.log(`drawing1.xml 节点数: ${count}`)
       }
     }
 
@@ -1546,23 +1873,19 @@ const detectExcelFormat = async (
         const content = await drawingRelsFile.async('text')
         const count = countXMLNodes(content)
         nodeCounts['drawing1.xml.rels'] = count
-        console.log(`drawing1.xml.rels 节点数: ${count}`)
       }
     }
 
-    console.log('\n--- 节点数统计结果 ---')
-    for (const [fileName, count] of Object.entries(nodeCounts)) {
-      console.log(`  ${fileName}: ${count} 个节点`)
+    for (const [_fileName, _count] of Object.entries(nodeCounts)) {
     }
 
-    console.log('\n--- 选择节点数量最多的文件作为目标 ---')
     let maxNodes = 0
     let targetFormat: 'drawings' | 'cellimages' = 'drawings'
 
     if (hasCellImages && hasCellImagesRels) {
       const cellImagesNodes =
         (nodeCounts['cellimages.xml'] || 0) + (nodeCounts['cellimages.xml.rels'] || 0)
-      console.log(`cellimages型总节点数: ${cellImagesNodes}`)
+
       if (cellImagesNodes > maxNodes) {
         maxNodes = cellImagesNodes
         targetFormat = 'cellimages'
@@ -1572,14 +1895,13 @@ const detectExcelFormat = async (
     if (hasDrawings && hasDrawingsRels) {
       const drawingNodes =
         (nodeCounts['drawing1.xml'] || 0) + (nodeCounts['drawing1.xml.rels'] || 0)
-      console.log(`drawings型总节点数: ${drawingNodes}`)
+
       if (drawingNodes > maxNodes) {
         maxNodes = drawingNodes
         targetFormat = 'drawings'
       }
     }
 
-    console.log(`========== 检测结果: ${targetFormat} (节点数: ${maxNodes}) ==========`)
     return targetFormat
   } catch (e) {
     console.error('检测Excel格式失败:', e)
@@ -1630,7 +1952,6 @@ const countXMLNodes = (xmlContent: string): number => {
     }
 
     count = countNodes(parsed)
-    console.log(`  元素节点: ${count} 个`)
 
     return count
   } catch (e) {
@@ -1642,20 +1963,17 @@ const countXMLNodes = (xmlContent: string): number => {
 const extractImagesFromExcel = async (
   binaryData: string
 ): Promise<{ mediaFiles: Record<string, string>; count: number }> => {
-  console.log('========== 开始提取图片 ==========')
   const mediaFiles: Record<string, string> = {}
   let count = 0
 
   try {
     const zip = new JSZip()
     const workbook = await zip.loadAsync(binaryData)
-    console.log('ZIP文件加载成功，文件列表:', Object.keys(workbook.files).slice(0, 20))
 
     const allFilePaths = Object.keys(workbook.files)
     const mediaFilePaths = allFilePaths.filter(
       (path) => path.startsWith('xl/media/') && !path.endsWith('/')
     )
-    console.log(`找到xl/media目录下 ${mediaFilePaths.length} 个文件`)
 
     const mediaPromises: Promise<void>[] = []
 
@@ -1668,9 +1986,6 @@ const extractImagesFromExcel = async (
             const extension = filePath.split('.').pop() || 'png'
             mediaFiles[filePath] = `data:image/${extension};base64,${content}`
             count++
-            console.log(
-              `图片提取成功 [${count}]: ${filePath}, 大小: ${content.length} 字符, 格式: ${extension}`
-            )
           })
           .catch((e) => {
             console.warn('处理图片文件失败:', filePath, e)
@@ -1680,7 +1995,6 @@ const extractImagesFromExcel = async (
     }
 
     await Promise.all(mediaPromises)
-    console.log(`========== 图片提取完成，共提取 ${count} 张图片 ==========`)
   } catch (e) {
     console.error('提取图片失败:', e)
   }
@@ -1703,8 +2017,7 @@ const cellImagesXmlParser = new XMLParser({
   parseAttributeValue: true,
   trimValues: true,
   removeNSPrefix: false,
-  isArray: (name, jpath, isLeafNode, isAttribute) => {
-    // 处理带命名空间的节点
+  isArray: (name) => {
     if (name === 'cellImage' || name === 'etc:cellImage' || name === 'Relationship') {
       return true
     }
@@ -1719,7 +2032,6 @@ const buildCellImagesMappingsWithSheet1 = async (
   cellImageMap: Record<string, { cell: string; imageId: string; imageName: string }>
   sheet1XmlData: Record<string, string>
 }> => {
-  console.log('========== 开始构建cellimages型图片映射（含sheet1.xml） ==========')
   const relMap: Record<string, string> = {}
   const cellImageMap: Record<string, { cell: string; imageId: string; imageName: string }> = {}
   const sheet1XmlData: Record<string, string> = {}
@@ -1728,17 +2040,12 @@ const buildCellImagesMappingsWithSheet1 = async (
     const zip = new JSZip()
     const workbook = await zip.loadAsync(binaryData)
 
-    const filePaths = Object.keys(workbook.files)
-    console.log('ZIP内所有文件数:', filePaths.length)
-
-    console.log('\n--- 步骤1: 解析cellimages.xml.rels ---')
     const cellImagesRelsPath = 'xl/_rels/cellimages.xml.rels'
     const cellImagesRelsFile = workbook.file(cellImagesRelsPath)
 
     if (cellImagesRelsFile) {
       try {
         const relsContent = await cellImagesRelsFile.async('text')
-        console.log(`解析cellimages.xml.rels, 长度: ${relsContent.length}`)
 
         const relsXml = xmlParser.parse(relsContent)
         const relationships = relsXml.Relationships?.Relationship
@@ -1748,7 +2055,6 @@ const buildCellImagesMappingsWithSheet1 = async (
         }
 
         const relArray = Array.isArray(relationships) ? relationships : [relationships]
-        console.log(`  找到 ${relArray.length} 个Relationship节点`)
 
         let foundRels = 0
         for (const rel of relArray) {
@@ -1766,35 +2072,24 @@ const buildCellImagesMappingsWithSheet1 = async (
             relMap[id] = fileName
             foundRels++
             if (foundRels <= 5) {
-              console.log(`  Rels映射 [${foundRels}]: Id="${id}" -> 文件名="${fileName}"`)
             }
           }
         }
-
-        console.log(`  从 cellimages.xml.rels 解析出 ${foundRels} 个关系映射`)
       } catch (e) {
         console.warn('读取cellimages.xml.rels失败:', e)
       }
     }
 
-    console.log('\n--- 步骤2: 解析cellimages.xml ---')
     const cellImagesPath = 'xl/cellimages.xml'
     const cellImagesFile = workbook.file(cellImagesPath)
 
     if (cellImagesFile) {
       try {
         const cellImagesContent = await cellImagesFile.async('text')
-        console.log(`解析cellimages.xml, 长度: ${cellImagesContent.length}`)
-        console.log('cellimages.xml内容前200字符:', cellImagesContent.substring(0, 200))
 
         const cellImagesXml = cellImagesXmlParser.parse(cellImagesContent)
-        console.log('  cellImagesXml根节点键:', Object.keys(cellImagesXml))
-        console.log('  cellImagesXml完整结构:', JSON.stringify(cellImagesXml, null, 2))
 
         const etcCellImages = cellImagesXml['etc:cellImages']
-        console.log('  etc:cellImages节点:', etcCellImages)
-        console.log('  etc:cellImages类型:', typeof etcCellImages)
-        console.log('  etc:cellImages键:', etcCellImages ? Object.keys(etcCellImages) : 'null')
 
         const cellImages = etcCellImages?.cellImage || etcCellImages?.['etc:cellImage']
 
@@ -1818,7 +2113,6 @@ const buildCellImagesMappingsWithSheet1 = async (
         }
 
         const cellImageArray = Array.isArray(cellImages) ? cellImages : [cellImages]
-        console.log(`  找到 ${cellImageArray.length} 个cellImage节点`)
 
         let foundImages = 0
         for (const cellImage of cellImageArray) {
@@ -1850,9 +2144,6 @@ const buildCellImagesMappingsWithSheet1 = async (
 
           const relationshipId = blip['r:embed']
 
-          console.log(`  处理cellImage节点: imageId="${imageId}", imageName="${imageName}"`)
-          console.log(`    提取到的r:embed: "${relationshipId}"`)
-
           if (relationshipId) {
             cellImageMap[relationshipId] = {
               cell: '',
@@ -1861,17 +2152,12 @@ const buildCellImagesMappingsWithSheet1 = async (
             }
             foundImages++
             if (foundImages <= 5) {
-              console.log(
-                `  CellImage映射 [${foundImages}]: r:embed="${relationshipId}" -> imageId="${imageId}", name="${imageName}"`
-              )
             }
           } else {
             console.warn(`    警告: r:embed属性为空`)
           }
         }
-
-        console.log(`  从 cellimages.xml 解析出 ${foundImages} 个图片位置映射`)
-      } catch (e) {
+      } catch (e: any) {
         console.error('读取cellimages.xml失败:', e)
         console.error('错误堆栈:', e.stack)
         return { relMap, cellImageMap, sheet1XmlData }
@@ -1880,23 +2166,19 @@ const buildCellImagesMappingsWithSheet1 = async (
       console.warn('cellimages.xml文件不存在')
     }
 
-    console.log('\n--- 步骤3: 解析sheet1.xml以提取DISPIMG函数单元格 ---')
     const sheet1Path = 'xl/worksheets/sheet1.xml'
     const sheet1File = workbook.file(sheet1Path)
 
     if (sheet1File) {
       try {
         const sheet1Content = await sheet1File.async('text')
-        console.log(`解析sheet1.xml, 长度: ${sheet1Content.length}`)
 
         // 使用DOMParser解析XML，参照文档方案
         const domParser = new DOMParser()
         const xmlDoc = domParser.parseFromString(sheet1Content, 'text/xml')
-        console.log('  DOMParser解析完成')
 
         // 遍历所有单元格节点（<c>）
         const cellNodes = xmlDoc.getElementsByTagName('c')
-        console.log(`  找到 ${cellNodes.length} 个单元格节点`)
 
         let dispimgCount = 0
         for (let i = 0; i < cellNodes.length; i++) {
@@ -1912,7 +2194,6 @@ const buildCellImagesMappingsWithSheet1 = async (
           // 获取公式文本并处理转义符（&quot; → "）
           const formulaText = formulaNodes[0].textContent || ''
           const cleanFormula = formulaText.replace(/&quot;/g, '"')
-          console.log(`  单元格${cellRef}的公式: ${cleanFormula}`)
 
           // 精准匹配目标图片ID（ID_+32位十六进制）
           const imageIdRegex = /ID_[0-9A-Fa-f]{32}/i
@@ -1922,26 +2203,16 @@ const buildCellImagesMappingsWithSheet1 = async (
             sheet1XmlData[imageName] = cellRef
             dispimgCount++
             if (dispimgCount <= 5) {
-              console.log(
-                `  DISPIMG单元格 [${dispimgCount}]: imageName="${imageName}" -> cell="${cellRef}"`
-              )
             }
           }
         }
-
-        console.log(`  从 sheet1.xml 解析出 ${dispimgCount} 个DISPIMG单元格`)
-      } catch (e) {
+      } catch (e: any) {
         console.error('读取sheet1.xml失败:', e)
         console.error('错误堆栈:', e.stack)
       }
     } else {
       console.warn('sheet1.xml文件不存在')
     }
-
-    console.log('\n========== cellimages型图片映射构建完成 ==========')
-    console.log(`relMap条数: ${Object.keys(relMap).length}`)
-    console.log(`cellImageMap条数: ${Object.keys(cellImageMap).length}`)
-    console.log(`sheet1XmlData条数: ${Object.keys(sheet1XmlData).length}`)
 
     return { relMap, cellImageMap, sheet1XmlData }
   } catch (e) {
@@ -1956,7 +2227,6 @@ const buildImageMappings = async (
   relMap: Record<string, string>
   drawingMap: Record<string, { row: number; col: number; imageId: string }>
 }> => {
-  console.log('========== 开始构建图片映射(fast-xml-parser) ==========')
   const relMap: Record<string, string> = {}
   const drawingMap: Record<string, { row: number; col: number; imageId: string }> = {}
 
@@ -1965,7 +2235,6 @@ const buildImageMappings = async (
     const workbook = await zip.loadAsync(binaryData)
 
     const filePaths = Object.keys(workbook.files)
-    console.log('ZIP内所有文件数:', filePaths.length)
 
     const drawingFiles: string[] = []
     const relsFiles: string[] = []
@@ -1980,16 +2249,11 @@ const buildImageMappings = async (
       }
     }
 
-    console.log(`找到drawing文件: ${drawingFiles.length} 个`, drawingFiles)
-    console.log(`找到rels文件: ${relsFiles.length} 个`, relsFiles)
-
-    console.log('\n--- 步骤1: 解析rels文件 ---')
     for (const relsPath of relsFiles) {
       const relsFile = workbook.file(relsPath)
       if (relsFile) {
         try {
           const relsContent = await relsFile.async('text')
-          console.log(`解析rels文件: ${relsPath}, 长度: ${relsContent.length}`)
 
           const relsXml = xmlParser.parse(relsContent)
           const relationships = relsXml.Relationships?.Relationship
@@ -1999,7 +2263,6 @@ const buildImageMappings = async (
           }
 
           const relArray = Array.isArray(relationships) ? relationships : [relationships]
-          console.log(`  找到 ${relArray.length} 个Relationship节点`)
 
           let foundRels = 0
           for (const rel of relArray) {
@@ -2017,35 +2280,28 @@ const buildImageMappings = async (
               relMap[id] = fileName
               foundRels++
               if (foundRels <= 5) {
-                console.log(`  Rels映射 [${foundRels}]: Id="${id}" -> 文件名="${fileName}"`)
               }
             }
           }
-
-          console.log(`  从 ${relsPath} 解析出 ${foundRels} 个关系映射`)
         } catch (e) {
           console.warn('读取rels文件失败:', relsPath, e)
         }
       }
     }
 
-    console.log('\n--- 步骤2: 解析drawing文件 ---')
     for (const drawingPath of drawingFiles) {
       const drawingFile = workbook.file(drawingPath)
       if (drawingFile) {
         try {
           const drawingContent = await drawingFile.async('text')
-          console.log(`解析drawing文件: ${drawingPath}, 长度: ${drawingContent.length}`)
 
           const drawingXml = xmlParser.parse(drawingContent)
-          console.log('  drawingXml根节点键:', Object.keys(drawingXml))
 
           const wsDr = drawingXml['xdr:wsDr'] || drawingXml
           if (!wsDr) {
             console.warn('  未找到wsDr节点')
             continue
           }
-          console.log('  wsDr节点键:', Object.keys(wsDr))
 
           let twoCellAnchors = wsDr['xdr:twoCellAnchor']
           let oneCellAnchors = wsDr['xdr:oneCellAnchor']
@@ -2056,16 +2312,7 @@ const buildImageMappings = async (
           if (oneCellAnchors && !Array.isArray(oneCellAnchors)) {
             oneCellAnchors = [oneCellAnchors]
           }
-
-          console.log(
-            `  找到 twoCellAnchor: ${twoCellAnchors?.length || 0} 个, oneCellAnchor: ${oneCellAnchors?.length || 0} 个`
-          )
-
           if (twoCellAnchors && twoCellAnchors.length > 0) {
-            console.log(
-              '  第一个twoCellAnchor内容:',
-              JSON.stringify(twoCellAnchors[0], null, 2).substring(0, 2000)
-            )
           }
 
           let foundAnchors = 0
@@ -2110,9 +2357,6 @@ const buildImageMappings = async (
               }
               foundAnchors++
               if (foundAnchors <= 5) {
-                console.log(
-                  `  Drawing映射 [${foundAnchors}]: r:embed="${relationshipId}" -> 行号=${row}, 列号=${col}, 图片ID="${imageId}"`
-                )
               }
             }
           }
@@ -2127,54 +2371,21 @@ const buildImageMappings = async (
               processAnchor(anchor)
             }
           }
-
-          console.log(`  从 ${drawingPath} 解析出 ${foundAnchors} 个图片位置映射`)
         } catch (e) {
           console.warn('读取drawing文件失败:', drawingPath, e)
         }
       }
     }
 
-    console.log('\n========== 图片映射构建完成 ==========')
-    console.log(`relMap条数: ${Object.keys(relMap).length}`)
-    console.log(`drawingMap条数: ${Object.keys(drawingMap).length}`)
     if (Object.keys(relMap).length > 0) {
-      const sampleKeys = Object.keys(relMap).slice(0, 3)
-      console.log(
-        `relMap示例:`,
-        sampleKeys.map((k) => `${k}->${relMap[k]}`)
-      )
     }
     if (Object.keys(drawingMap).length > 0) {
-      const sampleKeys = Object.keys(drawingMap).slice(0, 3)
-      console.log(
-        `drawingMap示例:`,
-        sampleKeys.map((k) => `${k}->${JSON.stringify(drawingMap[k])}`)
-      )
     }
   } catch (e) {
     console.error('构建图片映射失败:', e)
   }
 
   return { relMap, drawingMap }
-}
-
-const extractImageNameFromCell = (cellValue: any): string | null => {
-  if (!cellValue || typeof cellValue !== 'string') {
-    return null
-  }
-
-  // 匹配各种形式的DISPIMG函数
-  const dispimgMatch = cellValue.match(
-    /(?:_xlfn\.)?DISPIMG\s*\(\s*["']([^"']+)["']\s*,\s*\d+\s*\)|=(?:_xlfn\.)?DISPIMG\s*\(\s*["']([^"']+)["']\s*,\s*\d+\s*\)/i
-  )
-
-  if (dispimgMatch) {
-    // 返回第一个捕获组或第二个捕获组（取决于哪种匹配成功）
-    return dispimgMatch[1] || dispimgMatch[2] || null
-  }
-
-  return null
 }
 
 const parseCellRef = (cellRef: string): { row: number; col: number } | null => {
@@ -2197,30 +2408,6 @@ const parseCellRef = (cellRef: string): { row: number; col: number } | null => {
   }
 }
 
-const buildImageCellMap = (processedData: any[]): Record<string, string> => {
-  console.log('========== 开始建立图片名称到单元格的映射 ==========')
-  const imageCellMap: Record<string, string> = {}
-
-  for (let i = 0; i < processedData.length; i++) {
-    const row = processedData[i]
-    for (const [columnName, cellValue] of Object.entries(row)) {
-      if (typeof cellValue !== 'string') {
-        continue
-      }
-
-      const imageName = extractImageNameFromCell(cellValue)
-
-      if (imageName) {
-        imageCellMap[imageName] = columnName
-        console.log(`  图片 "${imageName}" 关联到单元格 ${columnName}`)
-      }
-    }
-  }
-
-  console.log(`  建立了 ${Object.keys(imageCellMap).length} 个图片-单元格映射`)
-  return imageCellMap
-}
-
 const associateCellImagesWithRows = (
   processedData: any[],
   mediaFiles: Record<string, string>,
@@ -2228,27 +2415,15 @@ const associateCellImagesWithRows = (
   cellImageMap: Record<string, { cell: string; imageId: string; imageName: string }>,
   sheet1XmlData: Record<string, string>
 ): void => {
-  console.log('========== 开始关联cellimages型图片到数据行 ==========')
-  console.log(`数据行总数: ${processedData.length}`)
-  console.log(`图片文件数: ${Object.keys(mediaFiles).length}`)
-  console.log(`关系映射数: ${Object.keys(relMap).length}`)
-  console.log(`单元格映射数: ${Object.keys(cellImageMap).length}`)
-  console.log(`sheet1XmlData数: ${Object.keys(sheet1XmlData).length}`)
-
-  console.log('\n--- 步骤1: 使用sheet1.xml数据建立图片名称到单元格的映射 ---')
   const imageCellMap: Record<string, string> = {}
 
   for (const imageName in sheet1XmlData) {
     if (Object.prototype.hasOwnProperty.call(sheet1XmlData, imageName)) {
       const cellRef = sheet1XmlData[imageName]
       imageCellMap[imageName] = cellRef
-      console.log(`  图片 "${imageName}" 关联到单元格 ${cellRef}`)
     }
   }
 
-  console.log(`  建立了 ${Object.keys(imageCellMap).length} 个图片-单元格映射`)
-
-  console.log('\n--- 步骤2: 构建图片名称到图片数据的映射 ---')
   const imageNameToDataMap: Record<string, { imageId: string; imageData: string }[]> = {}
 
   for (const relationshipId in cellImageMap) {
@@ -2258,10 +2433,6 @@ const associateCellImagesWithRows = (
       const imageId = info.imageId
 
       const imageFileName = relMap[relationshipId]
-      console.log(
-        `处理关系ID "${relationshipId}": imageName="${imageName}", imageId="${imageId}", 映射文件名="${imageFileName}"`
-      )
-
       let actualImagePath: string | null = null
       if (imageFileName) {
         if (mediaFiles[imageFileName]) {
@@ -2283,32 +2454,14 @@ const associateCellImagesWithRows = (
           imageId: imageId,
           imageData: mediaFiles[actualImagePath]
         })
-        console.log(
-          `  ✓ 图片名称"${imageName}"添加图片: imageId="${imageId}", 文件="${actualImagePath}"`
-        )
       } else {
         console.warn(
           `  ✗ 未找到图片文件: 关系ID="${relationshipId}", 映射文件名="${imageFileName}"`
         )
-        console.log(`  可用的图片文件示例:`, Object.keys(mediaFiles).slice(0, 10))
       }
     }
   }
 
-  console.log('\n--- 步骤3: 按图片名称分组结果 ---')
-  for (const imageName in imageNameToDataMap) {
-    console.log(
-      `图片名称${imageName}: ${imageNameToDataMap[imageName].length} 张图片`,
-      imageNameToDataMap[imageName].map((img) => img.imageId)
-    )
-  }
-
-  console.log('\n--- 步骤4: 将图片关联到数据行 ---')
-  console.log('说明: 根据DISPIMG函数匹配图片名称到单元格，再根据单元格列位置关联到对应字段')
-  console.log('  G列(列号7)图片 -> 查核资料1')
-  console.log('  H列(列号8)图片 -> 查核资料2')
-  console.log('  imageCellMap键:', Object.keys(imageCellMap).slice(0, 10))
-  console.log('  imageNameToDataMap键:', Object.keys(imageNameToDataMap).slice(0, 10))
   let successCount = 0
 
   for (const imageName in imageNameToDataMap) {
@@ -2323,8 +2476,6 @@ const associateCellImagesWithRows = (
         continue
       }
 
-      console.log(`  图片名称"${imageName}"关联到单元格"${cellRef}"`)
-
       const cellRefInfo = parseCellRef(cellRef)
       if (!cellRefInfo) {
         console.warn(`  ⚠ 无法解析单元格引用: ${cellRef}`)
@@ -2337,40 +2488,25 @@ const associateCellImagesWithRows = (
 
       if (dataRowIndex >= 0 && dataRowIndex < processedData.length) {
         const targetRow = processedData[dataRowIndex]
-        const rowId = targetRow['通行标识ID'] || '未知ID'
-
-        const colLetter = String.fromCharCode(64 + colNumber)
-        console.log(`  单元格${cellRef} -> 列号${colNumber}(${colLetter}列), 数据行索引${dataRowIndex}`)
 
         if (colNumber === 7) {
           if (images.length >= 1) {
             targetRow['查核资料1'] = images[0].imageData
             successCount++
-            console.log(
-              `  ✓ 行${dataRowIndex}(通行标识ID="${rowId}") "查核资料1" = imageId="${images[0].imageId}" (G列)`
-            )
           }
         } else if (colNumber === 8) {
           if (images.length >= 1) {
             targetRow['查核资料2'] = images[0].imageData
             successCount++
-            console.log(
-              `  ✓ 行${dataRowIndex}(通行标识ID="${rowId}") "查核资料2" = imageId="${images[0].imageId}" (H列)`
-            )
           }
         } else {
-          console.warn(
-            `  ⚠ 单元格${cellRef}列号${colNumber}不在G列(7)或H列(8)范围内，跳过此图片`
-          )
+          console.warn(`  ⚠ 单元格${cellRef}列号${colNumber}不在G列(7)或H列(8)范围内，跳过此图片`)
         }
       } else {
         console.warn(`  ⚠ 行号${rowNumber}超出数据范围(0-${processedData.length})`)
       }
     }
   }
-
-  console.log('\n========== cellimages型图片关联完成 ==========')
-  console.log(`成功关联图片: ${successCount} 张`)
 }
 
 const associateImagesWithRows = (
@@ -2379,13 +2515,6 @@ const associateImagesWithRows = (
   relMap: Record<string, string>,
   drawingMap: Record<string, { row: number; col: number; imageId: string }>
 ): void => {
-  console.log('========== 开始关联图片到数据行 ==========')
-  console.log(`数据行总数: ${processedData.length}`)
-  console.log(`图片文件数: ${Object.keys(mediaFiles).length}`)
-  console.log(`关系映射数: ${Object.keys(relMap).length}`)
-  console.log(`位置映射数: ${Object.keys(drawingMap).length}`)
-
-  console.log('\n--- 步骤1: 按行号分组图片 ---')
   const rowImagesMap: Record<number, { imageId: string; imageData: string; col: number }[]> = {}
 
   for (const relationshipId in drawingMap) {
@@ -2396,10 +2525,6 @@ const associateImagesWithRows = (
       const imageId = info.imageId
 
       const imageFileName = relMap[relationshipId]
-      console.log(
-        `处理关系ID "${relationshipId}": 行号=${row}, 列号=${col}, imageId="${imageId}", 映射文件名="${imageFileName}"`
-      )
-
       let actualImagePath: string | null = null
       if (imageFileName) {
         if (mediaFiles[imageFileName]) {
@@ -2422,28 +2547,14 @@ const associateImagesWithRows = (
           imageData: mediaFiles[actualImagePath],
           col: col
         })
-        console.log(
-          `  ✓ 行${row}添加图片: imageId="${imageId}", 列号=${col}, 文件="${actualImagePath}"`
-        )
       } else {
         console.warn(
           `  ✗ 未找到图片文件: 关系ID="${relationshipId}", 映射文件名="${imageFileName}"`
         )
-        console.log(`  可用的图片文件示例:`, Object.keys(mediaFiles).slice(0, 10))
       }
     }
   }
 
-  console.log('\n--- 步骤2: 按行号分组结果 ---')
-  for (const row in rowImagesMap) {
-    console.log(
-      `行${row}: ${rowImagesMap[row].length} 张图片`,
-      rowImagesMap[row].map((img) => `(${img.col}列:${img.imageId})`)
-    )
-  }
-
-  console.log('\n--- 步骤3: 将图片关联到数据行 ---')
-  console.log('说明: Excel行号=drawing row+1, 数据索引=Excel行号-2(跳过表头)')
   let successCount = 0
 
   for (const row in rowImagesMap) {
@@ -2455,26 +2566,18 @@ const associateImagesWithRows = (
 
     if (dataRowIndex >= 0 && dataRowIndex < processedData.length) {
       const targetRow = processedData[dataRowIndex]
-      const rowId = targetRow['通行标识ID'] || '未知ID'
 
       if (images.length >= 1) {
         targetRow['查核资料1'] = images[0].imageData
         successCount++
-        console.log(
-          `  ✓ Excel行${excelRowNum}(索引${dataRowIndex}) "查核资料1" = imageId="${images[0].imageId}", 列号=${images[0].col}, 通行标识ID="${rowId}"`
-        )
       }
 
       if (images.length >= 2) {
         targetRow['查核资料2'] = images[1].imageData
         successCount++
-        console.log(
-          `  ✓ Excel行${excelRowNum}(索引${dataRowIndex}) "查核资料2" = imageId="${images[1].imageId}", 列号=${images[1].col}, 通行标识ID="${rowId}"`
-        )
       }
 
       if (images.length > 2) {
-        console.log(`  ⚠ Excel行${excelRowNum}有${images.length}张图片，仅保留前2张`)
       }
     } else {
       console.warn(
@@ -2483,29 +2586,19 @@ const associateImagesWithRows = (
     }
   }
 
-  console.log('\n========== 图片关联完成 ==========')
-  console.log(`成功关联: ${successCount} 张`)
-
   let rowsWithImage1 = 0
   let rowsWithImage2 = 0
   for (const row of processedData) {
     if (row['查核资料1']) rowsWithImage1++
     if (row['查核资料2']) rowsWithImage2++
   }
-  console.log(
-    `最终统计: 查核资料1有图片的行数=${rowsWithImage1}, 查核资料2有图片的行数=${rowsWithImage2}`
-  )
 }
 
 const parseExcelAsync = async (
   binaryData: string,
   onProgress: (progress: number, status: string) => void
 ): Promise<{ data: any[]; extractedImagesCount: number }> => {
-  console.log('==================== 开始解析Excel文件 ====================')
-  console.log(`文件数据大小: ${binaryData.length} 字符`)
-
   onProgress(5, '正在检测Excel格式...')
-  console.log('[步骤1] 检测Excel格式...')
 
   const excelFormat = await detectExcelFormat(binaryData)
 
@@ -2516,26 +2609,19 @@ const parseExcelAsync = async (
   }
 
   onProgress(10, '正在解析Excel工作簿...')
-  console.log(`[步骤2] 检测到格式: ${excelFormat}`)
-  console.log('[步骤3] 解析Excel工作簿...')
 
   const xlsxWorkbook = XLSX.read(binaryData, { type: 'binary' })
   const sheetName = xlsxWorkbook.SheetNames[0]
-  console.log(`工作表名称: ${sheetName}`)
-  console.log(`所有工作表: ${xlsxWorkbook.SheetNames.join(', ')}`)
 
   const worksheet = xlsxWorkbook.Sheets[sheetName]
   const jsonData = XLSX.utils.sheet_to_json(worksheet, { range: 0 })
 
   const totalRows = jsonData.length
-  console.log(`解析到 ${totalRows} 行数据`)
+
   if (totalRows > 0) {
-    console.log('第一行数据示例:', jsonData[0])
-    console.log('第一行字段:', Object.keys(jsonData[0]))
   }
 
   onProgress(20, '正在处理数据...')
-  console.log('[步骤4] 处理数据行...')
 
   const processedData: any[] = []
   const chunkSize = 50
@@ -2556,51 +2642,36 @@ const parseExcelAsync = async (
     await new Promise((resolve) => setTimeout(resolve, 0))
   }
 
-  console.log(`数据处理完成，共 ${processedData.length} 行`)
-
   onProgress(50, '正在提取图片...')
-  console.log('[步骤5] 提取图片...')
 
   const { mediaFiles, count } = await extractImagesFromExcel(binaryData)
 
   onProgress(60, '正在建立图片关联...')
-  console.log('[步骤6] 构建图片映射...')
 
   if (excelFormat === 'cellimages') {
     const { relMap, cellImageMap, sheet1XmlData } =
       await buildCellImagesMappingsWithSheet1(binaryData)
     onProgress(75, '正在关联图片到数据行...')
-    console.log('[步骤7] 关联图片到数据行(cellimages型)...')
+
     associateCellImagesWithRows(processedData, mediaFiles, relMap, cellImageMap, sheet1XmlData)
   } else {
     const { relMap, drawingMap } = await buildImageMappings(binaryData)
     onProgress(75, '正在关联图片到数据行...')
-    console.log('[步骤7] 关联图片到数据行(drawings型)...')
+
     associateImagesWithRows(processedData, mediaFiles, relMap, drawingMap)
   }
 
   onProgress(95, '正在完成...')
-  console.log('[步骤8] 完成解析...')
 
   await new Promise((resolve) => setTimeout(resolve, 0))
 
   onProgress(100, '文件解析完成')
-  console.log('==================== Excel文件解析完成 ====================')
-  console.log(`最终结果: ${processedData.length} 行数据, ${count} 张图片`)
 
   return { data: processedData, extractedImagesCount: count }
 }
 
 // 文件上传处理函数
 const handleFileUpload = async (file: any) => {
-  console.log('==================== 文件上传开始 ====================')
-  console.log('上传文件信息:', {
-    name: file.name,
-    size: file.size,
-    type: file.raw?.type,
-    lastModified: file.raw?.lastModified
-  })
-
   if (!selectedTable.value) {
     ElMessage.warning('请先选择数据表')
     return
@@ -2616,33 +2687,24 @@ const handleFileUpload = async (file: any) => {
     const reader = new FileReader()
 
     reader.onload = async (e) => {
-      console.log('FileReader.onload 触发')
       try {
         const data = e.target?.result
         if (!data) {
           throw new Error('文件读取失败')
         }
 
-        console.log(`文件读取成功，数据大小: ${(data as string).length} 字符`)
         uploadProgressText.value = '文件读取完成'
 
         const result = await parseExcelAsync(data as string, (progress: number, status: string) => {
           uploadProgress.value = progress
           uploadProgressText.value = status
         })
-
-        console.log('Excel解析结果:', {
-          数据行数: result.data.length,
-          提取图片数: result.extractedImagesCount
-        })
-
         importData.value = result.data
         extractedImagesCount.value = result.extractedImagesCount
         uploadProgress.value = 100
         uploadProgressText.value = '文件解析完成'
         uploadLoading.value = false
         importPreviewVisible.value = true
-        console.log('==================== 文件上传处理完成 ====================')
       } catch (error) {
         console.error('解析Excel文件失败:', error)
         importError.value =
@@ -2659,7 +2721,6 @@ const handleFileUpload = async (file: any) => {
       uploadLoading.value = false
     }
 
-    console.log('开始读取文件...')
     reader.readAsBinaryString(file.raw)
   } catch (error) {
     console.error('处理文件上传失败:', error)
@@ -2677,7 +2738,6 @@ const getAllTableData = async (): Promise<any[]> => {
   }
 
   try {
-    console.log('开始获取所有表格数据，表名:', selectedTable.value)
     // 调用API获取所有数据，不使用分页参数
     const response = await getSplitMatchData({
       table_name: selectedTable.value,
@@ -2686,7 +2746,6 @@ const getAllTableData = async (): Promise<any[]> => {
       page: 1,
       page_size: 10000 // 设置一个足够大的值
     })
-    console.log('获取所有表格数据结果:', response)
 
     let allData: any[] = []
     if (response && typeof response === 'object') {
@@ -2697,7 +2756,6 @@ const getAllTableData = async (): Promise<any[]> => {
       }
     }
 
-    console.log('获取到的所有表格数据条数:', allData.length)
     return allData
   } catch (error) {
     console.error('获取所有表格数据失败:', error)
@@ -2728,14 +2786,7 @@ const matchImportData = async () => {
 
   const matchResult: any[] = []
   const unmatchedImportIds: string[] = []
-  const total = importData.value.length
-
-  console.log('开始匹配导入数据:', {
-    导入数据条数: total,
-    表格数据条数: allTableData.length
-  })
-
-  // 更新进度
+  const total = importData.value.length // 更新进度
   importProgress.value = 20
   importProgressText.value = '开始匹配数据...'
 
@@ -2745,14 +2796,11 @@ const matchImportData = async () => {
     const 通行标识ID = importRow['通行标识ID']
 
     if (!通行标识ID) {
-      console.log(`第 ${i + 1} 条导入数据：通行标识ID为空`)
       // 更新进度
       importProgress.value = 20 + Math.round(((i + 1) / total) * 70)
       importProgressText.value = `正在匹配 ${i + 1}/${total}...`
       continue
     }
-
-    console.log(`第 ${i + 1} 条导入数据：通行标识ID = ${通行标识ID}`)
 
     // 在所有表格数据中查找匹配的记录
     const matchedRow = allTableData.find((tableRow) => {
@@ -2770,9 +2818,6 @@ const matchImportData = async () => {
 
       const isMatch = tableId === importId
       if (isMatch) {
-        console.log(
-          `找到匹配记录：表格ID = ${String(tableRow['通行标识ID'])}，清理后 = ${tableId}；导入ID = ${通行标识ID}，清理后 = ${importId}`
-        )
       }
       return isMatch
     })
@@ -2787,7 +2832,6 @@ const matchImportData = async () => {
       })
     } else {
       unmatchedImportIds.push(通行标识ID)
-      console.log(`未找到匹配记录：导入ID = ${通行标识ID}`)
     }
 
     // 更新进度
@@ -2802,15 +2846,7 @@ const matchImportData = async () => {
   importProgress.value = 100
   importProgressText.value = '匹配完成'
 
-  // 输出匹配结果统计
-  console.log('匹配结果统计:', {
-    总导入数据条数: total,
-    匹配成功条数: matchResult.length,
-    匹配失败条数: unmatchedImportIds.length,
-    未匹配的通行标识ID: unmatchedImportIds
-  })
-
-  // 显示匹配结果提示
+  // 输出匹配结果统计// 显示匹配结果提示
   ElMessage.info(
     `匹配完成：共 ${total} 条导入数据，成功匹配 ${matchResult.length} 条，未匹配 ${unmatchedImportIds.length} 条`
   )
@@ -2874,7 +2910,6 @@ const getImportDataColumns = () => {
     sortedColumns.push(column)
   })
 
-  console.log('按用户指定顺序排列的列:', sortedColumns)
   return sortedColumns
 }
 
@@ -3198,8 +3233,6 @@ const handleSave = async () => {
   }
 
   try {
-    console.log('开始保存编辑数据:', editedRow.value)
-
     // 获取通行标识ID作为唯一标识符
     const rowId = String(editedRow.value['通行标识ID'])
 
@@ -3251,26 +3284,14 @@ const handleSave = async () => {
       data: saveData
     }
 
-    console.log('准备调用API，参数:', apiParams)
-    console.log('API基础URL:', import.meta.env.VITE_API_BASE_PATH)
-    console.log('是否启用Mock:', import.meta.env.VITE_USE_MOCK)
-
     // 直接使用 axios 实例发起请求，确保路径正确
-    console.log('开始直接使用 axios 发起请求')
 
     // 导入 axios
     import('axios').then(({ default: axios }) => {
-      console.log('axios 导入成功')
-      console.log(
-        '准备发起请求到:',
-        import.meta.env.VITE_API_BASE_PATH + '/api/split-match/update/'
-      )
-
       // 直接使用 axios 发起请求
       axios
         .post(import.meta.env.VITE_API_BASE_PATH + '/api/split-match/update/', apiParams)
         .then((response) => {
-          console.log('axios请求成功，响应:', response)
           if (
             response &&
             response.data &&
@@ -3375,6 +3396,51 @@ onMounted(() => {
   border-top: 1px dashed #ebeef5;
 }
 
+/* 匹配结果详细信息 */
+.match-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.match-stat {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #fff;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+  color: #909399;
+  margin-right: 8px;
+  font-size: 14px;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #303133;
+
+  &.success {
+    color: #67c23a;
+  }
+
+  &.warning {
+    color: #e6a23c;
+  }
+
+  &.info {
+    color: #409eff;
+  }
+
+  &.primary {
+    color: #9093ff;
+  }
+}
+
 /* 旋转动画 */
 @keyframes spin {
   from {
@@ -3449,5 +3515,57 @@ onMounted(() => {
 /* 进度条样式增强 */
 :deep(.el-progress__bar__inner) {
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.debug-panel {
+  margin-top: 20px;
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 16px;
+    font-weight: bold;
+  }
+
+  .debug-content {
+    .match-result-debug {
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: #f0f9ff;
+      border-radius: 6px;
+      border: 1px solid #b3d8ff;
+
+      h4 {
+        margin: 0 0 12px 0;
+        font-size: 15px;
+        color: #409eff;
+        font-weight: 600;
+      }
+    }
+
+    .debug-statistics {
+      margin-bottom: 20px;
+    }
+
+    .debug-section {
+      margin-bottom: 20px;
+
+      h4 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        color: #606266;
+      }
+
+      .el-textarea {
+        :deep(.el-textarea__inner) {
+          font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+          font-size: 13px;
+          color: #303133;
+          background-color: #f5f7fa;
+        }
+      }
+    }
+  }
 }
 </style>
