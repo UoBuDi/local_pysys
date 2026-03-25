@@ -6,7 +6,6 @@ import pymysql
 import hashlib
 import os
 import re
-import bcrypt
 import uvicorn
 import asyncio
 import json
@@ -18,6 +17,7 @@ from config import load_config, save_config, get_database_config
 from database import test_db_connection, create_db_connection, get_database_tables, table_exists, get_available_databases, create_db_pool, close_all_pools
 from sync_service import generate_month_options, run_sync, stop_sync, sync_status
 from split_match_service import SplitMatchService
+from statistics_service import get_dashboard_statistics, run_statistics_task, update_task_status, get_latest_month_data, start_task_execution, end_task_execution, get_task_execution_history
 from models import *
 
 # 从models导入所有数据模型
@@ -114,12 +114,14 @@ class RoleCreateRequest(BaseModel):
     code: str
     description: Optional[str] = None
     status: int = 1
+    menu: Optional[List[dict]] = None
 
 class RoleUpdateRequest(BaseModel):
     name: str
     code: str
     description: Optional[str] = None
     status: int = 1
+    menu: Optional[List[dict]] = None
 
 class AssignRoleRequest(BaseModel):
     user_id: int
@@ -128,6 +130,27 @@ class AssignRoleRequest(BaseModel):
 class AssignMenuRequest(BaseModel):
     role_id: int
     menu_ids: List[int]
+
+class AssignPermissionRequest(BaseModel):
+    role_id: int
+    permission_ids: List[int]
+
+class PermissionCreateRequest(BaseModel):
+    code: str
+    name: str
+    module: str
+    resource: str
+    operation: str
+    description: Optional[str] = None
+    status: int = 1
+
+class PermissionUpdateRequest(BaseModel):
+    name: str
+    module: str
+    resource: str
+    operation: str
+    description: Optional[str] = None
+    status: int = 1
 
 # 加载配置
 config = load_config()
@@ -147,8 +170,43 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 SECRET_KEY = os.environ.get("SECRET_KEY", "change-me")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 security = HTTPBearer()
+
+def create_access_token(data: dict):
+    """创建访问令牌"""
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire, "type": "access"})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def create_refresh_token(data: dict):
+    """创建刷新令牌"""
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire, "type": "refresh"})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def decode_token(token: str):
+    """解码令牌"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.PyJWTError:
+        return None
+
+def get_token_expires_at():
+    """获取访问令牌过期时间戳（毫秒）"""
+    return int((datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp() * 1000)
+
+def get_refresh_token_expires_at():
+    """获取刷新令牌过期时间戳（毫秒）"""
+    return int((datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)).timestamp() * 1000)
 
 # 获取当前用户信息的依赖
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -159,6 +217,10 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         username: str = payload.get("sub")
         if username is None:
             raise HTTPException(status_code=401, detail="无效的访问令牌")
+        
+        token_type = payload.get("type", "access")
+        if token_type != "access":
+            raise HTTPException(status_code=401, detail="请使用访问令牌")
         
         # 查询用户详细信息和权限
         conn = create_db_connection("USER_DB", config) or create_db_connection("LOCAL_DB", config)
@@ -211,15 +273,6 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         logger.error(f"获取用户信息失败: {e}")
         raise HTTPException(status_code=500, detail="获取用户信息失败")
 
-def create_access_token(data: dict):
-    """创建访问令牌"""
-    to_encode = data.copy()
-    # 兼容旧版本Python，使用UTC时间
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """验证令牌"""
     try:
@@ -228,6 +281,17 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         return payload
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="无效的访问令牌")
+
+def require_permission(permission: str):
+    """权限验证依赖"""
+    async def check_permission(user: dict = Depends(get_current_user)):
+        if 'super_admin' in [r.get('code') for r in user.get('roles', [])]:
+            return user
+        
+        if permission not in user.get('permissions', []):
+            raise HTTPException(status_code=403, detail="没有权限执行此操作")
+        return user
+    return check_permission
 
 @app.get("/api/config/")
 async def get_config():
@@ -370,171 +434,136 @@ async def get_sync_status():
 # 添加分析页面数据接口
 @app.get("/api/analysis/total")
 async def get_analysis_total():
-    """获取分析总览数据"""
-    # 返回示例数据
-    return {
-        "code": 200,
-        "message": "success",
-        "data": [
-            {
-                "type": "users",
-                "value": 1000
-            },
-            {
-                "type": "messages",
-                "value": 2000
-            },
-            {
-                "type": "moneys",
-                "value": 3000
-            },
-            {
-                "type": "shoppings",
-                "value": 4000
+    """获取分析总览数据 - 从统计数据表获取"""
+    try:
+        stats = get_dashboard_statistics()
+        
+        if stats:
+            return {
+                "code": 200,
+                "message": "success",
+                "data": [
+                    {
+                        "type": "transactions",
+                        "value": stats.get('total_transactions', 0)
+                    },
+                    {
+                        "type": "amount",
+                        "value": float(stats.get('total_amount', 0))
+                    },
+                    {
+                        "type": "splitAmount",
+                        "value": float(stats.get('total_split_amount', 0))
+                    },
+                    {
+                        "type": "stations",
+                        "value": stats.get('station_count', 0)
+                    }
+                ]
             }
-        ]
-    }
+        else:
+            return {
+                "code": 200,
+                "message": "success",
+                "data": [
+                    {"type": "transactions", "value": 0},
+                    {"type": "amount", "value": 0},
+                    {"type": "splitAmount", "value": 0},
+                    {"type": "stations", "value": 0}
+                ]
+            }
+    except Exception as e:
+        logger.error(f"获取分析总览数据失败: {e}")
+        return {
+            "code": 500,
+            "message": f"获取数据失败: {str(e)}",
+            "data": []
+        }
 
 @app.get("/api/analysis/userAccessSource")
 async def get_user_access_source():
-    """获取用户来源数据"""
-    # 返回示例数据
-    return {
-        "code": 200,
-        "message": "success",
-        "data": [
-            {
-                "name": "analysis.directAccess",
-                "value": 335
-            },
-            {
-                "name": "analysis.mailMarketing",
-                "value": 310
-            },
-            {
-                "name": "analysis.allianceAdvertising",
-                "value": 234
-            },
-            {
-                "name": "analysis.videoAdvertising",
-                "value": 135
-            },
-            {
-                "name": "analysis.searchEngines",
-                "value": 1548
-            }
-        ]
-    }
+    """获取车型分布数据 - 从统计数据表获取"""
+    try:
+        stats = get_dashboard_statistics()
+        
+        if stats and stats.get('vehicle_types'):
+            vehicle_types = stats['vehicle_types']
+            data = []
+            for item in vehicle_types:
+                data.append({
+                    "name": item.get('type', '未知'),
+                    "value": item.get('count', 0)
+                })
+            return {"code": 200, "message": "success", "data": data}
+        else:
+            return {"code": 200, "message": "success", "data": []}
+    except Exception as e:
+        logger.error(f"获取车型分布数据失败: {e}")
+        return {"code": 500, "message": f"获取数据失败: {str(e)}", "data": []}
 
 @app.get("/api/analysis/weeklyUserActivity")
 async def get_weekly_user_activity():
-    """获取周活跃用户数据"""
-    # 返回示例数据
-    return {
-        "code": 200,
-        "message": "success",
-        "data": [
-            {
-                "name": "analysis.monday",
-                "value": 13253
-            },
-            {
-                "name": "analysis.tuesday",
-                "value": 34235
-            },
-            {
-                "name": "analysis.wednesday",
-                "value": 26321
-            },
-            {
-                "name": "analysis.thursday",
-                "value": 12340
-            },
-            {
-                "name": "analysis.friday",
-                "value": 24643
-            },
-            {
-                "name": "analysis.saturday",
-                "value": 1322
-            },
-            {
-                "name": "analysis.sunday",
-                "value": 1324
-            }
-        ]
-    }
+    """获取通行介质类型统计数据 - 从统计数据表获取"""
+    try:
+        stats = get_dashboard_statistics()
+        
+        if stats and stats.get('media_types'):
+            media_data = stats['media_types']
+            data = []
+            for item in media_data:
+                media_type = item.get('type', '未知')
+                data.append({
+                    "name": f"通行介质{media_type}",
+                    "value": item.get('count', 0)
+                })
+            return {"code": 200, "message": "success", "data": data}
+        else:
+            return {"code": 200, "message": "success", "data": []}
+    except Exception as e:
+        logger.error(f"获取通行介质类型数据失败: {e}")
+        return {"code": 500, "message": f"获取数据失败: {str(e)}", "data": []}
 
 @app.get("/api/analysis/monthlySales")
 async def get_monthly_sales():
-    """获取每月销售数据"""
-    # 返回示例数据
-    return {
-        "code": 200,
-        "message": "success",
-        "data": [
-            {
-                "name": "analysis.january",
-                "estimate": 13253,
-                "actual": 11234
-            },
-            {
-                "name": "analysis.february",
-                "estimate": 34235,
-                "actual": 23412
-            },
-            {
-                "name": "analysis.march",
-                "estimate": 26321,
-                "actual": 21356
-            },
-            {
-                "name": "analysis.april",
-                "estimate": 12340,
-                "actual": 12345
-            },
-            {
-                "name": "analysis.may",
-                "estimate": 24643,
-                "actual": 18765
-            },
-            {
-                "name": "analysis.june",
-                "estimate": 1322,
-                "actual": 2341
-            },
-            {
-                "name": "analysis.july",
-                "estimate": 1324,
-                "actual": 3456
-            },
-            {
-                "name": "analysis.august",
-                "estimate": 3524,
-                "actual": 2341
-            },
-            {
-                "name": "analysis.september",
-                "estimate": 2354,
-                "actual": 3215
-            },
-            {
-                "name": "analysis.october",
-                "estimate": 1235,
-                "actual": 2134
-            },
-            {
-                "name": "analysis.november",
-                "estimate": 3215,
-                "actual": 2134
-            },
-            {
-                "name": "analysis.december",
-                "estimate": 2134,
-                "actual": 2135
-            }
-        ]
-    }
+    """获取省份数据统计数据 - 从统计数据表获取"""
+    try:
+        stats = get_dashboard_statistics()
+        
+        if stats and stats.get('province_data'):
+            province_data = stats['province_data']
+            data = []
+            for item in province_data:
+                province_name = item.get('province', '未知')
+                count = item.get('count', 0)
+                data.append({
+                    "name": province_name,
+                    "estimate": count,
+                    "actual": count
+                })
+            
+            return {"code": 200, "message": "success", "data": data}
+        else:
+            return {"code": 200, "message": "success", "data": []}
+    except Exception as e:
+        logger.error(f"获取省份数据统计数据失败: {e}")
+        return {"code": 500, "message": f"获取数据失败: {str(e)}", "data": []}
+
+@app.post("/api/analytics/route")
+async def log_route_analytics(request_data: dict):
+    """记录路由导航分析数据"""
+    try:
+        timestamp = request_data.get('timestamp')
+        from_path = request_data.get('from')
+        to_path = request_data.get('to')
+        duration = request_data.get('duration')
+        user_agent = request_data.get('userAgent')
+        
+        logger.info(f"路由导航: {from_path} -> {to_path}, 耗时: {duration}ms")
+        
+        return {"code": 200, "message": "success"}
+    except Exception as e:
+        logger.error(f"记录路由分析数据失败: {e}")
+        return {"code": 500, "message": "记录失败"}
 
 @app.get("/api/user/loginOut")
 async def login_out():
@@ -543,6 +572,89 @@ async def login_out():
         "code": 200,
         "message": "success"
     }
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+@app.post("/api/token/refresh")
+async def refresh_token(request: RefreshTokenRequest):
+    """使用Refresh Token获取新的Access Token"""
+    try:
+        payload = decode_token(request.refresh_token)
+        
+        if not payload:
+            return {"code": 401, "message": "刷新令牌已过期或无效"}
+        
+        token_type = payload.get("type")
+        if token_type != "refresh":
+            return {"code": 401, "message": "无效的刷新令牌类型"}
+        
+        username = payload.get("sub")
+        if not username:
+            return {"code": 401, "message": "无效的刷新令牌"}
+        
+        conn = create_db_connection("USER_DB", config) or create_db_connection("LOCAL_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute("SELECT id, username, status FROM users WHERE username = %s", (username,))
+                user = cursor.fetchone()
+                
+                if not user:
+                    return {"code": 401, "message": "用户不存在"}
+                
+                if user['status'] != 1:
+                    return {"code": 401, "message": "用户已被禁用"}
+                
+                new_access_token = create_access_token(data={"sub": username})
+                new_refresh_token = create_refresh_token(data={"sub": username})
+                
+                return {
+                    "code": 200,
+                    "message": "刷新成功",
+                    "data": {
+                        "token": new_access_token,
+                        "refreshToken": new_refresh_token,
+                        "tokenType": "bearer",
+                        "expiresAt": get_token_expires_at(),
+                        "refreshExpiresAt": get_refresh_token_expires_at()
+                    }
+                }
+        finally:
+            conn.close()
+            
+    except Exception as e:
+        logger.error(f"刷新令牌失败: {e}")
+        return {"code": 500, "message": "刷新令牌失败"}
+
+@app.post("/api/token/validate")
+async def validate_token(request: RefreshTokenRequest):
+    """验证Token是否有效"""
+    try:
+        payload = decode_token(request.refresh_token)
+        
+        if not payload:
+            return {"code": 401, "message": "令牌已过期或无效", "data": {"valid": False}}
+        
+        username = payload.get("sub")
+        if not username:
+            return {"code": 401, "message": "无效的令牌", "data": {"valid": False}}
+        
+        return {
+            "code": 200,
+            "message": "令牌有效",
+            "data": {
+                "valid": True,
+                "username": username,
+                "type": payload.get("type", "access"),
+                "exp": payload.get("exp")
+            }
+        }
+    except Exception as e:
+        logger.error(f"验证令牌失败: {e}")
+        return {"code": 500, "message": "验证令牌失败", "data": {"valid": False}}
 
 @app.post("/api/login/")
 async def login(credentials: LoginCredentials):
@@ -562,22 +674,28 @@ async def login(credentials: LoginCredentials):
                 if not user:
                     return {"code": 401, "message": "用户名或密码错误"}
                 
-                # 验证密码：兼容历史MD5与新bcrypt
+                # 验证密码（MD5）
                 provided = credentials.password.encode('utf-8')
                 stored = user['password']
-                is_md5 = isinstance(stored, str) and bool(re.fullmatch(r"[0-9a-fA-F]{32}", stored))
-                md5_match = hashlib.md5(provided).hexdigest() == stored if is_md5 else False
-                bcrypt_match = False
-                if isinstance(stored, str) and stored.startswith("$2"):
-                    try:
-                        bcrypt_match = bcrypt.checkpw(provided, stored.encode('utf-8'))
-                    except Exception:
-                        bcrypt_match = False
-                if not (md5_match or bcrypt_match):
+                md5_hash = hashlib.md5(provided).hexdigest()
+                if md5_hash != stored:
                     return {"code": 401, "message": "用户名或密码错误"}
+                
+                # 查询用户角色
+                cursor.execute("""
+                    SELECT r.id, r.name, r.code 
+                    FROM roles r 
+                    JOIN user_roles ur ON r.id = ur.role_id 
+                    WHERE ur.user_id = %s AND r.status = 1
+                """, (user['id'],))
+                roles = cursor.fetchall()
+                
+                # 构建角色列表
+                role_list = [role['name'] for role in roles] if roles else []
                 
                 # 生成JWT令牌
                 access_token = create_access_token(data={"sub": user['username']})
+                refresh_token = create_refresh_token(data={"sub": user['username']})
                 
                 # 登录成功
                 return {
@@ -586,10 +704,15 @@ async def login(credentials: LoginCredentials):
                     "data": {
                         "user": {
                             "id": user['id'],
-                            "username": user['username']
+                            "username": user['username'],
+                            "roles": roles if roles else [],
+                            "roleList": role_list
                         },
                         "token": access_token,
-                        "token_type": "bearer"
+                        "refreshToken": refresh_token,
+                        "tokenType": "bearer",
+                        "expiresAt": get_token_expires_at(),
+                        "refreshExpiresAt": get_refresh_token_expires_at()
                     }
                 }
         finally:
@@ -635,9 +758,9 @@ async def register(credentials: RegisterCredentials):
                 logger.warning(f"用户名已存在: {credentials.username}")
                 return {"code": 400, "message": "用户名已存在"}
             
-            # 密码加密（bcrypt）
+            # 密码加密（MD5）
             logger.info("开始密码加密")
-            hashed_password = bcrypt.hashpw(credentials.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            hashed_password = hashlib.md5(credentials.password.encode('utf-8')).hexdigest()
             logger.info("密码加密完成")
             
             # 插入新用户
@@ -800,8 +923,8 @@ def get_db():
         connection.close()
 
 @app.get("/api/user/menus")
-async def get_user_menus():
-    """获取用户菜单 - 取消权限验证，所有用户都可以访问"""
+async def get_user_menus(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """获取用户菜单 - 根据用户的角色和菜单分配返回对应的菜单"""
     try:
         conn = create_db_connection("USER_DB", config) or create_db_connection("LOCAL_DB", config)
         if not conn:
@@ -809,106 +932,164 @@ async def get_user_menus():
         
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                cursor.execute("SELECT * FROM menus ORDER BY sort_order")
-                menus = cursor.fetchall()
-            
-            # 转换字段名，确保前端兼容性
-            converted_menus = []
-            for menu in menus:
-                # 跳过没有path的菜单（按钮权限）
-                if not menu.get('path'):
-                    continue
-                    
-                converted_menu = menu.copy()
-                # 同时保留 sort_order 和 sortOrder
-                if 'sort_order' in converted_menu:
-                    converted_menu['sortOrder'] = converted_menu['sort_order']
-                # 转换 parent_id 为 parentId
-                if 'parent_id' in converted_menu:
-                    converted_menu['parentId'] = converted_menu['parent_id']
+                # 获取当前用户信息
+                token = credentials.credentials
+                payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+                username = payload.get("sub")
                 
-                # 对于有子菜单的顶级菜单，设置component为#
-                if converted_menu.get('parent_id') == 0:
-                    converted_menu['component'] = '#'
-                # 对于子菜单，根据路径自动设置component
-                elif converted_menu.get('parent_id') != 0:
-                    path = converted_menu.get('path', '')
-                    # 如果数据库中已经有component字段，优先使用
-                    if converted_menu.get('component'):
-                        component = converted_menu['component']
-                        if component == 'Layout':
-                            converted_menu['component'] = '#'
-                        elif component.startswith('/'):
-                            converted_menu['component'] = component[1:]
-                        # 修复 system-tools 为 SystemTools
-                        elif component.startswith('system-tools/'):
-                            converted_menu['component'] = 'SystemTools' + component[12:]
-                    else:
-                        # 根据路径映射到正确的组件
-                        if path == '/analysis':
-                            converted_menu['component'] = 'Dashboard/Analysis'
-                        elif path == '/workplace':
-                            converted_menu['component'] = 'Dashboard/Workplace'
-                        elif path == '/split-match':
-                            converted_menu['component'] = 'SystemTools/SplitMatch'
-                        elif path == '/detail-query':
-                            converted_menu['component'] = 'SystemTools/DetailQuery'
-                        elif path == '/path-match':
-                            converted_menu['component'] = 'SystemTools/PathMatch'
-                        elif path == '/config' or path == '/sync-config':
-                            converted_menu['component'] = 'SystemTools/SyncConfig'
-                        elif path == '/control' or path == '/sync-control':
-                            converted_menu['component'] = 'SystemTools/SyncControl'
-                        elif path == '/params-config':
-                            converted_menu['component'] = 'SystemTools/ParamsConfig'
-                        elif path == '/department':
-                            converted_menu['component'] = 'Authorization/Department/Department'
-                        elif path == '/user':
-                            converted_menu['component'] = 'Authorization/User/User'
-                        elif path == '/menu':
-                            converted_menu['component'] = 'Authorization/Menu/Menu'
-                        elif path == '/role':
-                            converted_menu['component'] = 'Authorization/Role/Role'
-                # 添加 meta 字段，将中文菜单名映射为国际化key
-                name = converted_menu.get('name', '')
-                title_map = {
-                    '数据查询': 'dataQuery',
-                    '拆分匹配': 'splitMatch',
-                    '详单查询': 'detailQuery',
-                    '路径匹配': 'pathMatch',
-                    '系统管理': 'system',
-                    '用户管理': 'user',
-                    '角色管理': 'role',
-                    '菜单管理': 'menu',
-                    '部门管理': 'dept',
-                    '首页': 'dashboard',
-                    '工作台': 'workplace',
-                    '分析页': 'analysis',
-                    '同步管理': 'syncManage',
-                    '同步配置': 'syncConfig',
-                    '同步控制': 'syncControl',
-                    '系统工具': 'systemTools'
-                }
-                converted_menu['meta'] = {
-                    'title': title_map.get(name, name),
-                    'icon': converted_menu.get('icon', ''),
-                    'hidden': not converted_menu.get('visible', 1),
-                    'alwaysShow': converted_menu.get('alwaysShow', False),
-                    'noCache': False,
-                    'breadcrumb': True,
-                    'affix': False,
-                    'noTagsView': False,
-                    'canTo': False,
-                    'activeMenu': ''
-                }
-                # 添加 name 字段
-                if not converted_menu.get('name'):
-                    converted_menu['name'] = converted_menu.get('path', '').replace('/', '').replace('-', '')
-                converted_menus.append(converted_menu)
-            
-            # 构造树形结构
-            menu_tree = build_menu_tree(converted_menus)
-            return {"code": 200, "message": "success", "data": menu_tree}
+                if not username:
+                    return {"code": 401, "message": "无效的访问令牌"}
+                
+                # 获取用户ID
+                cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
+                user = cursor.fetchone()
+                
+                if not user:
+                    return {"code": 401, "message": "用户不存在"}
+                
+                user_id = user['id']
+                
+                # 获取用户的角色
+                cursor.execute("""
+                    SELECT DISTINCT r.id, r.name, r.code 
+                    FROM roles r 
+                    JOIN user_roles ur ON r.id = ur.role_id 
+                    WHERE ur.user_id = %s AND r.status = 1
+                """, (user_id,))
+                roles = cursor.fetchall()
+                
+                if not roles:
+                    # 如果用户没有角色，返回空菜单
+                    return {"code": 200, "message": "success", "data": []}
+                
+                role_ids = [role['id'] for role in roles]
+                
+                # 获取用户可访问的菜单 - 使用安全的参数化查询
+                placeholders = ','.join(['%s'] * len(role_ids))
+                cursor.execute(f"""
+                    SELECT DISTINCT m.* 
+                    FROM menus m 
+                    JOIN role_menus rm ON m.id = rm.menu_id 
+                    WHERE rm.role_id IN ({placeholders}) AND m.status = 1 AND m.visible = 1
+                    ORDER BY m.sort_order
+                """, role_ids)
+                menus = cursor.fetchall()
+                
+                # 转换字段名，确保前端兼容性
+                converted_menus = []
+                # 先建立菜单ID到菜单的映射，方便查找父菜单
+                menu_map = {menu['id']: menu for menu in menus}
+                
+                for menu in menus:
+                    # 跳过没有path的菜单（按钮权限）
+                    if not menu.get('path'):
+                        continue
+                        
+                    converted_menu = menu.copy()
+                    # 同时保留 sort_order 和 sortOrder
+                    if 'sort_order' in converted_menu:
+                        converted_menu['sortOrder'] = converted_menu['sort_order']
+                    # 转换 parent_id 为 parentId
+                    if 'parent_id' in converted_menu:
+                        converted_menu['parentId'] = converted_menu['parent_id']
+                    
+                    # 对于有子菜单的顶级菜单，设置component为#
+                    if converted_menu.get('parent_id') == 0:
+                        converted_menu['component'] = '#'
+                    # 对于子菜单，根据路径自动设置component
+                    elif converted_menu.get('parent_id') != 0:
+                        full_path = converted_menu.get('path', '')
+                        # 获取父菜单路径
+                        parent_menu = menu_map.get(converted_menu.get('parent_id'))
+                        if parent_menu:
+                            parent_path = parent_menu.get('path', '')
+                            # 将完整路径转换为相对路径
+                            if full_path.startswith(parent_path + '/'):
+                                converted_menu['path'] = full_path[len(parent_path) + 1:]
+                            elif full_path.startswith(parent_path):
+                                converted_menu['path'] = full_path[len(parent_path):].lstrip('/')
+                        
+                        # 如果数据库中已经有component字段，优先使用
+                        if converted_menu.get('component'):
+                            component = converted_menu['component']
+                            if component == 'Layout':
+                                converted_menu['component'] = '#'
+                            elif component.startswith('/'):
+                                converted_menu['component'] = component[1:]
+                            # 修复 system-tools 为 SystemTools
+                            elif component.startswith('system-tools/'):
+                                converted_menu['component'] = 'SystemTools' + component[12:]
+                        else:
+                            # 根据路径映射到正确的组件
+                            path = converted_menu.get('path', '')
+                            if path == 'analysis':
+                                converted_menu['component'] = 'Dashboard/Analysis'
+                            elif path == 'workplace':
+                                converted_menu['component'] = 'Dashboard/Workplace'
+                            elif path == 'split-match':
+                                converted_menu['component'] = 'SystemTools/SplitMatch'
+                            elif path == 'detail-query':
+                                converted_menu['component'] = 'SystemTools/DetailQuery'
+                            elif path == 'path-match':
+                                converted_menu['component'] = 'SystemTools/PathMatch'
+                            elif path == 'config' or path == 'sync-config':
+                                converted_menu['component'] = 'SystemTools/SyncConfig'
+                            elif path == 'control' or path == 'sync-control':
+                                converted_menu['component'] = 'SystemTools/SyncControl'
+                            elif path == 'params-config':
+                                converted_menu['component'] = 'SystemTools/ParamsConfig'
+                            elif path == 'department':
+                                converted_menu['component'] = 'Authorization/Department/Department'
+                            elif path == 'user':
+                                converted_menu['component'] = 'Authorization/User/User'
+                            elif path == 'menu':
+                                converted_menu['component'] = 'Authorization/Menu/Menu'
+                            elif path == 'role':
+                                converted_menu['component'] = 'Authorization/Role/Role'
+                            elif path == 'scheduled-tasks':
+                                converted_menu['component'] = 'SystemTools/ScheduledTasks/ScheduledTasks'
+                    # 添加 meta 字段，将中文菜单名映射为国际化key
+                    name = converted_menu.get('name', '')
+                    title_map = {
+                        '数据查询': 'dataQuery',
+                        '拆分匹配': 'splitMatch',
+                        '详单查询': 'detailQuery',
+                        '路径匹配': 'pathMatch',
+                        '系统管理': 'authorization',
+                        '用户管理': 'user',
+                        '角色管理': 'role',
+                        '菜单管理': 'menuManagement',
+                        '部门管理': 'department',
+                        '首页': 'dashboard',
+                        '工作台': 'workplace',
+                        '分析页': 'analysis',
+                        '同步管理': 'syncManage',
+                        '同步配置': 'syncConfig',
+                        '同步控制': 'syncControl',
+                        '系统工具': 'systemTools',
+                        '定时任务': 'scheduledTasks'
+                    }
+                    converted_menu['meta'] = {
+                        'title': title_map.get(name, name),
+                        'icon': converted_menu.get('icon', ''),
+                        'hidden': not converted_menu.get('visible', 1),
+                        'alwaysShow': converted_menu.get('alwaysShow', False),
+                        'noCache': False,
+                        'breadcrumb': True,
+                        'affix': False,
+                        'noTagsView': False,
+                        'canTo': False,
+                        'activeMenu': ''
+                    }
+                    # 添加 name 字段
+                    if not converted_menu.get('name'):
+                        converted_menu['name'] = converted_menu.get('path', '').replace('/', '').replace('-', '')
+                    converted_menus.append(converted_menu)
+                
+                # 构造树形结构
+                menu_tree = build_menu_tree(converted_menus)
+                return {"code": 200, "message": "success", "data": menu_tree}
+                
         finally:
             conn.close()
     except Exception as e:
@@ -1135,15 +1316,9 @@ async def update_user(user_id: int, user: UserUpdateRequest, db = Depends(get_db
             
             # 更新用户信息
             if user.password:
-                # 检查密码是否已经是bcrypt加密的（以$2b$、$2a$等开头）
-                if user.password.startswith('$2b$') or user.password.startswith('$2a$') or user.password.startswith('$2y$'):
-                    # 密码已经加密，直接使用
-                    hashed_password = user.password
-                    logger.info(f"密码已加密，直接使用")
-                else:
-                    # 新密码，需要加密存储（bcrypt）
-                    hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-                    logger.info(f"新密码已加密")
+                # 密码加密（MD5）
+                hashed_password = hashlib.md5(user.password.encode('utf-8')).hexdigest()
+                logger.info(f"新密码已加密")
                 
                 logger.info(f"执行更新用户（带密码）SQL，参数: username={user.username}, nickname={user.nickname}, email={user.email}, department_id={user.department_id}, status={user.status}, id={user_id}")
                 cursor.execute(
@@ -1213,6 +1388,23 @@ async def create_role(role: RoleCreateRequest, db = Depends(get_db)):
                 "INSERT INTO roles (name, code, description, status) VALUES (%s, %s, %s, %s)",
                 (role.name, role.code, role.description, role.status)
             )
+            role_id = cursor.lastrowid
+            
+            # 如果包含菜单数据，添加菜单分配
+            if role.menu is not None:
+                # 递归添加菜单分配
+                def add_menu_recursively(menus):
+                    for menu in menus:
+                        cursor.execute(
+                            "INSERT INTO role_menus (role_id, menu_id) VALUES (%s, %s)",
+                            (role_id, menu['id'])
+                        )
+                        # 递归处理子菜单
+                        if 'children' in menu and menu['children']:
+                            add_menu_recursively(menu['children'])
+                
+                add_menu_recursively(role.menu)
+            
             db.commit()
             return {"code": 200, "message": "角色创建成功"}
     except Exception as e:
@@ -1239,6 +1431,25 @@ async def update_role(role_id: int, role: RoleUpdateRequest, db = Depends(get_db
                 "UPDATE roles SET name=%s, code=%s, description=%s, status=%s WHERE id=%s",
                 (role.name, role.code, role.description, role.status, role_id)
             )
+            
+            # 如果包含菜单数据，更新菜单分配
+            if role.menu is not None:
+                # 先删除角色原有的菜单
+                cursor.execute("DELETE FROM role_menus WHERE role_id = %s", (role_id,))
+                
+                # 递归添加菜单分配
+                def add_menu_recursively(menus):
+                    for menu in menus:
+                        cursor.execute(
+                            "INSERT INTO role_menus (role_id, menu_id) VALUES (%s, %s)",
+                            (role_id, menu['id'])
+                        )
+                        # 递归处理子菜单
+                        if 'children' in menu and menu['children']:
+                            add_menu_recursively(menu['children'])
+                
+                add_menu_recursively(role.menu)
+            
             db.commit()
             return {"code": 200, "message": "角色更新成功"}
     except Exception as e:
@@ -1481,74 +1692,140 @@ async def get_role_menus(role_id: int, db = Depends(get_db)):
         logger.error(f"获取角色菜单失败: {e}")
         return {"code": 500, "message": "获取角色菜单失败"}
 
-# 权限验证装饰器
-def require_permission(permission: str):
-    """权限验证装饰器"""
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            # 从请求头获取token
-            from fastapi import Request
-            request = kwargs.get('request') or args[0] if args else None
+# 权限点管理API
+@app.get("/api/permissions/")
+async def get_permissions(db = Depends(get_db)):
+    """获取权限点列表"""
+    try:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT * FROM permissions ORDER BY module, resource, operation")
+            permissions = cursor.fetchall()
+            return {"code": 200, "message": "success", "data": permissions}
+    except Exception as e:
+        logger.error(f"获取权限点失败: {e}")
+        return {"code": 500, "message": "获取权限点失败"}
+
+@app.post("/api/permissions/")
+async def create_permission(permission: PermissionCreateRequest, db = Depends(get_db)):
+    """创建权限点"""
+    try:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute(
+                "INSERT INTO permissions (code, name, module, resource, operation, description, status) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (permission.code, permission.name, permission.module, permission.resource, permission.operation, permission.description, permission.status)
+            )
+            db.commit()
+            return {"code": 200, "message": "权限点创建成功"}
+    except Exception as e:
+        logger.error(f"创建权限点失败: {e}")
+        return {"code": 500, "message": "创建权限点失败"}
+
+@app.put("/api/permissions/{permission_id}")
+async def update_permission(permission_id: int, permission: PermissionUpdateRequest, db = Depends(get_db)):
+    """更新权限点"""
+    try:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute(
+                "UPDATE permissions SET name = %s, module = %s, resource = %s, operation = %s, description = %s, status = %s WHERE id = %s",
+                (permission.name, permission.module, permission.resource, permission.operation, permission.description, permission.status, permission_id)
+            )
+            db.commit()
+            return {"code": 200, "message": "权限点更新成功"}
+    except Exception as e:
+        logger.error(f"更新权限点失败: {e}")
+        return {"code": 500, "message": "更新权限点失败"}
+
+@app.delete("/api/permissions/{permission_id}")
+async def delete_permission(permission_id: int, db = Depends(get_db)):
+    """删除权限点"""
+    try:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("DELETE FROM permissions WHERE id = %s", (permission_id,))
+            db.commit()
+            return {"code": 200, "message": "权限点删除成功"}
+    except Exception as e:
+        logger.error(f"删除权限点失败: {e}")
+        return {"code": 500, "message": "删除权限点失败"}
+
+# 角色权限分配API
+@app.get("/api/roles/{role_id}/permissions")
+async def get_role_permissions(role_id: int, db = Depends(get_db)):
+    """获取角色已分配的权限点"""
+    try:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT permission_id FROM role_permissions WHERE role_id = %s", (role_id,))
+            permission_ids = [row['permission_id'] for row in cursor.fetchall()]
+            return {"code": 200, "message": "success", "data": permission_ids}
+    except Exception as e:
+        logger.error(f"获取角色权限失败: {e}")
+        return {"code": 500, "message": "获取角色权限失败"}
+
+@app.post("/api/role-permissions/")
+async def assign_role_permissions(assign_request: AssignPermissionRequest, db = Depends(get_db)):
+    """为角色分配权限点"""
+    try:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("DELETE FROM role_permissions WHERE role_id = %s", (assign_request.role_id,))
             
-            if not isinstance(request, Request):
-                # 尝试从依赖注入中获取token
-                for arg in args:
-                    if hasattr(arg, 'user'):
-                        # 已经通过认证中间件处理
-                        # 检查权限
-                        if permission not in arg.user.get('permissions', []):
-                            raise HTTPException(status_code=403, detail="权限不足")
-                        return await func(*args, **kwargs)
-                raise HTTPException(status_code=401, detail="未认证")
-            
-            # 从Authorization头获取token
-            auth_header = request.headers.get('Authorization')
-            if not auth_header:
-                raise HTTPException(status_code=401, detail="缺少Authorization头")
-            
-            try:
-                scheme, token = auth_header.split()
-                if scheme.lower() != "bearer":
-                    raise HTTPException(status_code=401, detail="无效的认证方案")
-                
-                # 验证token
+            for permission_id in assign_request.permission_ids:
+                cursor.execute(
+                    "INSERT INTO role_permissions (role_id, permission_id) VALUES (%s, %s)",
+                    (assign_request.role_id, permission_id)
+                )
+            db.commit()
+            return {"code": 200, "message": "权限分配成功"}
+    except Exception as e:
+        logger.error(f"权限分配失败: {e}")
+        return {"code": 500, "message": "权限分配失败"}
+
+# 获取用户权限点列表
+@app.get("/api/user/permissions")
+async def get_user_permissions(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """获取当前用户的权限点列表"""
+    try:
+        conn = create_db_connection("USER_DB", config) or create_db_connection("LOCAL_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                # 从token获取用户名
+                token = credentials.credentials
                 payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-                username: str = payload.get("sub")
-                if username is None:
-                    raise HTTPException(status_code=401, detail="无效的token")
+                username = payload.get("sub")
                 
-                # 查询用户权限
-                conn = create_db_connection("USER_DB", config) or create_db_connection("LOCAL_DB", config)
-                if not conn:
-                    raise HTTPException(status_code=500, detail="无法连接到用户数据库")
+                if not username:
+                    return {"code": 401, "message": "无效的访问令牌"}
                 
-                try:
-                    with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                        # 获取用户角色
-                        cursor.execute("SELECT r.id FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE u.username = %s", (username,))
-                        roles = cursor.fetchall()
-                        
-                        if not roles:
-                            raise HTTPException(status_code=403, detail="用户没有角色")
-                        
-                        role_ids = [role['id'] for role in roles]
-                        
-                        # 获取角色权限
-                        cursor.execute("SELECT m.permission FROM menus m JOIN role_menus rm ON m.id = rm.menu_id WHERE rm.role_id IN %s AND m.permission IS NOT NULL AND m.permission != ''", (tuple(role_ids),))
-                        permissions = [row['permission'] for row in cursor.fetchall()]
-                        
-                        if permission not in permissions:
-                            raise HTTPException(status_code=403, detail="权限不足")
-                finally:
-                    conn.close()
-            except jwt.PyJWTError:
-                raise HTTPException(status_code=401, detail="无效的token")
-            except Exception as e:
-                raise HTTPException(status_code=403, detail=str(e))
-            
-            return await func(*args, **kwargs)
-        return wrapper
-    return decorator
+                # 获取用户角色
+                cursor.execute("SELECT r.id FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE u.username = %s AND r.status = 1", (username,))
+                roles = cursor.fetchall()
+                
+                if not roles:
+                    return {"code": 200, "message": "success", "data": []}
+                
+                role_ids = [role['id'] for role in roles]
+                
+                # 获取角色权限（使用新的细粒度权限系统）
+                placeholders = ','.join(['%s'] * len(role_ids))
+                cursor.execute(f"""
+                    SELECT DISTINCT p.code 
+                    FROM permissions p 
+                    JOIN role_permissions rp ON p.id = rp.permission_id 
+                    WHERE rp.role_id IN ({placeholders}) AND p.status = 1
+                """, role_ids)
+                permissions = [row['code'] for row in cursor.fetchall()]
+                
+                return {"code": 200, "message": "success", "data": permissions}
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"获取用户权限失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"code": 500, "message": "获取用户权限失败"}
+
+
 
 # 拆分匹配相关请求模型
 class ExecuteMatchRequest(BaseModel):
@@ -2355,7 +2632,6 @@ async def startup_event():
     """应用启动时初始化连接池"""
     logger.info("应用启动，正在初始化数据库连接池...")
     try:
-        # 预初始化常用的数据库连接池
         common_db_types = ["USER_DB", "LOCAL_DB", "REMOTE_DB", "CHECK_DATA_DB"]
         for db_type in common_db_types:
             try:
@@ -2365,6 +2641,151 @@ async def startup_event():
         logger.info("应用启动完成，数据库连接池已初始化")
     except Exception as e:
         logger.error(f"应用启动时初始化连接池失败: {e}", exc_info=True)
+
+@app.get("/api/scheduled-tasks/")
+async def get_scheduled_tasks(user: dict = Depends(require_permission('system:scheduled-tasks:view'))):
+    """获取定时任务列表"""
+    try:
+        conn = create_db_connection("USER_DB", config) or create_db_connection("LOCAL_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接数据库", "data": []}
+        
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute("""
+                    SELECT id, task_name, task_type, cron_expression, is_enabled,
+                           last_run_time, next_run_time, last_run_status, last_run_message,
+                           created_at, updated_at
+                    FROM scheduled_tasks
+                    ORDER BY id
+                """)
+                tasks = cursor.fetchall()
+                
+                for task in tasks:
+                    if task['last_run_time']:
+                        task['last_run_time'] = task['last_run_time'].strftime('%Y-%m-%d %H:%M:%S')
+                    if task['next_run_time']:
+                        task['next_run_time'] = task['next_run_time'].strftime('%Y-%m-%d %H:%M:%S')
+                    if task['created_at']:
+                        task['created_at'] = task['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+                    if task['updated_at']:
+                        task['updated_at'] = task['updated_at'].strftime('%Y-%m-%d %H:%M:%S')
+                
+                return {"code": 200, "message": "success", "data": tasks}
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"获取定时任务列表失败: {e}")
+        return {"code": 500, "message": f"获取失败: {str(e)}", "data": []}
+
+@app.put("/api/scheduled-tasks/{task_id}")
+async def update_scheduled_task(task_id: int, request_data: dict, user: dict = Depends(require_permission('system:scheduled-tasks:edit'))):
+    """更新定时任务配置"""
+    try:
+        conn = create_db_connection("USER_DB", config) or create_db_connection("LOCAL_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接数据库"}
+        
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                is_enabled = request_data.get('is_enabled')
+                cron_expression = request_data.get('cron_expression')
+                
+                update_fields = []
+                params = []
+                
+                if is_enabled is not None:
+                    update_fields.append("is_enabled = %s")
+                    params.append(1 if is_enabled else 0)
+                
+                if cron_expression:
+                    update_fields.append("cron_expression = %s")
+                    params.append(cron_expression)
+                
+                if not update_fields:
+                    return {"code": 400, "message": "没有要更新的字段"}
+                
+                params.append(task_id)
+                sql = f"UPDATE scheduled_tasks SET {', '.join(update_fields)} WHERE id = %s"
+                cursor.execute(sql, params)
+                conn.commit()
+                
+                return {"code": 200, "message": "更新成功"}
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"更新定时任务失败: {e}")
+        return {"code": 500, "message": f"更新失败: {str(e)}"}
+
+@app.post("/api/scheduled-tasks/{task_name}/run")
+async def run_scheduled_task(task_name: str, user: dict = Depends(require_permission('system:scheduled-tasks:run'))):
+    """手动执行定时任务"""
+    history_id = None
+    start_time = None
+    
+    try:
+        from datetime import datetime
+        start_time = datetime.now()
+        history_id = start_task_execution(task_name)
+        
+        if task_name == 'dashboard_statistics_daily':
+            result = run_statistics_task()
+            
+            status = 'success' if result['success'] else 'failed'
+            update_task_status(task_name, status, result['message'])
+            
+            end_time = datetime.now()
+            duration = int((end_time - start_time).total_seconds()) if start_time else None
+            
+            end_task_execution(
+                history_id, 
+                status, 
+                result['message'], 
+                {'data': result.get('data')}, 
+                duration
+            )
+            
+            return {"code": 200 if result['success'] else 500, "message": result['message'], "data": result}
+        else:
+            if history_id:
+                end_task_execution(history_id, 'failed', f"未知的任务: {task_name}")
+            return {"code": 404, "message": f"未知的任务: {task_name}"}
+    except Exception as e:
+        logger.error(f"执行定时任务失败: {e}")
+        update_task_status(task_name, 'failed', str(e))
+        
+        if history_id:
+            from datetime import datetime
+            end_time = datetime.now()
+            duration = int((end_time - start_time).total_seconds()) if start_time else None
+            end_task_execution(history_id, 'failed', str(e), None, duration)
+        
+        return {"code": 500, "message": f"执行失败: {str(e)}"}
+
+@app.get("/api/dashboard-statistics/")
+async def get_dashboard_stats():
+    """获取Dashboard统计数据"""
+    try:
+        stats = get_dashboard_statistics()
+        if stats:
+            if stats.get('created_at'):
+                stats['created_at'] = stats['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+            if stats.get('updated_at'):
+                stats['updated_at'] = stats['updated_at'].strftime('%Y-%m-%d %H:%M:%S')
+        return {"code": 200, "message": "success", "data": stats}
+    except Exception as e:
+        logger.error(f"获取Dashboard统计数据失败: {e}")
+        return {"code": 500, "message": f"获取失败: {str(e)}", "data": None}
+
+@app.get("/api/task-execution-history/")
+async def get_execution_history(task_name: str = None, limit: int = 20, user: dict = Depends(require_permission('system:scheduled-tasks:view'))):
+    """获取任务执行历史"""
+    try:
+        history = get_task_execution_history(task_name, limit)
+        return {"code": 200, "message": "success", "data": history}
+    except Exception as e:
+        logger.error(f"获取任务执行历史失败: {e}")
+        return {"code": 500, "message": f"获取失败: {str(e)}", "data": []}
 
 @app.on_event("shutdown")
 async def shutdown_event():

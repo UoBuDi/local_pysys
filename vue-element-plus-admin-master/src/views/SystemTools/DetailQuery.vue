@@ -291,19 +291,18 @@ import * as XLSX from 'xlsx'
 
 const userStore = useUserStore()
 
-const hasPermission = (): boolean => {
-  const userInfo = userStore.getUserInfo
-  const roleList = userInfo?.roleList || []
-
-  if (roleList.includes('超级管理员') || roleList.includes('管理员')) {
-    return true
-  }
-
-  return false
+const hasDebugPermission = (): boolean => {
+  const permissions = userStore.getPermissions || []
+  return permissions.includes('system:debug:view')
 }
 
-const canShowDebug = computed(() => hasPermission())
-const canShowExport = computed(() => hasPermission())
+const hasExportPermission = (): boolean => {
+  const permissions = userStore.getPermissions || []
+  return permissions.includes('system:debug:export')
+}
+
+const canShowDebug = computed(() => hasDebugPermission())
+const canShowExport = computed(() => hasExportPermission())
 
 const loading = ref(false)
 const exportingCurrent = ref(false)

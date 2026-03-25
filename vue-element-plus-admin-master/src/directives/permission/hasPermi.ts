@@ -1,15 +1,18 @@
 import type { App, Directive, DirectiveBinding } from 'vue'
 import { useI18n } from '@/hooks/web/useI18n'
-import router from '@/router'
+import { useUserStoreWithOut } from '@/store/modules/user'
 
 const { t } = useI18n()
 
 const hasPermission = (value: string): boolean => {
-  const permission = (router.currentRoute.value.meta.permission || []) as string[]
+  const userStore = useUserStoreWithOut()
+  const permissions = userStore.getPermissions || []
+
   if (!value) {
     throw new Error(t('permission.hasPermission'))
   }
-  if (permission.includes(value)) {
+
+  if (permissions.includes(value)) {
     return true
   }
   return false

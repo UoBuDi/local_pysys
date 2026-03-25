@@ -23,18 +23,17 @@ const isDark = computed(() => appStore.getIsDark)
 
 const pieOptionsData = reactive<EChartsOption>(pieOptions) as EChartsOption
 
-// 用户来源
 const getUserAccessSource = async () => {
   const res = await getUserAccessSourceApi().catch(() => {})
   if (res) {
     set(
       pieOptionsData,
       'legend.data',
-      res.data.map((v) => t(v.name))
+      res.data.map((v) => v.name)
     )
     pieOptionsData!.series![0].data = res.data.map((v) => {
       return {
-        name: t(v.name),
+        name: v.name,
         value: v.value
       }
     })
@@ -43,14 +42,13 @@ const getUserAccessSource = async () => {
 
 const barOptionsData = reactive<EChartsOption>(barOptions) as EChartsOption
 
-// 周活跃量
 const getWeeklyUserActivity = async () => {
   const res = await getWeeklyUserActivityApi().catch(() => {})
   if (res) {
     set(
       barOptionsData,
       'xAxis.data',
-      res.data.map((v) => t(v.name))
+      res.data.map((v) => v.name)
     )
     set(barOptionsData, 'series', [
       {
@@ -64,14 +62,13 @@ const getWeeklyUserActivity = async () => {
 
 const lineOptionsData = reactive<EChartsOption>(lineOptions) as EChartsOption
 
-// 每月销售总额
 const getMonthlySales = async () => {
   const res = await getMonthlySalesApi().catch(() => {})
   if (res) {
     set(
       lineOptionsData,
       'xAxis.data',
-      res.data.map((v) => t(v.name))
+      res.data.map((v) => v.name)
     )
     set(lineOptionsData, 'series', [
       {
@@ -95,9 +92,6 @@ const getMonthlySales = async () => {
   }
 }
 
-/**
- * 更新 legend.textStyle
- */
 const updateLegendTextStyle = (options) => {
   const newTextStyle = {
     color: isDark.value ? '#ccc' : '#333'
@@ -118,7 +112,6 @@ const getAllApi = async () => {
 
 getAllApi()
 
-// 监听暗黑模式变化并重新更新样式
 watch(isDark, () => {
   updateLegendTextStyle(pieOptionsData)
   updateLegendTextStyle(barOptionsData)

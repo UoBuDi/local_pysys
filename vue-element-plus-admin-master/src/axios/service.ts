@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios'
 import { defaultRequestInterceptors, defaultResponseInterceptors } from './config'
+import { setupTokenRefreshInterceptor } from './refreshInterceptor'
 
 import { AxiosInstance, InternalAxiosRequestConfig, RequestConfig, AxiosResponse } from './types'
 import { ElMessage } from 'element-plus'
@@ -29,11 +30,10 @@ axiosInstance.interceptors.response.use(
   (res: AxiosResponse) => {
     const url = res.config.url || ''
     abortControllerMap.delete(url)
-    // 这里不能做任何处理，否则后面的 interceptors 拿不到完整的上下文了
     return res
   },
   (error: AxiosError) => {
-    console.log('err： ' + error) // for debug
+    console.log('err： ' + error)
     ElMessage.error(error.message)
     return Promise.reject(error)
   }
@@ -41,6 +41,8 @@ axiosInstance.interceptors.response.use(
 
 axiosInstance.interceptors.request.use(defaultRequestInterceptors)
 axiosInstance.interceptors.response.use(defaultResponseInterceptors)
+
+setupTokenRefreshInterceptor(axiosInstance)
 
 const service = {
   request: (config: RequestConfig) => {

@@ -6,6 +6,9 @@ const request = (option: AxiosConfig) => {
   const { url, method, params, data, headers, responseType } = option
 
   const userStore = useUserStoreWithOut()
+  const token = userStore.getToken ?? ''
+  const authHeader = token ? `Bearer ${token}` : ''
+
   return service.request({
     url: url,
     method,
@@ -14,7 +17,7 @@ const request = (option: AxiosConfig) => {
     responseType: responseType,
     headers: {
       'Content-Type': CONTENT_TYPE,
-      [userStore.getTokenKey ?? 'Authorization']: userStore.getToken ?? '',
+      [userStore.getTokenKey ?? 'Authorization']: authHeader,
       ...headers
     }
   })

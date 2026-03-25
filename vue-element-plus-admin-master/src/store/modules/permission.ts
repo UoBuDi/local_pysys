@@ -7,6 +7,7 @@ import {
 } from '@/utils/routerHelper'
 import { store } from '../index'
 import { cloneDeep } from 'lodash-es'
+import { clearRouteCache } from '@/permission'
 
 export interface PermissionState {
   routers: AppRouteRecordRaw[]
@@ -81,9 +82,22 @@ export const usePermissionStore = defineStore('permission', {
       this.addRouters = []
       this.isAddRouters = false
       this.menuTabRouters = []
+    },
+
+    refreshRoutes(): void {
+      this.isAddRouters = false
+      clearRouteCache()
     }
   },
   persist: [
+    {
+      pick: ['routers'],
+      storage: localStorage
+    },
+    {
+      pick: ['addRouters'],
+      storage: localStorage
+    },
     {
       pick: ['menuTabRouters'],
       storage: localStorage

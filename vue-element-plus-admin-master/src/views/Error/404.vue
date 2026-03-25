@@ -1,14 +1,37 @@
 <script setup lang="ts">
 import { Error } from '@/components/Error'
-import { usePermissionStore } from '@/store/modules/permission'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/store/modules/user'
+import { usePermissionStoreWithOut } from '@/store/modules/permission'
+import { hasValidRefreshToken, isTokenExpired } from '@/utils/auth'
 
 const { push } = useRouter()
+const userStore = useUserStore()
+const permissionStore = usePermissionStoreWithOut()
 
-const permissionStore = usePermissionStore()
-
-const errorClick = () => {
-  push(permissionStore.addRouters[0]?.path as string)
+const errorClick = async () => {
+  const token = userStore.getToken
+  
+  if (!token) {
+    push('/login')
+    return
+  }
+  
+  if (isTokenExpired()) {
+    if (hasValidRefreshToken()) {
+      push('/')
+    } else {
+      push('/login')
+    }
+    return
+  }
+  
+  if (!permissionStore.getIsAddRouters) {
+    push('/')
+    return
+  }
+  
+  push('/')
 }
 </script>
 

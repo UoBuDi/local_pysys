@@ -7,12 +7,17 @@ import { loginOutApi } from '@/api/login'
 import { useTagsViewStore } from './tagsView'
 import { usePermissionStore } from './permission'
 import router from '@/router'
+import { clearRouteCache } from '@/permission'
 
 interface UserState {
   userInfo?: UserType
   tokenKey: string
   token: string
+  refreshToken: string
+  tokenExpiresAt: number
+  refreshExpiresAt: number
   roleRouters?: string[] | AppCustomRouteRecordRaw[]
+  permissions?: string[]
   rememberMe: boolean
   loginInfo?: UserLoginType
 }
@@ -23,8 +28,10 @@ export const useUserStore = defineStore('user', {
       userInfo: undefined,
       tokenKey: 'Authorization',
       token: '',
+      refreshToken: '',
+      tokenExpiresAt: 0,
+      refreshExpiresAt: 0,
       roleRouters: undefined,
-      // 记住我
       rememberMe: true,
       loginInfo: undefined
     }
@@ -36,11 +43,23 @@ export const useUserStore = defineStore('user', {
     getToken(): string {
       return this.token
     },
+    getRefreshToken(): string {
+      return this.refreshToken
+    },
+    getTokenExpiresAt(): number {
+      return this.tokenExpiresAt
+    },
+    getRefreshExpiresAt(): number {
+      return this.refreshExpiresAt
+    },
     getUserInfo(): UserType | undefined {
       return this.userInfo
     },
     getRoleRouters(): string[] | AppCustomRouteRecordRaw[] | undefined {
       return this.roleRouters
+    },
+    getPermissions(): string[] | undefined {
+      return this.permissions
     },
     getRememberMe(): boolean {
       return this.rememberMe
@@ -56,11 +75,29 @@ export const useUserStore = defineStore('user', {
     setToken(token: string) {
       this.token = token
     },
+    setRefreshToken(refreshToken: string) {
+      this.refreshToken = refreshToken
+    },
+    setTokenExpiresAt(expiresAt: number) {
+      this.tokenExpiresAt = expiresAt
+    },
+    setRefreshExpiresAt(expiresAt: number) {
+      this.refreshExpiresAt = expiresAt
+    },
+    setTokenData(data: { token: string; refreshToken: string; expiresAt: number; refreshExpiresAt: number }) {
+      this.token = data.token
+      this.refreshToken = data.refreshToken
+      this.tokenExpiresAt = data.expiresAt
+      this.refreshExpiresAt = data.refreshExpiresAt
+    },
     setUserInfo(userInfo?: UserType) {
       this.userInfo = userInfo
     },
     setRoleRouters(roleRouters: string[] | AppCustomRouteRecordRaw[]) {
       this.roleRouters = roleRouters
+    },
+    setPermissions(permissions?: string[]) {
+      this.permissions = permissions
     },
     logoutConfirm() {
       const { t } = useI18n()
@@ -82,9 +119,13 @@ export const useUserStore = defineStore('user', {
       const permissionStore = usePermissionStore()
       tagsViewStore.delAllViews()
       this.setToken('')
+      this.setRefreshToken('')
+      this.setTokenExpiresAt(0)
+      this.setRefreshExpiresAt(0)
       this.setUserInfo(undefined)
       this.setRoleRouters([])
       permissionStore.reset()
+      clearRouteCache()
       router.replace('/login')
     },
     logout() {
@@ -99,7 +140,7 @@ export const useUserStore = defineStore('user', {
   },
   persist: [
     {
-      pick: ['token', 'userInfo', 'rememberMe', 'loginInfo'],
+      pick: ['token', 'refreshToken', 'tokenExpiresAt', 'refreshExpiresAt', 'userInfo', 'permissions', 'rememberMe', 'loginInfo'],
       storage: localStorage
     }
   ]

@@ -1024,14 +1024,8 @@ import { useUserStore } from '@/store/modules/user'
 const userStore = useUserStore()
 
 const hasPermission = (): boolean => {
-  const userInfo = userStore.getUserInfo
-  const roleList = userInfo?.roleList || []
-
-  if (roleList.includes('超级管理员') || roleList.includes('管理员')) {
-    return true
-  }
-
-  return false
+  const permissions = userStore.getPermissions || []
+  return permissions.includes('system:debug:view')
 }
 
 const canShowDebug = computed(() => hasPermission())

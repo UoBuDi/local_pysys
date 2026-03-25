@@ -29,3 +29,18 @@ export const assignRoleMenusApi = (data: { role_id: number; menu_ids: number[] }
 export const getRoleMenusApi = (roleId: number) => {
   return request.get({ url: `/api/roles/${roleId}/menus` })
 }
+
+// 获取权限点列表
+export const getPermissionListApi = () => {
+  return request.get({ url: '/api/permissions/' })
+}
+
+// 为角色分配权限
+export const assignRolePermissionsApi = (data: { role_id: number; permission_ids: number[] }) => {
+  return request.post({ url: '/api/role-permissions/', data })
+}
+
+// 获取角色已分配的权限
+export const getRolePermissionsApi = (roleId: number) => {
+  return request.get({ url: `/api/roles/${roleId}/permissions` })
+}

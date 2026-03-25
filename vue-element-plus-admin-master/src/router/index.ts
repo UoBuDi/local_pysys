@@ -2,7 +2,10 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import type { App } from 'vue'
 import { Layout, getParentLayout } from '@/utils/routerHelper'
+import { useI18n } from '@/hooks/web/useI18n'
 import { NO_RESET_WHITE_LIST } from '@/constants'
+
+const { t } = useI18n()
 
 export const constantRouterMap: AppRouteRecordRaw[] = [
   {
@@ -37,7 +40,7 @@ export const constantRouterMap: AppRouteRecordRaw[] = [
     name: 'Login',
     meta: {
       hidden: true,
-      title: 'router.login',
+      title: t('router.login'),
       noTagsView: true
     }
   },
@@ -47,7 +50,7 @@ export const constantRouterMap: AppRouteRecordRaw[] = [
     redirect: '/personal/personal-center',
     name: 'Personal',
     meta: {
-      title: 'router.personal',
+      title: t('router.personal'),
       hidden: true,
       canTo: true
     },
@@ -57,7 +60,7 @@ export const constantRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Personal/PersonalCenter/PersonalCenter.vue'),
         name: 'PersonalCenter',
         meta: {
-          title: 'router.personalCenter',
+          title: t('router.personalCenter'),
           hidden: true,
           canTo: true
         }
@@ -83,7 +86,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
     redirect: '/dashboard/analysis',
     name: 'Dashboard',
     meta: {
-      title: 'router.dashboard',
+      title: t('router.dashboard'),
       icon: 'vi-ant-design:dashboard-filled',
       alwaysShow: true
     },
@@ -93,7 +96,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Dashboard/Analysis.vue'),
         name: 'Analysis',
         meta: {
-          title: 'router.analysis',
+          title: t('router.analysis'),
           noCache: true,
           affix: true
         }
@@ -103,7 +106,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Dashboard/Workplace.vue'),
         name: 'Workplace',
         meta: {
-          title: 'router.workplace',
+          title: t('router.workplace'),
           noCache: true
         }
       }
@@ -121,7 +124,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         path: 'https://element-plus-admin-doc.cn/',
         name: 'DocumentLink',
         meta: {
-          title: 'router.document',
+          title: t('router.document'),
           icon: 'vi-clarity:document-solid'
         }
       }
@@ -132,7 +135,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
     component: Layout,
     name: 'Guide',
     meta: {
-      title: 'router.guide',
+      title: t('router.guide'),
       icon: 'vi-cib:telegram-plane'
     },
     children: [
@@ -141,7 +144,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Guide/Guide.vue'),
         name: 'GuideDemo',
         meta: {
-          title: 'router.guide',
+          title: t('router.guide'),
           icon: 'vi-cib:telegram-plane'
         }
       }
@@ -152,7 +155,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
     component: Layout,
     name: 'ComponentsDemo',
     meta: {
-      title: 'router.component',
+      title: t('router.component'),
       icon: 'vi-bx:bxs-component',
       alwaysShow: true
     },
@@ -163,7 +166,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         redirect: '/components/form/default-form',
         name: 'Form',
         meta: {
-          title: 'router.form',
+          title: t('router.form'),
           alwaysShow: true
         },
         children: [
@@ -172,7 +175,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
             component: () => import('@/views/Components/Form/DefaultForm.vue'),
             name: 'DefaultForm',
             meta: {
-              title: 'router.defaultForm'
+              title: t('router.defaultForm')
             }
           },
           {
@@ -180,7 +183,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
             component: () => import('@/views/Components/Form/UseFormDemo.vue'),
             name: 'UseForm',
             meta: {
-              title: 'UseForm'
+              title: t('router.useForm')
             }
           }
         ]
@@ -191,7 +194,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         redirect: '/components/table/default-table',
         name: 'TableDemo',
         meta: {
-          title: 'router.table',
+          title: t('router.table'),
           alwaysShow: true,
           hidden: true
         },
@@ -201,7 +204,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
             component: () => import('@/views/Components/Table/DefaultTable.vue'),
             name: 'DefaultTable',
             meta: {
-              title: 'router.defaultTable'
+              title: t('router.defaultTable')
             }
           },
           {
@@ -209,7 +212,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
             component: () => import('@/views/Components/Table/UseTableDemo.vue'),
             name: 'UseTable',
             meta: {
-              title: 'UseTable'
+              title: t('router.useTable')
             }
           },
           {
@@ -217,7 +220,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
             component: () => import('@/views/Components/Table/TreeTable.vue'),
             name: 'TreeTable',
             meta: {
-              title: 'router.treeTable'
+              title: t('router.treeTable')
             }
           },
           {
@@ -225,7 +228,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
             component: () => import('@/views/Components/Table/TableImagePreview.vue'),
             name: 'TableImagePreview',
             meta: {
-              title: 'router.PicturePreview'
+              title: t('router.PicturePreview')
             }
           },
           {
@@ -233,7 +236,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
             component: () => import('@/views/Components/Table/TableVideoPreview.vue'),
             name: 'TableVideoPreview',
             meta: {
-              title: 'router.tableVideoPreview'
+              title: t('router.tableVideoPreview')
             }
           },
           {
@@ -241,7 +244,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
             component: () => import('@/views/Components/Table/CardTable.vue'),
             name: 'CardTable',
             meta: {
-              title: 'router.cardTable'
+              title: t('router.cardTable')
             }
           }
         ]
@@ -252,7 +255,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         redirect: '/components/editor-demo/editor',
         name: 'EditorDemo',
         meta: {
-          title: 'router.editor',
+          title: t('router.editor'),
           alwaysShow: true
         },
         children: [
@@ -261,7 +264,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
             component: () => import('@/views/Components/Editor/Editor.vue'),
             name: 'Editor',
             meta: {
-              title: 'router.richText'
+              title: t('router.richText')
             }
           },
           {
@@ -269,7 +272,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
             component: () => import('@/views/Components/Editor/JsonEditor.vue'),
             name: 'JsonEditor',
             meta: {
-              title: 'router.jsonEditor'
+              title: t('router.jsonEditor')
             }
           }
         ]
@@ -279,7 +282,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/Search.vue'),
         name: 'Search',
         meta: {
-          title: 'router.search'
+          title: t('router.search')
         }
       },
       {
@@ -287,7 +290,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/Descriptions.vue'),
         name: 'Descriptions',
         meta: {
-          title: 'router.descriptions'
+          title: t('router.descriptions')
         }
       },
       {
@@ -295,7 +298,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/ImageViewer.vue'),
         name: 'ImageViewer',
         meta: {
-          title: 'router.imageViewer'
+          title: t('router.imageViewer')
         }
       },
       {
@@ -303,7 +306,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/Dialog.vue'),
         name: 'Dialog',
         meta: {
-          title: 'router.dialog'
+          title: t('router.dialog')
         }
       },
       {
@@ -311,7 +314,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/Icon.vue'),
         name: 'Icon',
         meta: {
-          title: 'router.icon'
+          title: t('router.icon')
         }
       },
       {
@@ -319,7 +322,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/IconPicker.vue'),
         name: 'IconPicker',
         meta: {
-          title: 'router.iconPicker'
+          title: t('router.iconPicker')
         }
       },
       {
@@ -327,7 +330,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/Echart.vue'),
         name: 'Echart',
         meta: {
-          title: 'router.echart'
+          title: t('router.echart')
         }
       },
       {
@@ -335,7 +338,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/CountTo.vue'),
         name: 'CountTo',
         meta: {
-          title: 'router.countTo'
+          title: t('router.countTo')
         }
       },
       {
@@ -343,7 +346,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/Qrcode.vue'),
         name: 'Qrcode',
         meta: {
-          title: 'router.qrcode'
+          title: t('router.qrcode')
         }
       },
       {
@@ -351,7 +354,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/Highlight.vue'),
         name: 'Highlight',
         meta: {
-          title: 'router.highlight'
+          title: t('router.highlight')
         }
       },
       {
@@ -359,7 +362,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/Infotip.vue'),
         name: 'Infotip',
         meta: {
-          title: 'router.infotip'
+          title: t('router.infotip')
         }
       },
       {
@@ -367,15 +370,15 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/InputPassword.vue'),
         name: 'InputPassword',
         meta: {
-          title: 'router.inputPassword'
+          title: t('router.inputPassword')
         }
       },
       {
         path: 'waterfall',
         component: () => import('@/views/Components/Waterfall.vue'),
-        name: 'waterfall',
+        name: 'Waterfall',
         meta: {
-          title: 'router.waterfall'
+          title: t('router.waterfall')
         }
       },
       {
@@ -383,7 +386,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/ImageCropping.vue'),
         name: 'ImageCropping',
         meta: {
-          title: 'router.imageCropping'
+          title: t('router.imageCropping')
         }
       },
       {
@@ -391,7 +394,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/VideoPlayer.vue'),
         name: 'VideoPlayer',
         meta: {
-          title: 'router.videoPlayer'
+          title: t('router.videoPlayer')
         }
       },
       {
@@ -399,7 +402,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/Avatars.vue'),
         name: 'Avatars',
         meta: {
-          title: 'router.avatars'
+          title: t('router.avatars')
         }
       },
       {
@@ -407,7 +410,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Components/IAgree.vue'),
         name: 'IAgree',
         meta: {
-          title: 'router.iAgree'
+          title: t('router.iAgree')
         }
       }
     ]
@@ -418,7 +421,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
     redirect: '/function/multipleTabs',
     name: 'Function',
     meta: {
-      title: 'router.function',
+      title: t('router.function'),
       icon: 'vi-ri:function-fill',
       alwaysShow: true
     },
@@ -428,7 +431,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Function/MultipleTabs.vue'),
         name: 'MultipleTabs',
         meta: {
-          title: 'router.multipleTabs'
+          title: t('router.multipleTabs')
         }
       },
       {
@@ -437,7 +440,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         name: 'MultipleTabsDemo',
         meta: {
           hidden: true,
-          title: 'router.details',
+          title: t('router.details'),
           canTo: true,
           activeMenu: '/function/multiple-tabs'
         }
@@ -447,7 +450,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Function/Request.vue'),
         name: 'Request',
         meta: {
-          title: 'router.request'
+          title: t('router.request')
         }
       },
       {
@@ -455,7 +458,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Function/Test.vue'),
         name: 'Test',
         meta: {
-          title: 'router.permission'
+          title: t('router.permission')
         }
       }
     ]
@@ -466,7 +469,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
     redirect: '/hooks/useWatermark',
     name: 'Hooks',
     meta: {
-      title: 'hooks',
+      title: t('hooks'),
       icon: 'vi-ic:outline-webhook',
       alwaysShow: true,
       hidden: true
@@ -477,7 +480,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/hooks/useWatermark.vue'),
         name: 'UseWatermark',
         meta: {
-          title: 'useWatermark'
+          title: t('useWatermark')
         }
       },
       {
@@ -485,7 +488,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/hooks/useTagsView.vue'),
         name: 'UseTagsView',
         meta: {
-          title: 'useTagsView'
+          title: t('useTagsView')
         }
       },
       {
@@ -803,6 +806,14 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         name: 'Role',
         meta: {
           title: 'router.role'
+        }
+      },
+      {
+        path: 'scheduled-tasks',
+        component: () => import('@/views/SystemTools/ScheduledTasks/ScheduledTasks.vue'),
+        name: 'ScheduledTasks',
+        meta: {
+          title: 'router.scheduledTasks'
         }
       }
     ]

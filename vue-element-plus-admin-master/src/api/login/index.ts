@@ -1,5 +1,5 @@
 import request from '@/axios'
-import type { UserType } from './types'
+import type { UserType, RefreshTokenResponse, ValidateTokenResponse } from './types'
 
 interface RoleParams {
   roleName: string
@@ -13,9 +13,15 @@ interface LoginCredentials {
 interface LoginResponse {
   message: string
   token?: string
+  refreshToken?: string
+  tokenType?: string
+  expiresAt?: number
+  refreshExpiresAt?: number
   user?: {
     id: number
     username: string
+    roles?: any[]
+    roleList?: string[]
   }
 }
 
@@ -29,6 +35,14 @@ export const registerApi = (data: LoginCredentials): Promise<IResponse<LoginResp
 
 export const loginOutApi = (): Promise<IResponse> => {
   return request.get({ url: '/api/user/loginOut' })
+}
+
+export const refreshTokenApi = (refreshToken: string): Promise<IResponse<RefreshTokenResponse>> => {
+  return request.post({ url: '/api/token/refresh', data: { refresh_token: refreshToken } })
+}
+
+export const validateTokenApi = (token: string): Promise<IResponse<ValidateTokenResponse>> => {
+  return request.post({ url: '/api/token/validate', data: { refresh_token: token } })
 }
 
 export const getUserListApi = ({ params }: AxiosConfig) => {
@@ -53,4 +67,8 @@ export const getTestRoleApi = (params: RoleParams): Promise<IResponse<string[]>>
 
 export const getUserMenusApi = (): Promise<IResponse<AppCustomRouteRecordRaw[]>> => {
   return request.get({ url: '/api/user/menus' })
+}
+
+export const getUserPermissionsApi = (): Promise<IResponse<string[]>> => {
+  return request.get({ url: '/api/user/permissions' })
 }
