@@ -5,11 +5,7 @@ import { useTitle } from '@/hooks/web/useTitle'
 import { useNProgress } from '@/hooks/web/useNProgress'
 import { usePermissionStoreWithOut } from '@/store/modules/permission'
 import { usePageLoading } from '@/hooks/web/usePageLoading'
-import {
-  PUBLIC_ROUTES,
-  DASHBOARD_ROUTES,
-  MAX_DYNAMIC_ROUTES
-} from '@/constants'
+import { PUBLIC_ROUTES, DASHBOARD_ROUTES, MAX_DYNAMIC_ROUTES } from '@/constants'
 import { useUserStoreWithOut } from '@/store/modules/user'
 import { ElMessage } from 'element-plus'
 import { checkAndRefreshToken } from '@/utils/auth'
@@ -52,10 +48,8 @@ function enforceRouteCacheSizeLimit(): void {
   if (routeCache.size <= MAX_ROUTE_CACHE_SIZE) {
     return
   }
-  
   const entries = Array.from(routeCache.entries())
   entries.sort((a, b) => a[1].timestamp - b[1].timestamp)
-  
   const toRemove = entries.slice(0, entries.length - MAX_ROUTE_CACHE_SIZE)
   for (const [path] of toRemove) {
     routeCache.delete(path)
@@ -302,22 +296,6 @@ router.beforeEach(async (to, from, next) => {
     const hasPermissionAndMenus =
       RouteGuardUtils.hasPermission(roleList) && RouteGuardUtils.hasMenus(roleRouters)
 
-    if (!hasPermissionAndMenus && !isDashboardRoute) {
-      next({ path: '/404' })
-      return
-    }
-
-    if (hasPermissionAndMenus) {
-      const permissions = userStore.getPermissions || []
-
-      if (!checkFineGrainedPermission(to, permissions)) {
-        console.warn(`用户没有访问路由 ${to.path} 的细粒度权限`)
-        ElMessage.warning('您没有访问该页面的权限')
-        next({ path: '/403' })
-        return
-      }
-    }
-
     if (permissionStore.getIsAddRouters) {
       if (hasPermissionAndMenus) {
         const permissions = userStore.getPermissions || []
@@ -328,7 +306,6 @@ router.beforeEach(async (to, from, next) => {
           return
         }
       }
-      
       if (!RouteGuardUtils.isRouteCached(to.path)) {
         RouteGuardUtils.cacheRoute(to.path)
       }
@@ -336,7 +313,7 @@ router.beforeEach(async (to, from, next) => {
       return
     }
 
-    if (appStore.getDynamicRouter && appStore.getServerDynamicRouter && roleRouters.length === 0) {
+    if (appStore.getDynamicRouter && appStore.getServerDynamicRouter) {
       try {
         roleRouters = await fetchAndSetUserMenusAndPermissions(userStore)
       } catch (error) {

@@ -74,20 +74,20 @@ INSERT INTO roles (name, code, description, status) VALUES
 
 INSERT INTO menus (parent_id, name, icon, path, component, permission, sort_order, status, visible) VALUES
 (0, '首页', 'vi-ant-design:dashboard-filled', '/dashboard', '#', '', 1, 1, 1),
-(1, '分析页', '', '/analysis', 'Dashboard/Analysis', '', 1, 1, 1),
-(1, '工作台', '', '/workplace', 'Dashboard/Workplace', '', 2, 1, 1),
+(1, '分析页', 'vi-clarity:document-solid', '/analysis', 'Dashboard/Analysis', '', 1, 1, 1),
+(1, '工作台', 'vi-clarity:document-solid', '/workplace', 'Dashboard/Workplace', '', 2, 1, 1),
 (0, '数据查询', 'vi-ant-design:database-outlined', '/data-query', '#', '', 2, 1, 1),
-(4, '拆分匹配', '', '/split-match', 'SystemTools/SplitMatch', '', 1, 1, 1),
-(4, '详单查询', '', '/detail-query', 'SystemTools/DetailQuery', '', 2, 1, 1),
-(0, '系统工具', 'ep:setting', '/system-tools', '#', '', 3, 1, 1),
-(7, '同步配置', '', '/sync-config', 'SystemTools/SyncConfig', '', 1, 1, 1),
-(7, '同步控制', '', '/sync-control', 'SystemTools/SyncControl', '', 2, 1, 1),
-(7, '参数配置', '', '/params-config', 'SystemTools/ParamsConfig', '', 3, 1, 1),
+(4, '拆分匹配', 'vi-carbon:split', '/split-match', 'SystemTools/SplitMatch', '', 1, 1, 1),
+(4, '详单查询', 'vi-ant-design:file-search-outlined', '/detail-query', 'SystemTools/DetailQuery', '', 2, 1, 1),
+(0, '系统工具', 'vi-ep:tools', '/system-tools', '#', '', 3, 1, 1),
+(7, '同步配置', 'vi-ep:connection', '/sync-config', 'SystemTools/SyncConfig', '', 1, 1, 1),
+(7, '同步控制', 'vi-ep:refresh', '/sync-control', 'SystemTools/SyncControl', '', 2, 1, 1),
+(7, '参数配置', 'vi-ep:operation', '/params-config', 'SystemTools/ParamsConfig', '', 3, 1, 1),
 (0, '系统管理', 'vi-eos-icons:role-binding', '/authorization', '#', '', 4, 1, 1),
-(11, '部门管理', '', '/department', 'Authorization/Department/Department', '', 1, 1, 1),
-(11, '用户管理', '', '/user', 'Authorization/User/User', '', 2, 1, 1),
-(11, '菜单管理', '', '/menu', 'Authorization/Menu/Menu', '', 3, 1, 1),
-(11, '角色管理', '', '/role', 'Authorization/Role/Role', '', 4, 1, 1);
+(11, '部门管理', 'vi-ant-design:apartment-outlined', '/department', 'Authorization/Department/Department', '', 1, 1, 1),
+(11, '用户管理', 'vi-ant-design:user-outlined', '/user', 'Authorization/User/User', '', 2, 1, 1),
+(11, '菜单管理', 'vi-ant-design:menu-outlined', '/menu', 'Authorization/Menu/Menu', '', 3, 1, 1),
+(11, '角色管理', 'vi-ant-design:team-outlined', '/role', 'Authorization/Role/Role', '', 4, 1, 1);
 
 INSERT INTO user_roles (user_id, role_id) VALUES
 (1, 1);

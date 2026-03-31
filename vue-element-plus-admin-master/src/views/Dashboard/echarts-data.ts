@@ -43,6 +43,7 @@ export const lineOptions: EChartsOption = {
     padding: [5, 10]
   },
   yAxis: {
+    type: 'log',
     axisTick: {
       show: false
     }
@@ -157,7 +158,6 @@ export const radarOption: EChartsOption = {
     data: [t('workplace.personal'), t('workplace.team')]
   },
   radar: {
-    // shape: 'circle',
     indicator: [
       { name: t('workplace.quote'), max: 65 },
       { name: t('workplace.contribution'), max: 160 },

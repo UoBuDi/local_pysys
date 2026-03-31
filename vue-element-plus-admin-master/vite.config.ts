@@ -75,7 +75,25 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         symbolId: 'icon-[dir]-[name]',
         svgoOptions: true
       }),
-      PurgeIcons(),
+      PurgeIcons({
+        content: [
+          './src/**/*.vue',
+          './src/**/*.ts',
+          './src/**/*.tsx',
+          './src/**/*.js',
+          './src/**/*.jsx'
+        ],
+        extractors: [
+          {
+            extractor: (content: string) => {
+              const regex = /vi-([a-z0-9-]+):[\w\d-]+/g
+              const matches = content.match(regex) || []
+              return matches.map((icon) => icon.replace('vi-', ''))
+            },
+            extensions: ['vue', 'ts', 'js', 'tsx', 'jsx']
+          }
+        ]
+      }),
       env.VITE_USE_MOCK === 'true'
         ? viteMockServe({
             ignore: /^\_/,

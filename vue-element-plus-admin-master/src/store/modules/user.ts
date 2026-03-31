@@ -84,7 +84,12 @@ export const useUserStore = defineStore('user', {
     setRefreshExpiresAt(expiresAt: number) {
       this.refreshExpiresAt = expiresAt
     },
-    setTokenData(data: { token: string; refreshToken: string; expiresAt: number; refreshExpiresAt: number }) {
+    setTokenData(data: {
+      token: string
+      refreshToken: string
+      expiresAt: number
+      refreshExpiresAt: number
+    }) {
       this.token = data.token
       this.refreshToken = data.refreshToken
       this.tokenExpiresAt = data.expiresAt
@@ -124,6 +129,8 @@ export const useUserStore = defineStore('user', {
       this.setRefreshExpiresAt(0)
       this.setUserInfo(undefined)
       this.setRoleRouters([])
+      this.setPermissions([])
+      localStorage.removeItem('user')
       permissionStore.reset()
       clearRouteCache()
       router.replace('/login')
@@ -140,7 +147,16 @@ export const useUserStore = defineStore('user', {
   },
   persist: [
     {
-      pick: ['token', 'refreshToken', 'tokenExpiresAt', 'refreshExpiresAt', 'userInfo', 'permissions', 'rememberMe', 'loginInfo'],
+      pick: [
+        'token',
+        'refreshToken',
+        'tokenExpiresAt',
+        'refreshExpiresAt',
+        'userInfo',
+        'permissions',
+        'rememberMe',
+        'loginInfo'
+      ],
       storage: localStorage
     }
   ]

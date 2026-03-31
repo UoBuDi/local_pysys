@@ -698,7 +698,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
     name: 'DataQuery',
     meta: {
       title: 'router.dataQuery',
-      icon: 'ep:search',
+      icon: 'vi-ant-design:database-outlined',
       alwaysShow: true
     },
     children: [
@@ -707,7 +707,8 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/SystemTools/PathMatch.vue'),
         name: 'PathMatch',
         meta: {
-          title: 'router.pathMatch'
+          title: 'router.pathMatch',
+          icon: 'vi-carbon:folder'
         }
       },
       {
@@ -715,7 +716,8 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/SystemTools/SplitMatch.vue'),
         name: 'SplitMatch',
         meta: {
-          title: 'router.splitMatch'
+          title: 'router.splitMatch',
+          icon: 'vi-carbon:split'
         }
       },
       {
@@ -723,7 +725,8 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/SystemTools/DetailQuery.vue'),
         name: 'DetailQuery',
         meta: {
-          title: 'router.detailQuery'
+          title: 'router.detailQuery',
+          icon: 'vi-ant-design:file-search-outlined'
         }
       }
     ]
@@ -735,7 +738,7 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
     name: 'SystemTools',
     meta: {
       title: 'router.systemTools',
-      icon: 'ep:setting',
+      icon: 'vi-ep:tools',
       alwaysShow: true
     },
     children: [
@@ -744,7 +747,8 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/SystemTools/SyncConfig.vue'),
         name: 'SyncConfig',
         meta: {
-          title: 'router.syncConfig'
+          title: 'router.syncConfig',
+          icon: 'vi-ep:connection'
         }
       },
       {
@@ -752,7 +756,8 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/SystemTools/SyncControl.vue'),
         name: 'SyncControl',
         meta: {
-          title: 'router.syncControl'
+          title: 'router.syncControl',
+          icon: 'vi-ep:refresh'
         }
       },
       {
@@ -760,7 +765,110 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/SystemTools/ParamsConfig.vue'),
         name: 'ParamsConfig',
         meta: {
-          title: 'router.paramsConfig'
+          title: 'router.paramsConfig',
+          icon: 'vi-ep:operation'
+        }
+      }
+    ]
+  },
+  {
+    path: '/data-records',
+    component: Layout,
+    redirect: '/data-records/monitor-center/special-records',
+    name: 'DataRecords',
+    meta: {
+      title: 'router.dataRecords',
+      icon: 'vi-ep:document',
+      alwaysShow: true
+    },
+    children: [
+      {
+        path: 'monitor-center',
+        component: getParentLayout(),
+        name: 'MonitorCenter',
+        redirect: '/data-records/monitor-center/special-records',
+        meta: {
+          title: 'router.monitorCenter',
+          icon: 'vi-ep:monitor',
+          alwaysShow: true
+        },
+        children: [
+          {
+            path: 'special-records',
+            component: () => import('@/views/DataRecords/SpecialRecords.vue'),
+            name: 'SpecialRecords',
+            meta: {
+              title: 'router.specialRecords',
+              icon: 'vi-ep:warning'
+            }
+          },
+          {
+            path: 'event-records',
+            component: () => import('@/views/DataRecords/EventRecords.vue'),
+            name: 'EventRecords',
+            meta: {
+              title: 'router.eventRecords',
+              icon: 'vi-ep:document'
+            }
+          }
+        ]
+      },
+      {
+        path: 'scheduling',
+        component: getParentLayout(),
+        name: 'Scheduling',
+        redirect: '/data-records/scheduling/calendar',
+        meta: {
+          title: 'router.scheduling',
+          icon: 'vi-ep:calendar',
+          alwaysShow: true
+        },
+        children: [
+          {
+            path: 'calendar',
+            component: () => import('@/views/DataRecords/Scheduling/Calendar.vue'),
+            name: 'SchedulingCalendar',
+            meta: {
+              title: 'router.schedulingCalendar',
+              icon: 'vi-ep:calendar'
+            }
+          },
+          {
+            path: 'groups',
+            component: () => import('@/views/DataRecords/Scheduling/Groups.vue'),
+            name: 'SchedulingGroups',
+            meta: {
+              title: 'router.schedulingGroups',
+              icon: 'vi-ep:user'
+            }
+          },
+          {
+            path: 'staff',
+            component: () => import('@/views/DataRecords/Scheduling/Staff.vue'),
+            name: 'SchedulingStaff',
+            meta: {
+              title: 'router.schedulingStaff',
+              icon: 'vi-ep:avatar'
+            }
+          },
+          {
+            path: 'shifts',
+            component: () => import('@/views/DataRecords/Scheduling/Shifts.vue'),
+            name: 'SchedulingShifts',
+            meta: {
+              title: 'router.schedulingShifts',
+              icon: 'vi-ep:clock'
+            }
+          }
+        ]
+      },
+      {
+        path: 'manage-center',
+        component: () => import('@/views/DataRecords/ManageCenter.vue'),
+        name: 'ManageCenter',
+        meta: {
+          title: 'router.manageCenter',
+          icon: 'vi-ep:setting'
         }
       }
     ]
@@ -781,7 +889,8 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Authorization/Department/Department.vue'),
         name: 'Department',
         meta: {
-          title: 'router.department'
+          title: 'router.department',
+          icon: 'vi-ant-design:apartment-outlined'
         }
       },
       {
@@ -789,15 +898,17 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Authorization/User/User.vue'),
         name: 'User',
         meta: {
-          title: 'router.user'
+          title: 'router.user',
+          icon: 'vi-ant-design:user-outlined'
         }
       },
       {
         path: 'menu',
         component: () => import('@/views/Authorization/Menu/Menu.vue'),
-        name: 'Menu',
+        name: 'MenuManagement',
         meta: {
-          title: 'router.menuManagement'
+          title: 'router.menuManagement',
+          icon: 'vi-ant-design:menu-outlined'
         }
       },
       {
@@ -805,7 +916,8 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/Authorization/Role/Role.vue'),
         name: 'Role',
         meta: {
-          title: 'router.role'
+          title: 'router.role',
+          icon: 'vi-ant-design:team-outlined'
         }
       },
       {
@@ -813,7 +925,8 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         component: () => import('@/views/SystemTools/ScheduledTasks/ScheduledTasks.vue'),
         name: 'ScheduledTasks',
         meta: {
-          title: 'router.scheduledTasks'
+          title: 'router.scheduledTasks',
+          icon: 'vi-ant-design:clock-circle-outlined'
         }
       }
     ]

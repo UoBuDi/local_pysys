@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, Query
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, Query, UploadFile, File, Form
 from pydantic import BaseModel
 import configparser
 import logging
@@ -9,16 +9,42 @@ import re
 import uvicorn
 import asyncio
 import json
+import requests
+import base64
+from io import BytesIO
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
+from openpyxl import Workbook, load_workbook
 from config import load_config, save_config, get_database_config
 from database import test_db_connection, create_db_connection, get_database_tables, table_exists, get_available_databases, create_db_pool, close_all_pools
 from sync_service import generate_month_options, run_sync, stop_sync, sync_status
 from split_match_service import SplitMatchService
-from statistics_service import get_dashboard_statistics, run_statistics_task, update_task_status, get_latest_month_data, start_task_execution, end_task_execution, get_task_execution_history
+from statistics_service import get_dashboard_statistics, run_statistics_task, update_task_status, get_latest_month_data, start_task_execution, end_task_execution, get_task_execution_history, get_check_data_connection
 from models import *
+
+SECRET_KEY = "cloud_portal_secret_key_2024"
+
+def encrypt_password(password: str) -> str:
+    encrypted = []
+    for i, char in enumerate(password):
+        key_char = SECRET_KEY[i % len(SECRET_KEY)]
+        encrypted_char = chr(ord(char) ^ ord(key_char))
+        encrypted.append(encrypted_char)
+    return base64.b64encode(''.join(encrypted).encode()).decode()
+
+def decrypt_password(encrypted_password: str) -> str:
+    try:
+        decoded = base64.b64decode(encrypted_password.encode()).decode()
+        decrypted = []
+        for i, char in enumerate(decoded):
+            key_char = SECRET_KEY[i % len(SECRET_KEY)]
+            decrypted_char = chr(ord(char) ^ ord(key_char))
+            decrypted.append(decrypted_char)
+        return ''.join(decrypted)
+    except:
+        return ''
 
 # 从models导入所有数据模型
 from models import (
@@ -58,6 +84,20 @@ error_handler.setFormatter(log_formatter)
 logger.addHandler(error_handler)
 
 logger = logging.getLogger(__name__)
+
+def format_time_value(time_val):
+    """格式化时间值，处理datetime.time和timedelta类型"""
+    if not time_val:
+        return ''
+    if hasattr(time_val, 'strftime'):
+        return time_val.strftime('%H:%M:%S')
+    if hasattr(time_val, 'total_seconds'):
+        total_seconds = int(time_val.total_seconds())
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    return str(time_val)
 
 app = FastAPI()
 
@@ -1048,37 +1088,66 @@ async def get_user_menus(credentials: HTTPAuthorizationCredentials = Depends(sec
                                 converted_menu['component'] = 'Authorization/Role/Role'
                             elif path == 'scheduled-tasks':
                                 converted_menu['component'] = 'SystemTools/ScheduledTasks/ScheduledTasks'
+                            elif path == 'monitor-center':
+                                converted_menu['component'] = 'ParentLayout'
+                            elif path == 'special-records':
+                                converted_menu['component'] = 'DataRecords/SpecialRecords'
+                            elif path == 'event-records':
+                                converted_menu['component'] = 'DataRecords/EventRecords'
+                            elif path == 'scheduling':
+                                converted_menu['component'] = 'ParentLayout'
+                            elif path == 'calendar':
+                                converted_menu['component'] = 'DataRecords/Scheduling/Calendar'
+                            elif path == 'groups':
+                                converted_menu['component'] = 'DataRecords/Scheduling/Groups'
+                            elif path == 'staff':
+                                converted_menu['component'] = 'DataRecords/Scheduling/Staff'
+                            elif path == 'shifts':
+                                converted_menu['component'] = 'DataRecords/Scheduling/Shifts'
+                            elif path == 'manage-center':
+                                converted_menu['component'] = 'DataRecords/ManageCenter'
                     # 添加 meta 字段，将中文菜单名映射为国际化key
                     name = converted_menu.get('name', '')
                     title_map = {
-                        '数据查询': 'dataQuery',
-                        '拆分匹配': 'splitMatch',
-                        '详单查询': 'detailQuery',
-                        '路径匹配': 'pathMatch',
-                        '系统管理': 'authorization',
-                        '用户管理': 'user',
-                        '角色管理': 'role',
-                        '菜单管理': 'menuManagement',
-                        '部门管理': 'department',
-                        '首页': 'dashboard',
-                        '工作台': 'workplace',
-                        '分析页': 'analysis',
-                        '同步管理': 'syncManage',
-                        '同步配置': 'syncConfig',
-                        '同步控制': 'syncControl',
-                        '系统工具': 'systemTools',
-                        '定时任务': 'scheduledTasks'
+                        '数据查询': 'router.dataQuery',
+                        '拆分匹配': 'router.splitMatch',
+                        '详单查询': 'router.detailQuery',
+                        '路径匹配': 'router.pathMatch',
+                        '系统管理': 'router.authorization',
+                        '用户管理': 'router.user',
+                        '角色管理': 'router.role',
+                        '菜单管理': 'router.menuManagement',
+                        '部门管理': 'router.department',
+                        '首页': 'router.dashboard',
+                        '工作台': 'router.workplace',
+                        '分析页': 'router.analysis',
+                        '同步管理': 'router.syncManage',
+                        '同步配置': 'router.syncConfig',
+                        '同步控制': 'router.syncControl',
+                        '系统工具': 'router.systemTools',
+                        '定时任务': 'router.scheduledTasks',
+                        '数据记录': 'router.dataRecords',
+                        '监控中心': 'router.monitorCenter',
+                        '特情记录': 'router.specialRecords',
+                        '事件记录': 'router.eventRecords',
+                        '排班功能': 'router.scheduling',
+                        '排班管理': 'router.scheduling',
+                        '排班日历': 'router.schedulingCalendar',
+                        '班组管理': 'router.schedulingGroups',
+                        '人员管理': 'router.schedulingStaff',
+                        '班次管理': 'router.schedulingShifts',
+                        '管理中心': 'router.manageCenter'
                     }
                     converted_menu['meta'] = {
                         'title': title_map.get(name, name),
                         'icon': converted_menu.get('icon', ''),
                         'hidden': not converted_menu.get('visible', 1),
-                        'alwaysShow': converted_menu.get('alwaysShow', False),
-                        'noCache': False,
+                        'alwaysShow': bool(converted_menu.get('always_show', 0)),
+                        'noCache': bool(converted_menu.get('no_cache', 0)),
                         'breadcrumb': True,
-                        'affix': False,
+                        'affix': bool(converted_menu.get('affix', 0)),
                         'noTagsView': False,
-                        'canTo': False,
+                        'canTo': bool(converted_menu.get('can_to', 1)),
                         'activeMenu': ''
                     }
                     # 添加 name 字段
@@ -1504,14 +1573,17 @@ async def get_menus(db = Depends(get_db)):
                     'title': converted_menu.get('name', ''),
                     'icon': converted_menu.get('icon', ''),
                     'hidden': not converted_menu.get('visible', 1),
-                    'alwaysShow': False,
-                    'noCache': False,
+                    'alwaysShow': bool(converted_menu.get('always_show', 0)),
+                    'noCache': bool(converted_menu.get('no_cache', 0)),
                     'breadcrumb': True,
-                    'affix': False,
+                    'affix': bool(converted_menu.get('affix', 0)),
                     'noTagsView': False,
-                    'canTo': False,
+                    'canTo': bool(converted_menu.get('can_to', 1)),
                     'activeMenu': ''
                 }
+                # 添加 type 字段
+                if 'type' in converted_menu:
+                    converted_menu['type'] = converted_menu['type']
                 converted_menus.append(converted_menu)
             
             # 返回扁平列表，菜单管理页面自己处理树形结构
@@ -1531,6 +1603,7 @@ def build_menu_tree(menus, parent_id=0):
             if children:
                 menu['children'] = children
             tree.append(menu)
+    tree.sort(key=lambda x: x.get('sort_order', 0))
     return tree
 
 @app.post("/api/menus/")
@@ -1548,12 +1621,17 @@ async def create_menu(menu_data: dict, db = Depends(get_db)):
             sort_order = menu_data.get('sortOrder', menu_data.get('sort_order', 0))
             status = menu_data.get('status', 1)
             visible = menu_data.get('visible', 1)
+            menu_type = menu_data.get('type', 1)
+            always_show = 1 if menu_data.get('meta', {}).get('alwaysShow', False) else 0
+            no_cache = 1 if menu_data.get('meta', {}).get('noCache', False) else 0
+            affix = 1 if menu_data.get('meta', {}).get('affix', False) else 0
+            can_to = 1 if menu_data.get('meta', {}).get('canTo', True) else 0
             
             # 插入新菜单
             cursor.execute(
-                """INSERT INTO menus (parent_id, name, icon, path, component, permission, sort_order, status, visible) 
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                (parent_id, name, icon, path, component, permission, sort_order, status, visible)
+                """INSERT INTO menus (parent_id, name, icon, path, component, permission, sort_order, status, visible, type, always_show, no_cache, affix, can_to) 
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (parent_id, name, icon, path, component, permission, sort_order, status, visible, menu_type, always_show, no_cache, affix, can_to)
             )
             db.commit()
             return {"code": 200, "message": "菜单创建成功"}
@@ -1583,12 +1661,17 @@ async def update_menu(menu_id: int, menu_data: dict, db = Depends(get_db)):
             sort_order = menu_data.get('sortOrder', menu_data.get('sort_order', 0))
             status = menu_data.get('status', 1)
             visible = menu_data.get('visible', 1)
+            menu_type = menu_data.get('type', 1)
+            always_show = 1 if menu_data.get('meta', {}).get('alwaysShow', False) else 0
+            no_cache = 1 if menu_data.get('meta', {}).get('noCache', False) else 0
+            affix = 1 if menu_data.get('meta', {}).get('affix', False) else 0
+            can_to = 1 if menu_data.get('meta', {}).get('canTo', True) else 0
             
             # 更新菜单信息
             cursor.execute(
                 """UPDATE menus SET parent_id=%s, name=%s, icon=%s, path=%s, component=%s, permission=%s, 
-                   sort_order=%s, status=%s, visible=%s WHERE id=%s""",
-                (parent_id, name, icon, path, component, permission, sort_order, status, visible, menu_id)
+                   sort_order=%s, status=%s, visible=%s, type=%s, always_show=%s, no_cache=%s, affix=%s, can_to=%s WHERE id=%s""",
+                (parent_id, name, icon, path, component, permission, sort_order, status, visible, menu_type, always_show, no_cache, affix, can_to, menu_id)
             )
             db.commit()
             return {"code": 200, "message": "菜单更新成功"}
@@ -2260,6 +2343,206 @@ async def query_detail_data(request: DetailQueryRequest):
         if conn:
             conn.close()
 
+@app.get("/api/split-match/verify-pass-id/")
+async def verify_pass_id(
+    pass_id: str = Query(..., description="通行标识ID或核查通行标识"),
+    verify_type: str = Query(..., description="核查类型：通行标识ID 或 核查通行标识"),
+    user_id: Optional[int] = Query(None, description="操作用户ID"),
+    username: Optional[str] = Query(None, description="操作用户名")
+):
+    """核查通行标识ID是否存在于DETAIL_QUERY表中
+    
+    返回：
+    - exists: 是否存在
+    - match_count: 匹配记录数
+    - records: 前3条匹配记录的关键信息
+    """
+    import time
+    from datetime import datetime
+    
+    query_start_time = time.time()
+    logger.info(f"========== 核查通行标识开始 ==========")
+    logger.info(f"核查ID: {pass_id}, 类型: {verify_type}, 用户: {username}")
+    
+    if not pass_id or not pass_id.strip():
+        return JSONResponse(status_code=400, content={"code": 400, "message": "通行标识ID不能为空"})
+    
+    pass_id = pass_id.strip()
+    
+    table_name = config.get('DETAIL_QUERY', 'table_name') if config.has_section('DETAIL_QUERY') and config.has_option('DETAIL_QUERY', 'table_name') else None
+    if not table_name:
+        return JSONResponse(status_code=400, content={"code": 400, "message": "请先在参数配置中设置详单查询数据表"})
+    
+    conn = None
+    try:
+        conn = create_db_connection("CHECK_DATA_DB", config)
+        if not conn:
+            logger.error("无法连接到数据库")
+            return JSONResponse(status_code=500, content={"code": 500, "message": "无法连接到数据库"})
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            count_sql = f"SELECT COUNT(*) as total FROM `{table_name}` WHERE `通行标识ID` = %s"
+            cursor.execute(count_sql, (pass_id,))
+            count_result = cursor.fetchone()
+            match_count = count_result['total'] if count_result else 0
+            
+            records = []
+            if match_count > 0:
+                select_sql = f"""
+                    SELECT 
+                        `通行标识ID`,
+                        `实际车辆车牌号码+颜色`,
+                        `收费入口名称`,
+                        `收费出口名称`,
+                        `计费交易起点时间`,
+                        `计费交易终点时间`,
+                        `收费车型`,
+                        `通行介质`,
+                        `计费方式`,
+                        `清分日`
+                    FROM `{table_name}` 
+                    WHERE `通行标识ID` = %s 
+                    LIMIT 3
+                """
+                cursor.execute(select_sql, (pass_id,))
+                records = cursor.fetchall()
+                
+                for record in records:
+                    for key, value in record.items():
+                        if hasattr(value, 'isoformat'):
+                            record[key] = value.isoformat()
+            
+            total_time = time.time() - query_start_time
+            logger.info(f"========== 核查完成 ==========")
+            logger.info(f"核查ID: {pass_id}, 匹配记录数: {match_count}, 耗时: {total_time:.3f}s")
+            
+            verify_result = {
+                "exists": match_count > 0,
+                "match_count": match_count,
+                "records": records,
+                "query_time": total_time
+            }
+            
+            try:
+                history_conn = create_db_connection("LOCAL_DB", config)
+                if history_conn:
+                    try:
+                        with history_conn.cursor() as history_cursor:
+                            insert_sql = """
+                                INSERT INTO verify_history 
+                                (pass_id, verify_type, table_name, match_count, verify_result, user_id, username, verify_time)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                            """
+                            history_cursor.execute(insert_sql, (
+                                pass_id,
+                                verify_type,
+                                table_name,
+                                match_count,
+                                json.dumps(verify_result, ensure_ascii=False),
+                                user_id,
+                                username,
+                                datetime.now()
+                            ))
+                            history_conn.commit()
+                            logger.info(f"核查历史记录已保存: {pass_id}")
+                    except Exception as e:
+                        logger.error(f"保存核查历史记录失败: {e}", exc_info=True)
+                    finally:
+                        history_conn.close()
+            except Exception as e:
+                logger.error(f"连接历史记录数据库失败: {e}", exc_info=True)
+            
+            return {
+                "code": 200,
+                "message": "success",
+                "data": verify_result
+            }
+    
+    except Exception as e:
+        total_time = time.time() - query_start_time
+        logger.error(f"核查失败！总耗时: {total_time:.3f}s, 错误: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "code": 500,
+                "message": f"核查失败: {str(e)}"
+            }
+        )
+    finally:
+        if conn:
+            conn.close()
+
+@app.get("/api/split-match/verify-history/")
+async def get_verify_history(
+    pass_id: Optional[str] = Query(None, description="通行标识ID"),
+    user_id: Optional[int] = Query(None, description="用户ID"),
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(20, description="每页条数")
+):
+    """获取核查历史记录"""
+    try:
+        conn = create_db_connection("LOCAL_DB", config)
+        if not conn:
+            return JSONResponse(status_code=500, content={"code": 500, "message": "无法连接到数据库"})
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            where_conditions = []
+            params = []
+            
+            if pass_id:
+                where_conditions.append("pass_id LIKE %s")
+                params.append(f"%{pass_id}%")
+            
+            if user_id:
+                where_conditions.append("user_id = %s")
+                params.append(user_id)
+            
+            where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+            
+            count_sql = f"SELECT COUNT(*) as total FROM verify_history WHERE {where_clause}"
+            cursor.execute(count_sql, params)
+            total = cursor.fetchone()['total']
+            
+            offset = (page - 1) * page_size
+            select_sql = f"""
+                SELECT 
+                    id, pass_id, verify_type, table_name, match_count, 
+                    verify_result, user_id, username, verify_time
+                FROM verify_history 
+                WHERE {where_clause}
+                ORDER BY verify_time DESC
+                LIMIT %s OFFSET %s
+            """
+            cursor.execute(select_sql, params + [page_size, offset])
+            records = cursor.fetchall()
+            
+            for record in records:
+                if record['verify_result']:
+                    try:
+                        record['verify_result'] = json.loads(record['verify_result'])
+                    except:
+                        pass
+                if record['verify_time']:
+                    record['verify_time'] = record['verify_time'].isoformat()
+            
+            return {
+                "code": 200,
+                "message": "success",
+                "data": {
+                    "list": records,
+                    "total": total,
+                    "page": page,
+                    "page_size": page_size
+                }
+            }
+    
+    except Exception as e:
+        logger.error(f"获取核查历史失败: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"code": 500, "message": f"获取核查历史失败: {str(e)}"})
+    finally:
+        if conn:
+            conn.close()
+
 class PathMatchRequest(BaseModel):
     timeRange: List[str]
     transactionTimeRange: List[str]
@@ -2638,6 +2921,8 @@ async def startup_event():
                 create_db_pool(db_type, config, max_connections=10)
             except Exception as e:
                 logger.warning(f"预初始化 {db_type} 连接池失败: {e}，将在首次使用时创建")
+        init_special_records_table()
+        init_cloud_portal_account_table()
         logger.info("应用启动完成，数据库连接池已初始化")
     except Exception as e:
         logger.error(f"应用启动时初始化连接池失败: {e}", exc_info=True)
@@ -2786,6 +3071,2380 @@ async def get_execution_history(task_name: str = None, limit: int = 20, user: di
     except Exception as e:
         logger.error(f"获取任务执行历史失败: {e}")
         return {"code": 500, "message": f"获取失败: {str(e)}", "data": []}
+
+@app.get("/api/stations/")
+async def get_stations(keyword: str = None, limit: int = 50):
+    """获取收费站列表（支持模糊搜索）"""
+    try:
+        conn = create_db_connection('YIN_WU_DB', config)
+        if not conn:
+            logger.error("无法连接到yin_wu数据库")
+            return {"code": 500, "message": "无法连接到yin_wu数据库", "data": []}
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            if keyword:
+                cursor.execute("""
+                    SELECT DISTINCT 收费站编码, 省份名称, 收费站名称
+                    FROM station_prov 
+                    WHERE 收费站编码 IS NOT NULL 
+                      AND (收费站编码 LIKE %s OR 省份名称 LIKE %s OR 收费站名称 LIKE %s)
+                    ORDER BY 省份名称
+                    LIMIT %s
+                """, (f'%{keyword}%', f'%{keyword}%', f'%{keyword}%', limit))
+            else:
+                cursor.execute("""
+                    SELECT DISTINCT 收费站编码, 省份名称, 收费站名称
+                    FROM station_prov 
+                    WHERE 收费站编码 IS NOT NULL 
+                    ORDER BY 省份名称
+                    LIMIT %s
+                """, (limit,))
+            
+            rows = cursor.fetchall()
+            
+            stations = []
+            for row in rows:
+                station_code = row['收费站编码']
+                station_name = row.get('收费站名称') or ''
+                province_name = row['省份名称'] or station_code
+                label_parts = [station_name, station_code, province_name]
+                label = ' - '.join([p for p in label_parts if p])
+                stations.append({
+                    "value": station_code,
+                    "label": label
+                })
+            
+            return {"code": 200, "message": "success", "data": stations}
+    except Exception as e:
+        logger.error(f"获取收费站列表失败: {e}")
+        return {"code": 500, "message": f"获取失败: {str(e)}", "data": []}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+class SpecialRecordCreate(BaseModel):
+    record_type: str
+    date: str
+    exit_station: str = None
+    entry_station: str = None
+    lane_number: str = None
+    transaction_time: str = None
+    license_plate: str = None
+    reason: str = None
+    remark: str = None
+
+class SpecialRecordUpdate(BaseModel):
+    record_type: str = None
+    date: str = None
+    exit_station: str = None
+    entry_station: str = None
+    lane_number: str = None
+    transaction_time: str = None
+    license_plate: str = None
+    reason: str = None
+    remark: str = None
+
+def init_special_records_table():
+    """初始化特情记录表"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            logger.error("无法连接到数据库创建特情记录表")
+            return False
+        
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS special_records (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    record_type VARCHAR(20) NOT NULL COMMENT '记录类型: u-car/unpaid-car/no-truck',
+                    date DATE NOT NULL COMMENT '日期',
+                    exit_station VARCHAR(100) COMMENT '收费出口',
+                    entry_station VARCHAR(100) COMMENT '收费入口',
+                    lane_number VARCHAR(20) COMMENT '车道号',
+                    transaction_time TIME COMMENT '交易时间',
+                    license_plate VARCHAR(20) COMMENT '车牌',
+                    reason VARCHAR(500) COMMENT '原因',
+                    remark VARCHAR(500) COMMENT '备注',
+                    created_by INT COMMENT '创建人ID',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                    INDEX idx_record_type (record_type),
+                    INDEX idx_date (date),
+                    INDEX idx_license_plate (license_plate)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='特情记录表'
+            """)
+            conn.commit()
+            logger.info("特情记录表初始化成功")
+            return True
+    except Exception as e:
+        logger.error(f"初始化特情记录表失败: {e}")
+        return False
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+def init_cloud_portal_account_table():
+    """初始化云门户账号绑定表"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            logger.error("无法连接到数据库创建云门户账号绑定表")
+            return False
+        
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS cloud_portal_accounts (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL COMMENT '用户ID',
+                    portal_username VARCHAR(100) NOT NULL COMMENT '云门户用户名',
+                    portal_password VARCHAR(255) NOT NULL COMMENT '云门户密码(加密存储)',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                    UNIQUE KEY uk_user_id (user_id),
+                    INDEX idx_portal_username (portal_username)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云门户账号绑定表'
+            """)
+            conn.commit()
+            logger.info("云门户账号绑定表初始化成功")
+            return True
+    except Exception as e:
+        logger.error(f"初始化云门户账号绑定表失败: {e}")
+        return False
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+class CloudPortalAccountCreate(BaseModel):
+    portal_username: str
+    portal_password: str
+
+class CloudPortalAccountUpdate(BaseModel):
+    portal_username: str = None
+    portal_password: str = None
+
+@app.get("/api/cloud-portal-account/")
+async def get_cloud_portal_account(user: dict = Depends(get_current_user)):
+    """获取当前用户的云门户账号绑定"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库", "data": None}
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("""
+                SELECT id, user_id, portal_username, created_at, updated_at
+                FROM cloud_portal_accounts
+                WHERE user_id = %s
+            """, (user['id'],))
+            account = cursor.fetchone()
+            
+            if account:
+                return {
+                    "code": 200,
+                    "message": "获取成功",
+                    "data": {
+                        "id": account['id'],
+                        "user_id": account['user_id'],
+                        "portal_username": account['portal_username'],
+                        "has_password": True,
+                        "created_at": account['created_at'].strftime('%Y-%m-%d %H:%M:%S') if account['created_at'] else None,
+                        "updated_at": account['updated_at'].strftime('%Y-%m-%d %H:%M:%S') if account['updated_at'] else None
+                    }
+                }
+            else:
+                return {"code": 200, "message": "未绑定云门户账号", "data": None}
+    except Exception as e:
+        logger.error(f"获取云门户账号绑定失败: {e}")
+        return {"code": 500, "message": f"获取失败: {str(e)}", "data": None}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.post("/api/cloud-portal-account/")
+async def create_or_update_cloud_portal_account(
+    request: CloudPortalAccountCreate,
+    user: dict = Depends(get_current_user)
+):
+    """创建或更新云门户账号绑定"""
+    try:
+        if not request.portal_username or not request.portal_password:
+            return {"code": 400, "message": "用户名和密码不能为空"}
+        
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        encrypted_password = encrypt_password(request.portal_password)
+        
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id FROM cloud_portal_accounts WHERE user_id = %s
+            """, (user['id'],))
+            existing = cursor.fetchone()
+            
+            if existing:
+                cursor.execute("""
+                    UPDATE cloud_portal_accounts
+                    SET portal_username = %s, portal_password = %s
+                    WHERE user_id = %s
+                """, (request.portal_username, encrypted_password, user['id']))
+            else:
+                cursor.execute("""
+                    INSERT INTO cloud_portal_accounts (user_id, portal_username, portal_password)
+                    VALUES (%s, %s, %s)
+                """, (user['id'], request.portal_username, encrypted_password))
+            
+            conn.commit()
+            return {"code": 200, "message": "绑定成功"}
+    except Exception as e:
+        logger.error(f"绑定云门户账号失败: {e}")
+        return {"code": 500, "message": f"绑定失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.delete("/api/cloud-portal-account/")
+async def delete_cloud_portal_account(user: dict = Depends(get_current_user)):
+    """删除云门户账号绑定"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                DELETE FROM cloud_portal_accounts WHERE user_id = %s
+            """, (user['id'],))
+            conn.commit()
+            return {"code": 200, "message": "解绑成功"}
+    except Exception as e:
+        logger.error(f"解绑云门户账号失败: {e}")
+        return {"code": 500, "message": f"解绑失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.get("/api/cloud-portal-account/credentials")
+async def get_cloud_portal_credentials(user: dict = Depends(get_current_user)):
+    """获取当前用户的云门户账号凭证（用于自动登录）"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库", "data": None}
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("""
+                SELECT portal_username, portal_password
+                FROM cloud_portal_accounts
+                WHERE user_id = %s
+            """, (user['id'],))
+            account = cursor.fetchone()
+            
+            if account:
+                decrypted_password = decrypt_password(account['portal_password'])
+                return {
+                    "code": 200,
+                    "message": "获取成功",
+                    "data": {
+                        "portal_username": account['portal_username'],
+                        "portal_password": decrypted_password
+                    }
+                }
+            else:
+                return {"code": 200, "message": "未绑定云门户账号", "data": None}
+    except Exception as e:
+        logger.error(f"获取云门户凭证失败: {e}")
+        return {"code": 500, "message": f"获取失败: {str(e)}", "data": None}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.get("/api/special-records/")
+async def get_special_records(
+    record_type: str = None,
+    date: str = None,
+    license_plate: str = None,
+    page: int = 1,
+    page_size: int = 10,
+    user: dict = Depends(require_permission('data-records:special-records:view'))
+):
+    """获取特情记录列表"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库", "data": []}
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            where_clauses = []
+            params = []
+            
+            if record_type:
+                where_clauses.append("sr.record_type = %s")
+                params.append(record_type)
+            if date:
+                where_clauses.append("sr.date = %s")
+                params.append(date)
+            if license_plate:
+                where_clauses.append("sr.license_plate LIKE %s")
+                params.append(f"%{license_plate}%")
+            
+            where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+            
+            count_sql = f"SELECT COUNT(*) as total FROM special_records sr WHERE {where_sql}"
+            cursor.execute(count_sql, params)
+            total = cursor.fetchone()['total']
+            
+            offset = (page - 1) * page_size
+            data_sql = f"""
+                SELECT sr.id, sr.record_type, sr.date, sr.exit_station, sr.entry_station, 
+                       sr.lane_number, sr.transaction_time, sr.license_plate, sr.reason, sr.remark,
+                       sr.created_at, sr.updated_at,
+                       es.收费站名称 as exit_station_name,
+                       ens.收费站名称 as entry_station_name
+                FROM special_records sr
+                LEFT JOIN yin_wu.station_prov es ON sr.exit_station = es.收费站编码
+                LEFT JOIN yin_wu.station_prov ens ON sr.entry_station = ens.收费站编码
+                WHERE {where_sql}
+                ORDER BY sr.created_at DESC
+                LIMIT %s OFFSET %s
+            """
+            cursor.execute(data_sql, params + [page_size, offset])
+            records = cursor.fetchall()
+            
+            for record in records:
+                if record['date']:
+                    record['date'] = record['date'].strftime('%Y-%m-%d')
+                if record['transaction_time']:
+                    if hasattr(record['transaction_time'], 'strftime'):
+                        record['transaction_time'] = record['transaction_time'].strftime('%H:%M:%S')
+                    else:
+                        total_seconds = int(record['transaction_time'].total_seconds())
+                        hours = total_seconds // 3600
+                        minutes = (total_seconds % 3600) // 60
+                        seconds = total_seconds % 60
+                        record['transaction_time'] = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                if record['created_at']:
+                    record['created_at'] = record['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+                if record['updated_at']:
+                    record['updated_at'] = record['updated_at'].strftime('%Y-%m-%d %H:%M:%S')
+                record['entry_station_display'] = record.get('entry_station_name') or record.get('entry_station', '')
+                record['exit_station_display'] = record.get('exit_station_name') or record.get('exit_station', '')
+            
+            return {
+                "code": 200,
+                "message": "success",
+                "data": {
+                    "list": records,
+                    "total": total,
+                    "page": page,
+                    "pageSize": page_size
+                }
+            }
+    except Exception as e:
+        logger.error(f"获取特情记录失败: {e}")
+        return {"code": 500, "message": f"获取失败: {str(e)}", "data": []}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.post("/api/special-records/")
+async def create_special_record(
+    record: SpecialRecordCreate,
+    user: dict = Depends(require_permission('data-records:special-records:create'))
+):
+    """创建特情记录"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO special_records 
+                (record_type, date, exit_station, entry_station, lane_number, 
+                 transaction_time, license_plate, reason, remark, created_by)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                record.record_type, record.date, record.exit_station, record.entry_station,
+                record.lane_number, record.transaction_time, record.license_plate,
+                record.reason, record.remark, user.get('id')
+            ))
+            conn.commit()
+            
+            return {"code": 200, "message": "添加成功", "data": {"id": cursor.lastrowid}}
+    except Exception as e:
+        logger.error(f"创建特情记录失败: {e}")
+        return {"code": 500, "message": f"添加失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.put("/api/special-records/{record_id}")
+async def update_special_record(
+    record_id: int,
+    record: SpecialRecordUpdate,
+    user: dict = Depends(require_permission('data-records:special-records:edit'))
+):
+    """更新特情记录"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            update_fields = []
+            params = []
+            
+            if record.record_type is not None:
+                update_fields.append("record_type = %s")
+                params.append(record.record_type)
+            if record.date is not None:
+                update_fields.append("date = %s")
+                params.append(record.date)
+            if record.exit_station is not None:
+                update_fields.append("exit_station = %s")
+                params.append(record.exit_station)
+            if record.entry_station is not None:
+                update_fields.append("entry_station = %s")
+                params.append(record.entry_station)
+            if record.lane_number is not None:
+                update_fields.append("lane_number = %s")
+                params.append(record.lane_number)
+            if record.transaction_time is not None:
+                update_fields.append("transaction_time = %s")
+                params.append(record.transaction_time)
+            if record.license_plate is not None:
+                update_fields.append("license_plate = %s")
+                params.append(record.license_plate)
+            if record.reason is not None:
+                update_fields.append("reason = %s")
+                params.append(record.reason)
+            if record.remark is not None:
+                update_fields.append("remark = %s")
+                params.append(record.remark)
+            
+            if not update_fields:
+                return {"code": 400, "message": "没有需要更新的字段"}
+            
+            params.append(record_id)
+            sql = f"UPDATE special_records SET {', '.join(update_fields)} WHERE id = %s"
+            cursor.execute(sql, params)
+            conn.commit()
+            
+            if cursor.rowcount == 0:
+                return {"code": 404, "message": "记录不存在"}
+            
+            return {"code": 200, "message": "更新成功"}
+    except Exception as e:
+        logger.error(f"更新特情记录失败: {e}")
+        return {"code": 500, "message": f"更新失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.delete("/api/special-records/{record_id}")
+async def delete_special_record(
+    record_id: int,
+    user: dict = Depends(require_permission('data-records:special-records:delete'))
+):
+    """删除特情记录"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM special_records WHERE id = %s", (record_id,))
+            conn.commit()
+            
+            if cursor.rowcount == 0:
+                return {"code": 404, "message": "记录不存在"}
+            
+            return {"code": 200, "message": "删除成功"}
+    except Exception as e:
+        logger.error(f"删除特情记录失败: {e}")
+        return {"code": 500, "message": f"删除失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+class BatchDeleteRequest(BaseModel):
+    ids: List[int]
+
+@app.post("/api/special-records/batch-delete")
+async def batch_delete_special_records(
+    request: BatchDeleteRequest,
+    user: dict = Depends(require_permission('data-records:special-records:delete'))
+):
+    """批量删除特情记录"""
+    try:
+        if not request.ids:
+            return {"code": 400, "message": "请选择要删除的记录"}
+        
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            placeholders = ','.join(['%s'] * len(request.ids))
+            cursor.execute(f"DELETE FROM special_records WHERE id IN ({placeholders})", request.ids)
+            conn.commit()
+            
+            return {"code": 200, "message": f"成功删除 {cursor.rowcount} 条记录"}
+    except Exception as e:
+        logger.error(f"批量删除特情记录失败: {e}")
+        return {"code": 500, "message": f"删除失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.get("/api/special-records/export/")
+async def export_special_records(
+    record_type: str = None,
+    user: dict = Depends(require_permission('data-records:special-records:view'))
+):
+    """导出特情记录"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            raise HTTPException(status_code=500, detail="无法连接到数据库")
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            where_clause = "WHERE sr.record_type = %s" if record_type else ""
+            params = [record_type] if record_type else []
+            
+            sql = f"""
+                SELECT sr.id, sr.record_type, sr.date, sr.exit_station, sr.entry_station, 
+                       sr.lane_number, sr.transaction_time, sr.license_plate, sr.reason, sr.remark,
+                       sr.created_at, sr.updated_at,
+                       es.收费站名称 as exit_station_name,
+                       ens.收费站名称 as entry_station_name
+                FROM special_records sr
+                LEFT JOIN yin_wu.station_prov es ON sr.exit_station = es.收费站编码
+                LEFT JOIN yin_wu.station_prov ens ON sr.entry_station = ens.收费站编码
+                {where_clause}
+                ORDER BY sr.created_at DESC
+            """
+            cursor.execute(sql, params)
+            records = cursor.fetchall()
+            
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "特情记录"
+            
+            headers = ["序号", "记录类型", "日期", "收费出口", "收费入口", "车道号", 
+                      "交易时间", "车牌", "原因", "备注", "创建时间", "更新时间"]
+            ws.append(headers)
+            
+            for idx, record in enumerate(records, 1):
+                exit_station_display = record.get('exit_station_name') or record.get('exit_station', '')
+                entry_station_display = record.get('entry_station_name') or record.get('entry_station', '')
+                row = [
+                    idx,
+                    record.get('record_type', ''),
+                    record['date'].strftime('%Y-%m-%d') if record.get('date') else '',
+                    exit_station_display,
+                    entry_station_display,
+                    record.get('lane_number', ''),
+                    format_time_value(record.get('transaction_time')),
+                    record.get('license_plate', ''),
+                    record.get('reason', ''),
+                    record.get('remark', ''),
+                    record['created_at'].strftime('%Y-%m-%d %H:%M:%S') if record.get('created_at') else '',
+                    record['updated_at'].strftime('%Y-%m-%d %H:%M:%S') if record.get('updated_at') else ''
+                ]
+                ws.append(row)
+            
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                ws.column_dimensions[column].width = adjusted_width
+            
+            output = BytesIO()
+            wb.save(output)
+            output.seek(0)
+            
+            filename = f"特情记录_{record_type or 'all'}_{__import__('datetime').datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+            
+            return StreamingResponse(
+                output,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f"attachment; filename*=UTF-8''{__import__('urllib').parse.quote(filename)}"}
+            )
+    except Exception as e:
+        logger.error(f"导出特情记录失败: {e}")
+        raise HTTPException(status_code=500, detail=f"导出失败: {str(e)}")
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+class ExportByIdsRequest(BaseModel):
+    ids: List[int]
+    record_type: str = None
+
+@app.post("/api/special-records/export/")
+async def export_special_records_by_ids(
+    request: ExportByIdsRequest,
+    user: dict = Depends(require_permission('data-records:special-records:view'))
+):
+    """批量导出选中的特情记录"""
+    try:
+        if not request.ids:
+            raise HTTPException(status_code=400, detail="请选择要导出的记录")
+        
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            raise HTTPException(status_code=500, detail="无法连接到数据库")
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            placeholders = ','.join(['%s'] * len(request.ids))
+            sql = f"""
+                SELECT sr.id, sr.record_type, sr.date, sr.exit_station, sr.entry_station, 
+                       sr.lane_number, sr.transaction_time, sr.license_plate, sr.reason, sr.remark,
+                       sr.created_at, sr.updated_at,
+                       es.收费站名称 as exit_station_name,
+                       ens.收费站名称 as entry_station_name
+                FROM special_records sr
+                LEFT JOIN yin_wu.station_prov es ON sr.exit_station = es.收费站编码
+                LEFT JOIN yin_wu.station_prov ens ON sr.entry_station = ens.收费站编码
+                WHERE sr.id IN ({placeholders})
+                ORDER BY sr.created_at DESC
+            """
+            cursor.execute(sql, request.ids)
+            records = cursor.fetchall()
+            
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "特情记录"
+            
+            headers = ["序号", "记录类型", "日期", "收费出口", "收费入口", "车道号", 
+                      "交易时间", "车牌", "原因", "备注", "创建时间", "更新时间"]
+            ws.append(headers)
+            
+            for idx, record in enumerate(records, 1):
+                exit_station_display = record.get('exit_station_name') or record.get('exit_station', '')
+                entry_station_display = record.get('entry_station_name') or record.get('entry_station', '')
+                row = [
+                    idx,
+                    record.get('record_type', ''),
+                    record['date'].strftime('%Y-%m-%d') if record.get('date') else '',
+                    exit_station_display,
+                    entry_station_display,
+                    record.get('lane_number', ''),
+                    format_time_value(record.get('transaction_time')),
+                    record.get('license_plate', ''),
+                    record.get('reason', ''),
+                    record.get('remark', ''),
+                    record['created_at'].strftime('%Y-%m-%d %H:%M:%S') if record.get('created_at') else '',
+                    record['updated_at'].strftime('%Y-%m-%d %H:%M:%S') if record.get('updated_at') else ''
+                ]
+                ws.append(row)
+            
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                ws.column_dimensions[column].width = adjusted_width
+            
+            output = BytesIO()
+            wb.save(output)
+            output.seek(0)
+            
+            filename = f"特情记录_选中{len(records)}条_{__import__('datetime').datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+            
+            return StreamingResponse(
+                output,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f"attachment; filename*=UTF-8''{__import__('urllib').parse.quote(filename)}"}
+            )
+    except Exception as e:
+        logger.error(f"批量导出特情记录失败: {e}")
+        raise HTTPException(status_code=500, detail=f"导出失败: {str(e)}")
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.post("/api/special-records/import/")
+async def import_special_records(
+    file: UploadFile = File(...),
+    record_type: str = Form(...),
+    user: dict = Depends(require_permission('data-records:special-records:create'))
+):
+    """导入特情记录"""
+    try:
+        if not file.filename.endswith(('.xlsx', '.xls')):
+            return {"code": 400, "message": "只支持Excel文件格式(.xlsx, .xls)"}
+        
+        content = await file.read()
+        wb = load_workbook(BytesIO(content))
+        ws = wb.active
+        
+        rows = list(ws.iter_rows(min_row=2, values_only=True))
+        
+        if not rows:
+            return {"code": 400, "message": "Excel文件中没有数据"}
+        
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        imported_count = 0
+        with conn.cursor() as cursor:
+            for row in rows:
+                if not row or not any(row):
+                    continue
+                
+                try:
+                    date_val = row[2] if len(row) > 2 else None
+                    if hasattr(date_val, 'strftime'):
+                        date_val = date_val.strftime('%Y-%m-%d')
+                    
+                    time_val = row[6] if len(row) > 6 else None
+                    if hasattr(time_val, 'strftime'):
+                        time_val = time_val.strftime('%H:%M:%S')
+                    
+                    cursor.execute("""
+                        INSERT INTO special_records 
+                        (record_type, date, exit_station, entry_station, lane_number, 
+                         transaction_time, license_plate, reason, remark, created_by)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        record_type,
+                        date_val,
+                        str(row[3]) if len(row) > 3 and row[3] else None,
+                        str(row[4]) if len(row) > 4 and row[4] else None,
+                        str(row[5]) if len(row) > 5 and row[5] else None,
+                        time_val,
+                        str(row[7]) if len(row) > 7 and row[7] else None,
+                        str(row[8]) if len(row) > 8 and row[8] else None,
+                        str(row[9]) if len(row) > 9 and row[9] else None,
+                        user.get('id')
+                    ))
+                    imported_count += 1
+                except Exception as e:
+                    logger.warning(f"导入行失败: {e}, 行数据: {row}")
+                    continue
+            
+            conn.commit()
+        
+        return {"code": 200, "message": "导入成功", "data": {"count": imported_count}}
+    except Exception as e:
+        logger.error(f"导入特情记录失败: {e}")
+        return {"code": 500, "message": f"导入失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+class SchedulingGroupCreate(BaseModel):
+    name: str
+    description: str = None
+
+class SchedulingGroupUpdate(BaseModel):
+    name: str = None
+    description: str = None
+
+class SchedulingShiftCreate(BaseModel):
+    name: str
+    start_time: str
+    end_time: str
+    description: str = None
+
+class SchedulingShiftUpdate(BaseModel):
+    name: str = None
+    start_time: str = None
+    end_time: str = None
+    description: str = None
+
+class SchedulingStaffCreate(BaseModel):
+    name: str
+    employee_id: str = None
+    group_id: int = None
+    phone: str = None
+
+class SchedulingStaffUpdate(BaseModel):
+    name: str = None
+    employee_id: str = None
+    group_id: int = None
+    phone: str = None
+    status: int = None
+
+class SchedulingRecordCreate(BaseModel):
+    staff_id: int = None
+    group_id: int
+    shift_id: int
+    schedule_date: str
+    remark: str = None
+
+class SchedulingRecordUpdate(BaseModel):
+    staff_id: int = None
+    group_id: int = None
+    shift_id: int = None
+    schedule_date: str = None
+    remark: str = None
+
+@app.get("/api/scheduling/groups/")
+async def get_scheduling_groups(
+    user: dict = Depends(require_permission('data-records:scheduling:view'))
+):
+    """获取班组列表"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库", "data": []}
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT * FROM scheduling_groups ORDER BY id")
+            groups = cursor.fetchall()
+            return {"code": 200, "message": "success", "data": groups}
+    except Exception as e:
+        logger.error(f"获取班组列表失败: {e}")
+        return {"code": 500, "message": f"获取失败: {str(e)}", "data": []}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.post("/api/scheduling/groups/")
+async def create_scheduling_group(
+    group: SchedulingGroupCreate,
+    user: dict = Depends(require_permission('data-records:scheduling:create'))
+):
+    """创建班组"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO scheduling_groups (name, description) VALUES (%s, %s)",
+                (group.name, group.description)
+            )
+            conn.commit()
+            return {"code": 200, "message": "创建成功", "data": {"id": cursor.lastrowid}}
+    except Exception as e:
+        logger.error(f"创建班组失败: {e}")
+        return {"code": 500, "message": f"创建失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.put("/api/scheduling/groups/{group_id}")
+async def update_scheduling_group(
+    group_id: int,
+    group: SchedulingGroupUpdate,
+    user: dict = Depends(require_permission('data-records:scheduling:edit'))
+):
+    """更新班组"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            update_fields = []
+            params = []
+            if group.name is not None:
+                update_fields.append("name = %s")
+                params.append(group.name)
+            if group.description is not None:
+                update_fields.append("description = %s")
+                params.append(group.description)
+            
+            if not update_fields:
+                return {"code": 400, "message": "没有需要更新的字段"}
+            
+            params.append(group_id)
+            sql = f"UPDATE scheduling_groups SET {', '.join(update_fields)} WHERE id = %s"
+            cursor.execute(sql, params)
+            conn.commit()
+            return {"code": 200, "message": "更新成功"}
+    except Exception as e:
+        logger.error(f"更新班组失败: {e}")
+        return {"code": 500, "message": f"更新失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.delete("/api/scheduling/groups/{group_id}")
+async def delete_scheduling_group(
+    group_id: int,
+    user: dict = Depends(require_permission('data-records:scheduling:delete'))
+):
+    """删除班组"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM scheduling_groups WHERE id = %s", (group_id,))
+            conn.commit()
+            return {"code": 200, "message": "删除成功"}
+    except Exception as e:
+        logger.error(f"删除班组失败: {e}")
+        return {"code": 500, "message": f"删除失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.get("/api/scheduling/groups/export/")
+async def export_scheduling_groups(
+    user: dict = Depends(require_permission('data-records:scheduling:view'))
+):
+    """导出班组数据"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            raise HTTPException(status_code=500, detail="无法连接到数据库")
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT name, description, created_at FROM scheduling_groups ORDER BY id")
+            records = cursor.fetchall()
+            
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "班组数据"
+            
+            headers = ["班组名称", "描述", "创建时间"]
+            ws.append(headers)
+            
+            for record in records:
+                row = [
+                    record.get('name', ''),
+                    record.get('description', ''),
+                    record['created_at'].strftime('%Y-%m-%d %H:%M:%S') if record.get('created_at') else ''
+                ]
+                ws.append(row)
+            
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                ws.column_dimensions[column].width = adjusted_width
+            
+            output = BytesIO()
+            wb.save(output)
+            output.seek(0)
+            
+            filename = f"班组数据_{__import__('datetime').datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+            
+            return StreamingResponse(
+                output,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f"attachment; filename*=UTF-8''{__import__('urllib').parse.quote(filename)}"}
+            )
+    except Exception as e:
+        logger.error(f"导出班组数据失败: {e}")
+        raise HTTPException(status_code=500, detail=f"导出失败: {str(e)}")
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.post("/api/scheduling/groups/import/")
+async def import_scheduling_groups(
+    file: UploadFile = File(...),
+    user: dict = Depends(require_permission('data-records:scheduling:create'))
+):
+    """导入班组数据"""
+    try:
+        if not file.filename.endswith(('.xlsx', '.xls')):
+            return {"code": 400, "message": "只支持Excel文件格式(.xlsx, .xls)"}
+        
+        content = await file.read()
+        wb = load_workbook(BytesIO(content))
+        ws = wb.active
+        
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        count = 0
+        with conn.cursor() as cursor:
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if not row[0]:
+                    continue
+                
+                name = str(row[0]).strip() if row[0] else ''
+                description = str(row[1]).strip() if row[1] else ''
+                
+                if not name:
+                    continue
+                
+                try:
+                    cursor.execute(
+                        "INSERT INTO scheduling_groups (name, description) VALUES (%s, %s)",
+                        (name, description)
+                    )
+                    count += 1
+                except Exception as e:
+                    logger.warning(f"导入班组跳过: {name}, 错误: {e}")
+                    continue
+            
+            conn.commit()
+        
+        return {"code": 200, "message": "导入成功", "data": {"count": count}}
+    except Exception as e:
+        logger.error(f"导入班组数据失败: {e}")
+        return {"code": 500, "message": f"导入失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.get("/api/scheduling/shifts/")
+async def get_scheduling_shifts(
+    user: dict = Depends(require_permission('data-records:scheduling:view'))
+):
+    """获取班次列表"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库", "data": []}
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT * FROM scheduling_shifts ORDER BY start_time")
+            shifts = cursor.fetchall()
+            for shift in shifts:
+                if shift['start_time']:
+                    shift['start_time'] = format_time_value(shift['start_time'])
+                if shift['end_time']:
+                    shift['end_time'] = format_time_value(shift['end_time'])
+            return {"code": 200, "message": "success", "data": shifts}
+    except Exception as e:
+        logger.error(f"获取班次列表失败: {e}")
+        return {"code": 500, "message": f"获取失败: {str(e)}", "data": []}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.post("/api/scheduling/shifts/")
+async def create_scheduling_shift(
+    shift: SchedulingShiftCreate,
+    user: dict = Depends(require_permission('data-records:scheduling:create'))
+):
+    """创建班次"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO scheduling_shifts (name, start_time, end_time, description) VALUES (%s, %s, %s, %s)",
+                (shift.name, shift.start_time, shift.end_time, shift.description)
+            )
+            conn.commit()
+            return {"code": 200, "message": "创建成功", "data": {"id": cursor.lastrowid}}
+    except Exception as e:
+        logger.error(f"创建班次失败: {e}")
+        return {"code": 500, "message": f"创建失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.put("/api/scheduling/shifts/{shift_id}")
+async def update_scheduling_shift(
+    shift_id: int,
+    shift: SchedulingShiftUpdate,
+    user: dict = Depends(require_permission('data-records:scheduling:edit'))
+):
+    """更新班次"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            update_fields = []
+            params = []
+            if shift.name is not None:
+                update_fields.append("name = %s")
+                params.append(shift.name)
+            if shift.start_time is not None:
+                update_fields.append("start_time = %s")
+                params.append(shift.start_time)
+            if shift.end_time is not None:
+                update_fields.append("end_time = %s")
+                params.append(shift.end_time)
+            if shift.description is not None:
+                update_fields.append("description = %s")
+                params.append(shift.description)
+            
+            if not update_fields:
+                return {"code": 400, "message": "没有需要更新的字段"}
+            
+            params.append(shift_id)
+            sql = f"UPDATE scheduling_shifts SET {', '.join(update_fields)} WHERE id = %s"
+            cursor.execute(sql, params)
+            conn.commit()
+            return {"code": 200, "message": "更新成功"}
+    except Exception as e:
+        logger.error(f"更新班次失败: {e}")
+        return {"code": 500, "message": f"更新失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.delete("/api/scheduling/shifts/{shift_id}")
+async def delete_scheduling_shift(
+    shift_id: int,
+    user: dict = Depends(require_permission('data-records:scheduling:delete'))
+):
+    """删除班次"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM scheduling_shifts WHERE id = %s", (shift_id,))
+            conn.commit()
+            return {"code": 200, "message": "删除成功"}
+    except Exception as e:
+        logger.error(f"删除班次失败: {e}")
+        return {"code": 500, "message": f"删除失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.get("/api/scheduling/shifts/export/")
+async def export_scheduling_shifts(
+    user: dict = Depends(require_permission('data-records:scheduling:view'))
+):
+    """导出班次数据"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            raise HTTPException(status_code=500, detail="无法连接到数据库")
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT name, start_time, end_time, description FROM scheduling_shifts ORDER BY start_time")
+            records = cursor.fetchall()
+            
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "班次数据"
+            
+            headers = ["班次名称", "开始时间", "结束时间", "描述"]
+            ws.append(headers)
+            
+            for record in records:
+                row = [
+                    record.get('name', ''),
+                    format_time_value(record.get('start_time')),
+                    format_time_value(record.get('end_time')),
+                    record.get('description', '')
+                ]
+                ws.append(row)
+            
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                ws.column_dimensions[column].width = adjusted_width
+            
+            output = BytesIO()
+            wb.save(output)
+            output.seek(0)
+            
+            filename = f"班次数据_{__import__('datetime').datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+            
+            return StreamingResponse(
+                output,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f"attachment; filename*=UTF-8''{__import__('urllib').parse.quote(filename)}"}
+            )
+    except Exception as e:
+        logger.error(f"导出班次数据失败: {e}")
+        raise HTTPException(status_code=500, detail=f"导出失败: {str(e)}")
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.post("/api/scheduling/shifts/import/")
+async def import_scheduling_shifts(
+    file: UploadFile = File(...),
+    user: dict = Depends(require_permission('data-records:scheduling:create'))
+):
+    """导入班次数据"""
+    try:
+        if not file.filename.endswith(('.xlsx', '.xls')):
+            return {"code": 400, "message": "只支持Excel文件格式(.xlsx, .xls)"}
+        
+        content = await file.read()
+        wb = load_workbook(BytesIO(content))
+        ws = wb.active
+        
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        count = 0
+        with conn.cursor() as cursor:
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if not row[0]:
+                    continue
+                
+                name = str(row[0]).strip() if row[0] else ''
+                start_time = str(row[1]).strip() if row[1] else ''
+                end_time = str(row[2]).strip() if row[2] else ''
+                description = str(row[3]).strip() if row[3] else ''
+                
+                if not name or not start_time or not end_time:
+                    continue
+                
+                try:
+                    cursor.execute(
+                        "INSERT INTO scheduling_shifts (name, start_time, end_time, description) VALUES (%s, %s, %s, %s)",
+                        (name, start_time, end_time, description)
+                    )
+                    count += 1
+                except Exception as e:
+                    logger.warning(f"导入班次跳过: {name}, 错误: {e}")
+                    continue
+            
+            conn.commit()
+        
+        return {"code": 200, "message": "导入成功", "data": {"count": count}}
+    except Exception as e:
+        logger.error(f"导入班次数据失败: {e}")
+        return {"code": 500, "message": f"导入失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.get("/api/scheduling/staff/")
+async def get_scheduling_staff(
+    group_id: int = None,
+    user: dict = Depends(require_permission('data-records:scheduling:view'))
+):
+    """获取人员列表"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库", "data": []}
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            if group_id:
+                cursor.execute(
+                    "SELECT s.*, g.name as group_name FROM scheduling_staff s LEFT JOIN scheduling_groups g ON s.group_id = g.id WHERE s.group_id = %s ORDER BY s.id",
+                    (group_id,)
+                )
+            else:
+                cursor.execute("SELECT s.*, g.name as group_name FROM scheduling_staff s LEFT JOIN scheduling_groups g ON s.group_id = g.id ORDER BY s.id")
+            staff = cursor.fetchall()
+            return {"code": 200, "message": "success", "data": staff}
+    except Exception as e:
+        logger.error(f"获取人员列表失败: {e}")
+        return {"code": 500, "message": f"获取失败: {str(e)}", "data": []}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.post("/api/scheduling/staff/")
+async def create_scheduling_staff(
+    staff: SchedulingStaffCreate,
+    user: dict = Depends(require_permission('data-records:scheduling:create'))
+):
+    """创建人员"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO scheduling_staff (name, group_id, phone) VALUES (%s, %s, %s)",
+                (staff.name, staff.group_id, staff.phone)
+            )
+            conn.commit()
+            return {"code": 200, "message": "创建成功", "data": {"id": cursor.lastrowid}}
+    except Exception as e:
+        logger.error(f"创建人员失败: {e}")
+        return {"code": 500, "message": f"创建失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.put("/api/scheduling/staff/{staff_id}")
+async def update_scheduling_staff(
+    staff_id: int,
+    staff: SchedulingStaffUpdate,
+    user: dict = Depends(require_permission('data-records:scheduling:edit'))
+):
+    """更新人员"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            update_fields = []
+            params = []
+            if staff.name is not None:
+                update_fields.append("name = %s")
+                params.append(staff.name)
+            if staff.group_id is not None:
+                update_fields.append("group_id = %s")
+                params.append(staff.group_id)
+            if staff.phone is not None:
+                update_fields.append("phone = %s")
+                params.append(staff.phone)
+            if staff.status is not None:
+                update_fields.append("status = %s")
+                params.append(staff.status)
+            
+            if not update_fields:
+                return {"code": 400, "message": "没有需要更新的字段"}
+            
+            params.append(staff_id)
+            sql = f"UPDATE scheduling_staff SET {', '.join(update_fields)} WHERE id = %s"
+            cursor.execute(sql, params)
+            conn.commit()
+            return {"code": 200, "message": "更新成功"}
+    except Exception as e:
+        logger.error(f"更新人员失败: {e}")
+        return {"code": 500, "message": f"更新失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.delete("/api/scheduling/staff/{staff_id}")
+async def delete_scheduling_staff(
+    staff_id: int,
+    user: dict = Depends(require_permission('data-records:scheduling:delete'))
+):
+    """删除人员"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM scheduling_staff WHERE id = %s", (staff_id,))
+            conn.commit()
+            return {"code": 200, "message": "删除成功"}
+    except Exception as e:
+        logger.error(f"删除人员失败: {e}")
+        return {"code": 500, "message": f"删除失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.get("/api/scheduling/staff/export/")
+async def export_scheduling_staff(
+    group_id: int = None,
+    user: dict = Depends(require_permission('data-records:scheduling:view'))
+):
+    """导出人员数据"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            raise HTTPException(status_code=500, detail="无法连接到数据库")
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            where_sql = "1=1"
+            params = []
+            if group_id:
+                where_sql = "staff.group_id = %s"
+                params.append(group_id)
+            
+            sql = f"""
+                SELECT staff.name, g.name as group_name, staff.phone, 
+                       CASE staff.status WHEN 1 THEN '在职' ELSE '离职' END as status_text
+                FROM scheduling_staff staff
+                LEFT JOIN scheduling_groups g ON staff.group_id = g.id
+                WHERE {where_sql}
+                ORDER BY staff.id
+            """
+            cursor.execute(sql, params)
+            records = cursor.fetchall()
+            
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "人员数据"
+            
+            headers = ["姓名", "所属班组", "联系电话", "状态"]
+            ws.append(headers)
+            
+            for record in records:
+                row = [
+                    record.get('name', ''),
+                    record.get('group_name', ''),
+                    record.get('phone', ''),
+                    record.get('status_text', '')
+                ]
+                ws.append(row)
+            
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                ws.column_dimensions[column].width = adjusted_width
+            
+            output = BytesIO()
+            wb.save(output)
+            output.seek(0)
+            
+            filename = f"人员数据_{__import__('datetime').datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+            
+            return StreamingResponse(
+                output,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f"attachment; filename*=UTF-8''{__import__('urllib').parse.quote(filename)}"}
+            )
+    except Exception as e:
+        logger.error(f"导出人员数据失败: {e}")
+        raise HTTPException(status_code=500, detail=f"导出失败: {str(e)}")
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.post("/api/scheduling/staff/import/")
+async def import_scheduling_staff(
+    file: UploadFile = File(...),
+    user: dict = Depends(require_permission('data-records:scheduling:create'))
+):
+    """导入人员数据"""
+    try:
+        if not file.filename.endswith(('.xlsx', '.xls')):
+            return {"code": 400, "message": "只支持Excel文件格式(.xlsx, .xls)"}
+        
+        content = await file.read()
+        wb = load_workbook(BytesIO(content))
+        ws = wb.active
+        
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        group_map = {}
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT id, name FROM scheduling_groups")
+            for row in cursor.fetchall():
+                group_map[row['name']] = row['id']
+        
+        count = 0
+        with conn.cursor() as cursor:
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if not row[0]:
+                    continue
+                
+                name = str(row[0]).strip() if row[0] else ''
+                group_name = str(row[1]).strip() if row[1] else ''
+                phone = str(row[2]).strip() if row[2] else ''
+                status_text = str(row[3]).strip() if row[3] else '在职'
+                
+                if not name:
+                    continue
+                
+                group_id = group_map.get(group_name, None)
+                status = 1 if status_text == '在职' else 0
+                
+                try:
+                    cursor.execute(
+                        "INSERT INTO scheduling_staff (name, group_id, phone, status) VALUES (%s, %s, %s, %s)",
+                        (name, group_id, phone, status)
+                    )
+                    count += 1
+                except Exception as e:
+                    logger.warning(f"导入人员跳过: {name}, 错误: {e}")
+                    continue
+            
+            conn.commit()
+        
+        return {"code": 200, "message": "导入成功", "data": {"count": count}}
+    except Exception as e:
+        logger.error(f"导入人员数据失败: {e}")
+        return {"code": 500, "message": f"导入失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.get("/api/scheduling/records/")
+async def get_scheduling_records(
+    year: int = None,
+    month: int = None,
+    group_id: int = None,
+    user: dict = Depends(require_permission('data-records:scheduling:view'))
+):
+    """获取排班记录"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库", "data": []}
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            where_clauses = []
+            params = []
+            
+            if year and month:
+                where_clauses.append("YEAR(sr.schedule_date) = %s AND MONTH(sr.schedule_date) = %s")
+                params.extend([year, month])
+            if group_id:
+                where_clauses.append("sr.group_id = %s")
+                params.append(group_id)
+            
+            where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+            
+            sql = f"""
+                SELECT sr.*, 
+                       s.name as staff_name, s.employee_id,
+                       g.name as group_name,
+                       sh.name as shift_name, sh.start_time, sh.end_time
+                FROM scheduling_records sr
+                LEFT JOIN scheduling_staff s ON sr.staff_id = s.id
+                LEFT JOIN scheduling_groups g ON sr.group_id = g.id
+                LEFT JOIN scheduling_shifts sh ON sr.shift_id = sh.id
+                WHERE {where_sql}
+                ORDER BY sr.schedule_date, sh.start_time
+            """
+            cursor.execute(sql, params)
+            records = cursor.fetchall()
+            
+            for record in records:
+                if record['schedule_date']:
+                    record['schedule_date'] = record['schedule_date'].strftime('%Y-%m-%d')
+                if record['start_time']:
+                    record['start_time'] = format_time_value(record['start_time'])
+                if record['end_time']:
+                    record['end_time'] = format_time_value(record['end_time'])
+            
+            return {"code": 200, "message": "success", "data": records}
+    except Exception as e:
+        logger.error(f"获取排班记录失败: {e}")
+        return {"code": 500, "message": f"获取失败: {str(e)}", "data": []}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.post("/api/scheduling/records/")
+async def create_scheduling_record(
+    record: SchedulingRecordCreate,
+    user: dict = Depends(require_permission('data-records:scheduling:create'))
+):
+    """创建排班记录"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            if record.staff_id:
+                cursor.execute(
+                    """INSERT INTO scheduling_records (staff_id, group_id, shift_id, schedule_date, remark) 
+                       VALUES (%s, %s, %s, %s, %s)
+                       ON DUPLICATE KEY UPDATE remark = VALUES(remark)""",
+                    (record.staff_id, record.group_id, record.shift_id, record.schedule_date, record.remark)
+                )
+                conn.commit()
+                return {"code": 200, "message": "创建成功", "data": {"id": cursor.lastrowid}}
+            else:
+                cursor.execute(
+                    "SELECT id FROM scheduling_staff WHERE group_id = %s AND status = 1",
+                    (record.group_id,)
+                )
+                staff_list = cursor.fetchall()
+                
+                if not staff_list:
+                    return {"code": 400, "message": "该班组没有在职人员"}
+                
+                inserted_count = 0
+                for staff in staff_list:
+                    try:
+                        cursor.execute(
+                            """INSERT INTO scheduling_records (staff_id, group_id, shift_id, schedule_date, remark) 
+                               VALUES (%s, %s, %s, %s, %s)
+                               ON DUPLICATE KEY UPDATE remark = VALUES(remark)""",
+                            (staff[0], record.group_id, record.shift_id, record.schedule_date, record.remark)
+                        )
+                        inserted_count += 1
+                    except Exception as e:
+                        logger.warning(f"为人员 {staff[0]} 创建排班记录失败: {e}")
+                        continue
+                
+                conn.commit()
+                return {"code": 200, "message": f"成功为班组所有成员创建排班记录，共 {inserted_count} 条", "data": {"count": inserted_count}}
+    except Exception as e:
+        logger.error(f"创建排班记录失败: {e}")
+        return {"code": 500, "message": f"创建失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.put("/api/scheduling/records/{record_id}")
+async def update_scheduling_record(
+    record_id: int,
+    record: SchedulingRecordUpdate,
+    user: dict = Depends(require_permission('data-records:scheduling:edit'))
+):
+    """更新排班记录"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            update_fields = []
+            params = []
+            if record.staff_id is not None:
+                update_fields.append("staff_id = %s")
+                params.append(record.staff_id)
+            if record.group_id is not None:
+                update_fields.append("group_id = %s")
+                params.append(record.group_id)
+            if record.shift_id is not None:
+                update_fields.append("shift_id = %s")
+                params.append(record.shift_id)
+            if record.schedule_date is not None:
+                update_fields.append("schedule_date = %s")
+                params.append(record.schedule_date)
+            if record.remark is not None:
+                update_fields.append("remark = %s")
+                params.append(record.remark)
+            
+            if not update_fields:
+                return {"code": 400, "message": "没有需要更新的字段"}
+            
+            params.append(record_id)
+            sql = f"UPDATE scheduling_records SET {', '.join(update_fields)} WHERE id = %s"
+            cursor.execute(sql, params)
+            conn.commit()
+            return {"code": 200, "message": "更新成功"}
+    except Exception as e:
+        logger.error(f"更新排班记录失败: {e}")
+        return {"code": 500, "message": f"更新失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.delete("/api/scheduling/records/{record_id}")
+async def delete_scheduling_record(
+    record_id: int,
+    user: dict = Depends(require_permission('data-records:scheduling:delete'))
+):
+    """删除排班记录"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM scheduling_records WHERE id = %s", (record_id,))
+            conn.commit()
+            return {"code": 200, "message": "删除成功"}
+    except Exception as e:
+        logger.error(f"删除排班记录失败: {e}")
+        return {"code": 500, "message": f"删除失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.delete("/api/scheduling/records/")
+async def delete_scheduling_records_by_date(
+    year: int,
+    month: int,
+    group_id: int = None,
+    user: dict = Depends(require_permission('data-records:scheduling:delete'))
+):
+    """删除指定月份的排班记录"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor() as cursor:
+            if group_id:
+                cursor.execute(
+                    "DELETE FROM scheduling_records WHERE YEAR(schedule_date) = %s AND MONTH(schedule_date) = %s AND group_id = %s",
+                    (year, month, group_id)
+                )
+            else:
+                cursor.execute(
+                    "DELETE FROM scheduling_records WHERE YEAR(schedule_date) = %s AND MONTH(schedule_date) = %s",
+                    (year, month)
+                )
+            conn.commit()
+            return {"code": 200, "message": f"成功删除 {cursor.rowcount} 条记录"}
+    except Exception as e:
+        logger.error(f"删除排班记录失败: {e}")
+        return {"code": 500, "message": f"删除失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.get("/api/scheduling/export/")
+async def export_scheduling_records(
+    year: int,
+    month: int,
+    group_id: int = None,
+    user: dict = Depends(require_permission('data-records:scheduling:view'))
+):
+    """导出排班记录"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            raise HTTPException(status_code=500, detail="无法连接到数据库")
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            where_clauses = ["YEAR(sr.schedule_date) = %s", "MONTH(sr.schedule_date) = %s"]
+            params = [year, month]
+            
+            if group_id:
+                where_clauses.append("sr.group_id = %s")
+                params.append(group_id)
+            
+            where_sql = " AND ".join(where_clauses)
+            
+            sql = f"""
+                SELECT sr.schedule_date, s.name as staff_name, 
+                       g.name as group_name, sh.name as shift_name, 
+                       sh.start_time, sh.end_time, sr.remark
+                FROM scheduling_records sr
+                LEFT JOIN scheduling_staff s ON sr.staff_id = s.id
+                LEFT JOIN scheduling_groups g ON sr.group_id = g.id
+                LEFT JOIN scheduling_shifts sh ON sr.shift_id = sh.id
+                WHERE {where_sql}
+                ORDER BY sr.schedule_date, sh.start_time, s.name
+            """
+            cursor.execute(sql, params)
+            records = cursor.fetchall()
+            
+            wb = Workbook()
+            ws = wb.active
+            ws.title = f"{year}年{month}月排班"
+            
+            headers = ["日期", "姓名", "班组", "班次", "开始时间", "结束时间", "备注"]
+            ws.append(headers)
+            
+            for record in records:
+                row = [
+                    record['schedule_date'].strftime('%Y-%m-%d') if record.get('schedule_date') else '',
+                    record.get('staff_name', ''),
+                    record.get('group_name', ''),
+                    record.get('shift_name', ''),
+                    format_time_value(record.get('start_time')),
+                    format_time_value(record.get('end_time')),
+                    record.get('remark', '')
+                ]
+                ws.append(row)
+            
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                ws.column_dimensions[column].width = adjusted_width
+            
+            output = BytesIO()
+            wb.save(output)
+            output.seek(0)
+            
+            filename = f"排班表_{year}年{month}月_{__import__('datetime').datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+            
+            return StreamingResponse(
+                output,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f"attachment; filename*=UTF-8''{__import__('urllib').parse.quote(filename)}"}
+            )
+    except Exception as e:
+        logger.error(f"导出排班记录失败: {e}")
+        raise HTTPException(status_code=500, detail=f"导出失败: {str(e)}")
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.post("/api/scheduling/import/")
+async def import_scheduling_records(
+    file: UploadFile = File(...),
+    user: dict = Depends(require_permission('data-records:scheduling:create'))
+):
+    """导入排班记录"""
+    try:
+        if not file.filename.endswith(('.xlsx', '.xls')):
+            return {"code": 400, "message": "只支持Excel文件格式(.xlsx, .xls)"}
+        
+        content = await file.read()
+        wb = load_workbook(BytesIO(content))
+        ws = wb.active
+        
+        rows = list(ws.iter_rows(min_row=2, values_only=True))
+        
+        if not rows:
+            return {"code": 400, "message": "Excel文件中没有数据"}
+        
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT id, name FROM scheduling_groups")
+            groups = {g['name']: g['id'] for g in cursor.fetchall()}
+            
+            cursor.execute("SELECT id, name FROM scheduling_shifts")
+            shifts = {s['name']: s['id'] for s in cursor.fetchall()}
+            
+            cursor.execute("SELECT id, name FROM scheduling_staff")
+            staff_list = cursor.fetchall()
+            staff_by_name = {s['name']: s['id'] for s in staff_list}
+        
+        imported_count = 0
+        with conn.cursor() as cursor:
+            for row in rows:
+                if not row or not any(row):
+                    continue
+                
+                try:
+                    date_val = row[0] if len(row) > 0 else None
+                    if hasattr(date_val, 'strftime'):
+                        date_val = date_val.strftime('%Y-%m-%d')
+                    elif isinstance(date_val, str):
+                        pass
+                    else:
+                        continue
+                    
+                    staff_name = str(row[1]) if len(row) > 1 and row[1] else None
+                    group_name = str(row[2]) if len(row) > 2 and row[2] else None
+                    shift_name = str(row[3]) if len(row) > 3 and row[3] else None
+                    remark = str(row[6]) if len(row) > 6 and row[6] else None
+                    
+                    staff_id = staff_by_name.get(staff_name)
+                    group_id = groups.get(group_name)
+                    shift_id = shifts.get(shift_name)
+                    
+                    if not staff_id or not group_id or not shift_id:
+                        continue
+                    
+                    cursor.execute(
+                        """INSERT INTO scheduling_records (staff_id, group_id, shift_id, schedule_date, remark) 
+                           VALUES (%s, %s, %s, %s, %s)
+                           ON DUPLICATE KEY UPDATE remark = VALUES(remark)""",
+                        (staff_id, group_id, shift_id, date_val, remark)
+                    )
+                    imported_count += 1
+                except Exception as e:
+                    logger.warning(f"导入行失败: {e}, 行数据: {row}")
+                    continue
+            
+            conn.commit()
+        
+        return {"code": 200, "message": "导入成功", "data": {"count": imported_count}}
+    except Exception as e:
+        logger.error(f"导入排班记录失败: {e}")
+        return {"code": 500, "message": f"导入失败: {str(e)}"}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+GUI_SERVICE_URL = "http://172.32.48.239:9000"
+
+class CloudPortalLoginRequest(BaseModel):
+    session_id: str
+    username: str
+    password: str
+    captcha: str
+    uuid: str
+
+class CloudPortalQueryRequest(BaseModel):
+    session_id: str
+    query_params: dict
+
+class CloudPortalLogoutRequest(BaseModel):
+    session_id: str
+
+@app.get("/api/cloud-portal/captcha")
+async def get_cloud_portal_captcha(session_id: Optional[str] = None):
+    try:
+        params = {}
+        if session_id:
+            params['session_id'] = session_id
+        
+        response = requests.get(
+            f"{GUI_SERVICE_URL}/api/portal/captcha",
+            params=params,
+            timeout=10
+        )
+        
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"获取验证码失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"获取验证码失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/login")
+async def cloud_portal_login(request: CloudPortalLoginRequest):
+    try:
+        response = requests.post(
+            f"{GUI_SERVICE_URL}/api/portal/login",
+            json={
+                'session_id': request.session_id,
+                'username': request.username,
+                'password': request.password,
+                'captcha': request.captcha,
+                'uuid': request.uuid
+            },
+            timeout=15
+        )
+        
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"登录失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"登录失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/query")
+async def cloud_portal_query(request: CloudPortalQueryRequest):
+    try:
+        response = requests.post(
+            f"{GUI_SERVICE_URL}/api/portal/query",
+            json={
+                'session_id': request.session_id,
+                'query_params': request.query_params
+            },
+            timeout=30
+        )
+        
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"查询失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"查询失败: {str(e)}"}
+        )
+
+@app.get("/api/cloud-portal/status")
+async def cloud_portal_status(session_id: str):
+    try:
+        response = requests.get(
+            f"{GUI_SERVICE_URL}/api/portal/status",
+            params={'session_id': session_id},
+            timeout=10
+        )
+        
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"获取状态失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"获取状态失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/logout")
+async def cloud_portal_logout(request: CloudPortalLogoutRequest):
+    try:
+        response = requests.post(
+            f"{GUI_SERVICE_URL}/api/portal/logout",
+            json={'session_id': request.session_id},
+            timeout=10
+        )
+        
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"登出失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"登出失败: {str(e)}"}
+        )
+
+@app.get("/api/cloud-portal/health")
+async def cloud_portal_health():
+    try:
+        response = requests.get(
+            f"{GUI_SERVICE_URL}/api/portal/health",
+            timeout=5
+        )
+        
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "云门户查询服务未启动", "data": {"status": "offline"}}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "云门户查询服务响应超时", "data": {"status": "timeout"}}
+        )
+    except Exception as e:
+        logger.error(f"健康检查失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"健康检查失败: {str(e)}", "data": {"status": "error"}}
+        )
+
+class AIAuditBatchQueryRequest(BaseModel):
+    session_id: str
+    plate_number: str
+    entry_time: str
+    gate_time: str
+    pass_id: Optional[str] = None
+
+class AIAuditQueryRequest(BaseModel):
+    session_id: str
+    plate_number: Optional[str] = None
+    query_value: Optional[str] = None
+    vehicle_or_pass_id: Optional[str] = None
+    start_time: str
+    end_time: str
+    trade_type: Optional[int] = 1
+
+class AIAuditSelectImagesRequest(BaseModel):
+    images: List[dict]
+    gantry_ids: List[str]
+
+class SaveImagesRequest(BaseModel):
+    table_name: str
+    record_id: str
+    image1_base64: Optional[str] = None
+    image2_base64: Optional[str] = None
+
+@app.post("/api/cloud-portal/ai-audit/vehicle-images")
+async def ai_audit_vehicle_images(request: AIAuditQueryRequest):
+    try:
+        response = requests.post(
+            f"{GUI_SERVICE_URL}/api/portal/ai-audit/vehicle-images",
+            json={
+                'session_id': request.session_id,
+                'plate_number': request.plate_number,
+                'start_time': request.start_time,
+                'end_time': request.end_time
+            },
+            timeout=60
+        )
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"车辆图库查询失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"查询失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/ai-audit/gantry-trade")
+async def ai_audit_gantry_trade(request: AIAuditQueryRequest):
+    try:
+        response = requests.post(
+            f"{GUI_SERVICE_URL}/api/portal/ai-audit/gantry-trade",
+            json={
+                'session_id': request.session_id,
+                'query_value': request.query_value,
+                'start_time': request.start_time,
+                'end_time': request.end_time
+            },
+            timeout=60
+        )
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"门架交易查询失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"查询失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/ai-audit/gantry-plate")
+async def ai_audit_gantry_plate(request: AIAuditQueryRequest):
+    try:
+        response = requests.post(
+            f"{GUI_SERVICE_URL}/api/portal/ai-audit/gantry-plate",
+            json={
+                'session_id': request.session_id,
+                'plate_number': request.plate_number,
+                'start_time': request.start_time,
+                'end_time': request.end_time
+            },
+            timeout=60
+        )
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"门架牌识查询失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"查询失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/ai-audit/exit-trade")
+async def ai_audit_exit_trade(request: AIAuditQueryRequest):
+    try:
+        response = requests.post(
+            f"{GUI_SERVICE_URL}/api/portal/ai-audit/exit-trade",
+            json={
+                'session_id': request.session_id,
+                'query_value': request.query_value,
+                'start_time': request.start_time,
+                'end_time': request.end_time,
+                'trade_type': request.trade_type
+            },
+            timeout=60
+        )
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"出口交易查询失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"查询失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/ai-audit/suspected-car")
+async def ai_audit_suspected_car(request: AIAuditQueryRequest):
+    try:
+        response = requests.post(
+            f"{GUI_SERVICE_URL}/api/portal/ai-audit/suspected-car",
+            json={
+                'session_id': request.session_id,
+                'vehicle_or_pass_id': request.vehicle_or_pass_id,
+                'start_time': request.start_time,
+                'end_time': request.end_time
+            },
+            timeout=60
+        )
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"疑难车牌追查失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"查询失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/ai-audit/batch-query")
+async def ai_audit_batch_query(request: AIAuditBatchQueryRequest):
+    try:
+        response = requests.post(
+            f"{GUI_SERVICE_URL}/api/portal/ai-audit/batch-query",
+            json={
+                'session_id': request.session_id,
+                'plate_number': request.plate_number,
+                'entry_time': request.entry_time,
+                'gate_time': request.gate_time,
+                'pass_id': request.pass_id
+            },
+            timeout=120
+        )
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"批量查询失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"查询失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/ai-audit/select-images")
+async def ai_audit_select_images(request: AIAuditSelectImagesRequest):
+    try:
+        response = requests.post(
+            f"{GUI_SERVICE_URL}/api/portal/ai-audit/select-images",
+            json={
+                'images': request.images,
+                'gantry_ids': request.gantry_ids
+            },
+            timeout=30
+        )
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"图片选取失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"图片选取失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/ai-audit/save-images")
+async def ai_audit_save_images(request: SaveImagesRequest):
+    try:
+        conn = create_db_connection('CHECK_DATA_DB', config)
+        cursor = conn.cursor()
+        
+        update_fields = []
+        params = []
+        
+        if request.image1_base64:
+            update_fields.append("`查核资料1` = %s")
+            params.append(request.image1_base64)
+        
+        if request.image2_base64:
+            update_fields.append("`查核资料2` = %s")
+            params.append(request.image2_base64)
+        
+        if not update_fields:
+            return {"code": 400, "message": "没有需要保存的图片"}
+        
+        params.append(request.record_id)
+        
+        sql = f"UPDATE `{request.table_name}` SET {', '.join(update_fields)} WHERE `通行标识ID` = %s"
+        cursor.execute(sql, params)
+        conn.commit()
+        
+        affected_rows = cursor.rowcount
+        cursor.close()
+        conn.close()
+        
+        return {
+            "code": 200,
+            "message": f"成功保存 {affected_rows} 条记录",
+            "data": {"affected_rows": affected_rows}
+        }
+    except Exception as e:
+        logger.error(f"保存图片失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"保存图片失败: {str(e)}"}
+        )
 
 @app.on_event("shutdown")
 async def shutdown_event():

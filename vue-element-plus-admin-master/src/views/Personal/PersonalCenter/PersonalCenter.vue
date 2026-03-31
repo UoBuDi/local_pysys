@@ -7,6 +7,7 @@ import UploadAvatar from './components/UploadAvatar.vue'
 import { Dialog } from '@/components/Dialog'
 import EditInfo from './components/EditInfo.vue'
 import EditPassword from './components/EditPassword.vue'
+import CloudPortalAccount from './components/CloudPortalAccount.vue'
 
 const userInfo = ref()
 const fetchDetailUserApi = async () => {
@@ -103,6 +104,9 @@ const saveAvatar = async () => {
         </ElTabPane>
         <ElTabPane label="修改密码" name="second">
           <EditPassword />
+        </ElTabPane>
+        <ElTabPane label="云门户账号" name="third">
+          <CloudPortalAccount />
         </ElTabPane>
       </ElTabs>
     </ContentWrap>

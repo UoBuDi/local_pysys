@@ -102,20 +102,31 @@ export const generateRoutesByServer = (routes: AppCustomRouteRecordRaw[]): AppRo
       redirect: route.redirect,
       meta: {
         title: (route as any).name || route.meta?.title || '',
-        icon: (route as any).icon || route.meta?.icon || ''
+        icon: (route as any).icon || route.meta?.icon || '',
+        hidden: route.meta?.hidden ?? false,
+        alwaysShow: route.meta?.alwaysShow ?? false,
+        noCache: route.meta?.noCache ?? false,
+        breadcrumb: route.meta?.breadcrumb ?? true,
+        affix: route.meta?.affix ?? false,
+        noTagsView: route.meta?.noTagsView ?? false,
+        canTo: route.meta?.canTo ?? true,
+        activeMenu: route.meta?.activeMenu || ''
       }
     }
     if (route.component) {
       const component = route.component as string
       const comModule = modules[`../views/${component}.vue`] || modules[`../views/${component}.tsx`]
 
-      if (!comModule && !component.includes('#')) {
+      if (!comModule && !component.includes('#') && component !== 'ParentLayout') {
         console.error(`未找到${component}.vue文件或${component}.tsx文件，请创建`)
         console.log('可用的模块路径:', Object.keys(modules).slice(0, 10))
       } else {
-        // 动态加载路由文件，可根据实际情况进行自定义逻辑
         data.component =
-          component === '#' ? Layout : component.includes('##') ? getParentLayout() : comModule
+          component === '#'
+            ? Layout
+            : component.includes('##') || component === 'ParentLayout'
+              ? getParentLayout()
+              : comModule
       }
     }
     // recursive child routes

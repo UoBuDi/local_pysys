@@ -609,7 +609,13 @@ class SplitMatchService:
                 conn.close()
     
     def update_table_data(self, table_name, row_id, data):
-        """更新表数据"""
+        """更新表数据
+        
+        Args:
+            table_name: 表名
+            row_id: 行标识（通行标识ID）
+            data: 要更新的数据字典
+        """
         conn = None
         try:
             conn = self._get_db_connection()
@@ -625,7 +631,7 @@ class SplitMatchService:
             
             params.append(row_id)
             
-            update_sql = f"UPDATE `{table_name}` SET {','.join(set_clauses)} WHERE `id` = %s"
+            update_sql = f"UPDATE `{table_name}` SET {','.join(set_clauses)} WHERE `通行标识ID` = %s"
             
             with conn.cursor() as cursor:
                 cursor.execute(update_sql, params)

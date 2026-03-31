@@ -331,6 +331,16 @@
                   >
                     复制
                   </el-button>
+                  <el-button
+                    type="success"
+                    :icon="Search"
+                    @click="handleVerifyPassId(String(editedRow[key]), '核查通行标识')"
+                    size="default"
+                    :loading="verifyLoading"
+                    :disabled="!editedRow[key]"
+                  >
+                    核查
+                  </el-button>
                 </div>
               </template>
               <!-- 复核情况字段（下拉选择） -->
@@ -380,9 +390,9 @@
                 >
                   <!-- 图片已在上方预览区域显示 -->
                 </div>
-                <!-- 通行标识ID、车牌号码、车牌字段添加复制功能 -->
+                <!-- 通行标识ID字段（特殊处理：复制+核查） -->
                 <div
-                  v-else-if="['通行标识ID', '车牌号码', '车牌'].includes(key)"
+                  v-else-if="key === '通行标识ID'"
                   style="
                     display: flex;
                     align-items: center;
@@ -400,6 +410,46 @@
                     size="small"
                   >
                     复制
+                  </el-button>
+                  <el-button
+                    type="success"
+                    :icon="Search"
+                    @click="handleVerifyPassId(String(value), '通行标识ID')"
+                    size="small"
+                    :loading="verifyLoading"
+                    :disabled="!value"
+                  >
+                    核查
+                  </el-button>
+                </div>
+                <!-- 车牌号码、车牌字段添加复制和人工核查功能 -->
+                <div
+                  v-else-if="['车牌号码', '车牌'].includes(key)"
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    word-break: break-all;
+                    overflow-wrap: break-word;
+                    max-width: 400px;
+                  "
+                >
+                  <span style="flex: 1">{{ value || '-' }}</span>
+                  <el-button
+                    type="primary"
+                    :icon="CopyDocument"
+                    @click="handleCopy(String(value))"
+                    size="small"
+                  >
+                    复制
+                  </el-button>
+                  <el-button
+                    type="warning"
+                    :icon="Search"
+                    @click="handleOpenCloudPortal"
+                    size="small"
+                  >
+                    人工核查
                   </el-button>
                 </div>
                 <!-- 非图片字段正常显示 -->
@@ -982,6 +1032,289 @@
         </div>
       </el-card>
     </el-card>
+
+    <!-- 云门户人工核查对话框 -->
+    <el-dialog
+      v-model="cloudPortalDialogVisible"
+      title="云门户人工核查"
+      width="1000px"
+      destroy-on-close
+    >
+      <el-form :model="cloudPortalForm" label-width="120px">
+        <el-divider content-position="left">查询参数</el-divider>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; background: #f5f7fa; border-radius: 4px; margin-bottom: 15px">
+          <div style="display: flex; align-items: center; gap: 5px">
+            <span style="color: #606266; font-size: 13px">通行标识ID:</span>
+            <span style="font-weight: 500; font-size: 13px">{{ cloudPortalForm.passId || '-' }}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 5px">
+            <span style="color: #606266; font-size: 13px">车牌号码:</span>
+            <span style="font-weight: 500; font-size: 13px">{{ cloudPortalForm.plateNumber || '-' }}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 5px">
+            <span style="color: #606266; font-size: 13px">门架通行时间:</span>
+            <span style="font-weight: 500; font-size: 13px">{{ cloudPortalForm.gateTime || '-' }}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 5px">
+            <span style="color: #606266; font-size: 13px">入口时间:</span>
+            <span style="font-weight: 500; font-size: 13px">{{ cloudPortalForm.entryTime || '-' }}</span>
+          </div>
+        </div>
+
+        <el-divider content-position="left">云门户登录</el-divider>
+
+        <!-- 未登录状态 -->
+        <div v-if="!cloudPortalLoggedIn">
+          <el-alert v-if="!cloudPortalForm.username" type="error" :closable="false" style="margin-bottom: 15px">
+            未绑定云门户账号，请先在个人中心绑定云门户账号
+          </el-alert>
+          <el-alert v-else type="info" :closable="false" style="margin-bottom: 15px">
+            已自动填充绑定的云门户账号: {{ cloudPortalForm.username }}，请输入验证码登录
+          </el-alert>
+
+          <el-form-item label="验证码">
+            <div style="display: flex; gap: 10px; align-items: center">
+              <img
+                v-if="captchaImage"
+                :src="'data:image/jpeg;base64,' + captchaImage"
+                style="height: 40px; cursor: pointer; border: 1px solid #dcdfe6; border-radius: 4px"
+                @click="refreshCaptcha"
+                title="点击刷新验证码"
+              />
+              <el-button @click="refreshCaptcha" :loading="captchaLoading" size="small">
+                {{ captchaImage ? '刷新验证码' : '获取验证码' }}
+              </el-button>
+            </div>
+          </el-form-item>
+
+          <el-form-item label="验证码">
+            <el-input v-model="cloudPortalForm.captcha" placeholder="请输入验证码" />
+          </el-form-item>
+
+          <el-form-item>
+            <el-button 
+              type="primary" 
+              @click="handleCloudPortalLogin" 
+              :loading="loginLoading"
+              :disabled="!cloudPortalForm.username"
+            >
+              登录
+            </el-button>
+          </el-form-item>
+        </div>
+
+        <!-- 已登录状态 -->
+        <div v-else>
+          <el-alert type="success" :closable="false" style="margin-bottom: 15px">
+            已登录用户: {{ cloudPortalUserInfo?.real_name || cloudPortalForm.username }}
+          </el-alert>
+
+          <el-form-item>
+            <el-button type="primary" @click="executeAIAuditBatchQuery" :loading="aiAuditLoading">
+              AI稽核批量查询
+            </el-button>
+            <el-button @click="handleCloudPortalLogout">退出登录</el-button>
+          </el-form-item>
+        </div>
+
+        <!-- AI稽核查询结果 -->
+        <div v-if="aiAuditResult" style="max-height: 500px; overflow-y: auto">
+          <el-divider content-position="left">AI稽核查询结果</el-divider>
+          
+          <el-tabs v-model="aiAuditActiveTab">
+            <el-tab-pane label="车辆图库" name="vehicle_images">
+              <div v-if="aiAuditResult.vehicle_images?.success">
+                <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center">
+                  <span>共 {{ vehicleImagesTotal }} 张图片</span>
+                  <div style="display: flex; gap: 10px; align-items: center">
+                    <span style="font-size: 12px">排序：</span>
+                    <el-radio-group v-model="vehicleImagesSort" size="small" @change="handleVehicleImagesSortChange">
+                      <el-radio-button value="picTime DESC">时间降序</el-radio-button>
+                      <el-radio-button value="picTime ASC">时间升序</el-radio-button>
+                    </el-radio-group>
+                  </div>
+                </div>
+                <div v-loading="vehicleImagesLoading" style="display: flex; flex-wrap: wrap; gap: 10px; max-height: 300px; overflow-y: auto">
+                  <div
+                    v-for="(img, idx) in aiAuditResult.vehicle_images.images"
+                    :key="idx"
+                    :style="isStationMatched(img.stationId) ? 'width: 200px; border: 2px solid #409EFF; border-radius: 4px; padding: 5px; background: #ecf5ff' : 'width: 200px; border: 1px solid #ddd; border-radius: 4px; padding: 5px'"
+                  >
+                    <el-image
+                      :src="getImageSrc(img.bigPositivePic)"
+                      style="width: 100%; height: 120px"
+                      fit="contain"
+                      :preview-src-list="previewImageList"
+                      @click="handleImagePreview(img)"
+                    />
+                    <div style="font-size: 12px; margin-top: 5px">
+                      <div :style="isStationMatched(img.stationId) ? 'font-weight: bold; color: #409EFF' : ''">{{ img.stationName }}</div>
+                      <div>{{ img.picTime }}</div>
+                      <div style="margin-top: 5px">
+                        <el-button size="small" :loading="originalImageLoading === `image1-${img.picturePath}`" @click="selectImageForCheck(img, 'image1')">选为资料1</el-button>
+                        <el-button size="small" :loading="originalImageLoading === `image2-${img.picturePath}`" @click="selectImageForCheck(img, 'image2')">选为资料2</el-button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div v-if="vehicleImagesTotal > vehicleImagesPageSize" style="margin-top: 15px; display: flex; justify-content: center">
+                  <el-pagination
+                    :current-page="vehicleImagesPage + 1"
+                    :page-size="vehicleImagesPageSize"
+                    :total="vehicleImagesTotal"
+                    layout="prev, pager, next"
+                    @current-change="handleVehicleImagesPageChange"
+                  />
+                </div>
+              </div>
+              <el-alert v-else type="error" :closable="false">
+                {{ aiAuditResult.vehicle_images?.error || '查询失败' }}
+              </el-alert>
+            </el-tab-pane>
+
+            <el-tab-pane label="门架交易" name="gantry_trade">
+              <div v-if="aiAuditResult.gantry_trade?.success">
+                <div style="margin-bottom: 10px">共 {{ aiAuditResult.gantry_trade.total }} 条记录</div>
+                <el-table :data="aiAuditResult.gantry_trade.records" border max-height="250" size="small" stripe>
+                  <el-table-column prop="transTime" label="交易时间" width="160" show-overflow-tooltip />
+                  <el-table-column prop="gantryName" label="门架名称" show-overflow-tooltip />
+                  <el-table-column prop="vehiclePlate" label="车牌" width="100" />
+                  <el-table-column prop="feeVehicleTypeName" label="车型" width="80" />
+                  <el-table-column prop="fee" label="费用(元)" width="80">
+                    <template #default="{ row }">{{ formatFee(row.fee) }}</template>
+                  </el-table-column>
+                </el-table>
+              </div>
+              <el-alert v-else type="error" :closable="false">
+                {{ aiAuditResult.gantry_trade?.error || '查询失败' }}
+              </el-alert>
+            </el-tab-pane>
+
+            <el-tab-pane label="门架牌识" name="gantry_plate">
+              <div v-if="aiAuditResult.gantry_plate?.success">
+                <div style="margin-bottom: 10px">共 {{ aiAuditResult.gantry_plate.total }} 条记录</div>
+                <el-table :data="aiAuditResult.gantry_plate.records" border max-height="250" size="small" stripe>
+                  <el-table-column prop="picTime" label="识别时间" width="160" show-overflow-tooltip />
+                  <el-table-column prop="gantryName" label="门架名称" show-overflow-tooltip />
+                  <el-table-column prop="vehiclePlate" label="车牌" width="100" />
+                  <el-table-column prop="vehicleTypeName" label="车型" width="80" />
+                  <el-table-column prop="vehicleSpeed" label="速度(km/h)" width="90" />
+                </el-table>
+              </div>
+              <el-alert v-else type="error" :closable="false">
+                {{ aiAuditResult.gantry_plate?.error || '查询失败' }}
+              </el-alert>
+            </el-tab-pane>
+
+            <el-tab-pane label="出口交易(ETC)" name="exit_trade_etc">
+              <div v-if="aiAuditResult.exit_trade_etc?.success">
+                <div style="margin-bottom: 10px">共 {{ aiAuditResult.exit_trade_etc.total }} 条记录</div>
+                <el-table :data="aiAuditResult.exit_trade_etc.records" border max-height="250" size="small" stripe>
+                  <el-table-column prop="extime" label="出口时间" width="160" show-overflow-tooltip />
+                  <el-table-column prop="extollstationname" label="出口站" show-overflow-tooltip />
+                  <el-table-column prop="entime" label="入口时间" width="160" show-overflow-tooltip />
+                  <el-table-column prop="entollstationname" label="入口站" show-overflow-tooltip />
+                  <el-table-column prop="plateNumber" label="车牌" width="100" />
+                  <el-table-column prop="fee" label="费用(元)" width="80">
+                    <template #default="{ row }">{{ formatFee(row.fee) }}</template>
+                  </el-table-column>
+                </el-table>
+              </div>
+              <el-alert v-else type="error" :closable="false">
+                {{ aiAuditResult.exit_trade_etc?.error || '查询失败' }}
+              </el-alert>
+            </el-tab-pane>
+
+            <el-tab-pane label="出口交易(其它)" name="exit_trade_other">
+              <div v-if="aiAuditResult.exit_trade_other?.success">
+                <div style="margin-bottom: 10px">共 {{ aiAuditResult.exit_trade_other.total }} 条记录</div>
+                <el-table :data="aiAuditResult.exit_trade_other.records" border max-height="250" size="small" stripe>
+                  <el-table-column prop="extime" label="出口时间" width="160" show-overflow-tooltip />
+                  <el-table-column prop="extollstationname" label="出口站" show-overflow-tooltip />
+                  <el-table-column prop="entime" label="入口时间" width="160" show-overflow-tooltip />
+                  <el-table-column prop="entollstationname" label="入口站" show-overflow-tooltip />
+                  <el-table-column prop="plateNumber" label="车牌" width="100" />
+                  <el-table-column prop="fee" label="费用(元)" width="80">
+                    <template #default="{ row }">{{ formatFee(row.fee) }}</template>
+                  </el-table-column>
+                </el-table>
+              </div>
+              <el-alert v-else type="error" :closable="false">
+                {{ aiAuditResult.exit_trade_other?.error || '查询失败' }}
+              </el-alert>
+            </el-tab-pane>
+
+            <el-tab-pane label="疑难车牌追查" name="suspected_car">
+              <div v-if="aiAuditResult.suspected_car?.success" style="max-height: 300px; overflow-y: auto">
+                <div v-for="(item, idx) in aiAuditResult.suspected_car.trade_list" :key="idx" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ebeef5; border-radius: 4px">
+                  <el-descriptions :column="3" border size="small">
+                    <el-descriptions-item label="车牌">{{ item.vehiclePlate }}</el-descriptions-item>
+                    <el-descriptions-item label="匹配率">
+                      <el-tag :type="item.rate >= 0.8 ? 'success' : item.rate >= 0.5 ? 'warning' : 'info'">
+                        {{ (item.rate * 100).toFixed(1) }}%
+                      </el-tag>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="行程ID">{{ item.passId }}</el-descriptions-item>
+                  </el-descriptions>
+                  <el-table v-if="item.list && item.list.length > 0" :data="item.list" border size="small" style="margin-top: 10px" max-height="150">
+                    <el-table-column prop="matchingVehiclePlate" label="匹配车牌" width="100" />
+                    <el-table-column prop="matchingGantryName" label="门架名称" show-overflow-tooltip />
+                    <el-table-column prop="matchingTransTime" label="匹配时间" width="160" show-overflow-tooltip />
+                  </el-table>
+                </div>
+              </div>
+              <el-alert v-else type="error" :closable="false">
+                {{ aiAuditResult.suspected_car?.error || '查询失败' }}
+              </el-alert>
+            </el-tab-pane>
+          </el-tabs>
+
+          <!-- 图片保存区域 -->
+          <el-divider content-position="left">图片保存</el-divider>
+          <div style="display: flex; gap: 20px; align-items: flex-start">
+            <div style="flex: 1">
+              <div style="font-weight: bold; margin-bottom: 10px">查核资料1</div>
+              <el-image
+                v-if="aiAuditSelectedImage1"
+                :src="getImageSrc(aiAuditSelectedImage1)"
+                style="max-width: 200px; max-height: 150px"
+                fit="contain"
+              />
+              <div v-else style="color: #999; border: 1px dashed #ddd; padding: 20px; text-align: center">
+                未选择图片
+              </div>
+            </div>
+            <div style="flex: 1">
+              <div style="font-weight: bold; margin-bottom: 10px">查核资料2</div>
+              <el-image
+                v-if="aiAuditSelectedImage2"
+                :src="getImageSrc(aiAuditSelectedImage2)"
+                style="max-width: 200px; max-height: 150px"
+                fit="contain"
+              />
+              <div v-else style="color: #999; border: 1px dashed #ddd; padding: 20px; text-align: center">
+                未选择图片
+              </div>
+            </div>
+          </div>
+          <div style="margin-top: 15px">
+            <el-button type="primary" @click="saveImagesToDatabase" :loading="aiAuditSavingImages" :disabled="!aiAuditSelectedImage1 && !aiAuditSelectedImage2">
+              保存图片到数据库
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 查询结果 -->
+        <div v-if="cloudPortalQueryResult && cloudPortalQueryResult.length > 0">
+          <el-divider content-position="left">查询结果</el-divider>
+          <el-table :data="cloudPortalQueryResult" border max-height="300">
+            <el-table-column prop="field" label="字段" width="150" />
+            <el-table-column prop="value" label="值" />
+          </el-table>
+        </div>
+      </el-form>
+    </el-dialog>
   </div>
 </template>
 
@@ -992,6 +1325,7 @@ import JSZip from 'jszip'
 import { XMLParser } from 'fast-xml-parser'
 import {
   ElMessage,
+  ElNotification,
   ElCard,
   ElForm,
   ElFormItem,
@@ -1009,15 +1343,29 @@ import {
   ElUpload,
   ElImage,
   ElRadio,
-  ElTag
+  ElTag,
+  ElDivider,
+  ElTabs,
+  ElTabPane
 } from 'element-plus'
-import { CopyDocument, Picture, Loading } from '@element-plus/icons-vue'
+import { CopyDocument, Picture, Search } from '@element-plus/icons-vue'
 import {
   getSplitMatchTables,
   getSplitMatchData,
   executeSplitMatch,
   getExportSplitMatchData,
-  previewSplitMatch
+  previewSplitMatch,
+  verifyPassId,
+  getCloudPortalCaptcha,
+  cloudPortalLogin,
+  getCloudPortalStatus,
+  cloudPortalLogout,
+  aiAuditBatchQuery,
+  aiAuditSaveImages,
+  aiAuditOriginalImage,
+  type AIAuditVehicleImage,
+  type AIAuditBatchQueryResult,
+  getCloudPortalCredentials
 } from '@/api/split-match'
 import { useUserStore } from '@/store/modules/user'
 
@@ -1590,6 +1938,480 @@ const handleCheckIdInput = (value: string) => {
 
   // 更新值
   editedRow.value['核查通行标识'] = sanitizedValue
+}
+
+const verifyLoading = ref(false)
+
+const cloudPortalDialogVisible = ref(false)
+const cloudPortalLoggedIn = ref(false)
+const cloudPortalSessionId = ref('')
+const captchaImage = ref('')
+const captchaUuid = ref('')
+const captchaLoading = ref(false)
+const loginLoading = ref(false)
+const cloudPortalUserInfo = ref<any>(null)
+const cloudPortalQueryResult = ref<any[]>([])
+
+const cloudPortalForm = ref({
+  passId: '',
+  plateNumber: '',
+  gateTime: '',
+  entryTime: '',
+  username: '',
+  password: '',
+  captcha: ''
+})
+
+const aiAuditLoading = ref(false)
+const aiAuditResult = ref<AIAuditBatchQueryResult | null>(null)
+const aiAuditActiveTab = ref('vehicle_images')
+const aiAuditSelectedImage1 = ref<string>('')
+const aiAuditSelectedImage2 = ref<string>('')
+const aiAuditSavingImages = ref(false)
+const originalImageCache = new Map<string, string>()
+const originalImageLoading = ref<string>('')
+
+const vehicleImagesPage = ref(0)
+const vehicleImagesPageSize = ref(20)
+const vehicleImagesSort = ref('picTime DESC')
+const vehicleImagesTotal = ref(0)
+const vehicleImagesLoading = ref(false)
+
+const isStationMatched = (stationId: string): boolean => {
+  if (!editedRow.value || !stationId) return false
+  
+  const gantryCombination = String(editedRow.value['通行门架组合'] || '')
+  if (!gantryCombination) return false
+  
+  const gantryIds = gantryCombination.split('|').map(id => id.trim()).filter(id => id)
+  
+  for (const gantryId of gantryIds) {
+    if (stationId.startsWith(gantryId.substring(0, 16))) {
+      return true
+    }
+  }
+  
+  return false
+}
+
+const handleOpenCloudPortal = async () => {
+  if (!editedRow.value) return
+
+  cloudPortalForm.value.passId = String(editedRow.value['通行标识ID'] || '')
+  cloudPortalForm.value.plateNumber = String(editedRow.value['车牌号码'] || editedRow.value['车牌'] || '')
+  cloudPortalForm.value.gateTime = String(editedRow.value['门架通行时间'] || '')
+  cloudPortalForm.value.entryTime = String(editedRow.value['入口时间'] || '')
+
+  cloudPortalDialogVisible.value = true
+
+  await loadCloudPortalCredentials()
+  checkCloudPortalLoginStatus()
+}
+
+const loadCloudPortalCredentials = async () => {
+  try {
+    const response = await getCloudPortalCredentials()
+    if (response && response.code === 200 && response.data) {
+      const credentials = response.data as any
+      cloudPortalForm.value.username = credentials.portal_username || ''
+      cloudPortalForm.value.password = credentials.portal_password || ''
+    }
+  } catch (error) {
+    console.error('获取云门户凭证失败:', error)
+  }
+}
+
+const checkCloudPortalLoginStatus = async () => {
+  if (!cloudPortalSessionId.value) {
+    cloudPortalLoggedIn.value = false
+    return
+  }
+
+  try {
+    const response = await getCloudPortalStatus(cloudPortalSessionId.value)
+    if (response && response.code === 200 && (response.data as any)?.logged_in) {
+      cloudPortalLoggedIn.value = true
+      cloudPortalUserInfo.value = (response.data as any).user_info
+    } else {
+      cloudPortalLoggedIn.value = false
+    }
+  } catch (error) {
+    cloudPortalLoggedIn.value = false
+  }
+}
+
+const refreshCaptcha = async () => {
+  captchaLoading.value = true
+  try {
+    const response = await getCloudPortalCaptcha(cloudPortalSessionId.value || undefined)
+    if (response && response.code === 200) {
+      captchaImage.value = (response.data as any).img
+      captchaUuid.value = (response.data as any).uuid
+      cloudPortalSessionId.value = (response.data as any).session_id
+    } else {
+      ElMessage.error(response?.message || '获取验证码失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '获取验证码失败')
+  } finally {
+    captchaLoading.value = false
+  }
+}
+
+const handleCloudPortalLogin = async () => {
+  if (!cloudPortalForm.value.username || !cloudPortalForm.value.password || !cloudPortalForm.value.captcha) {
+    ElMessage.warning('请填写完整的登录信息')
+    return
+  }
+
+  loginLoading.value = true
+  try {
+    const response = await cloudPortalLogin({
+      session_id: cloudPortalSessionId.value,
+      username: cloudPortalForm.value.username,
+      password: cloudPortalForm.value.password,
+      captcha: cloudPortalForm.value.captcha,
+      uuid: captchaUuid.value
+    })
+
+    if (response && response.code === 200) {
+      ElMessage.success('登录成功')
+      cloudPortalLoggedIn.value = true
+      cloudPortalUserInfo.value = (response.data as any)?.user_info
+    } else {
+      ElMessage.error(response?.message || '登录失败')
+      refreshCaptcha()
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '登录失败')
+    refreshCaptcha()
+  } finally {
+    loginLoading.value = false
+  }
+}
+
+const handleCloudPortalLogout = async () => {
+  try {
+    await cloudPortalLogout(cloudPortalSessionId.value)
+    cloudPortalLoggedIn.value = false
+    cloudPortalSessionId.value = ''
+    cloudPortalUserInfo.value = null
+    cloudPortalQueryResult.value = []
+    aiAuditResult.value = null
+    ElMessage.success('已退出登录')
+  } catch (error) {
+    console.error('退出登录失败:', error)
+  }
+}
+
+const executeAIAuditBatchQuery = async () => {
+  if (!cloudPortalForm.value.plateNumber || !cloudPortalForm.value.entryTime || !cloudPortalForm.value.gateTime) {
+    ElMessage.warning('缺少必要的查询参数')
+    return
+  }
+
+  aiAuditLoading.value = true
+  aiAuditResult.value = null
+  
+  try {
+    const response = await aiAuditBatchQuery({
+      session_id: cloudPortalSessionId.value,
+      plate_number: cloudPortalForm.value.plateNumber,
+      entry_time: cloudPortalForm.value.entryTime,
+      gate_time: cloudPortalForm.value.gateTime,
+      pass_id: cloudPortalForm.value.passId || undefined
+    })
+
+    if (response && response.code === 200) {
+      aiAuditResult.value = response.data as any
+      if ((response.data as any)?.time_range) {
+        vehicleImagesTotal.value = (response.data as any).vehicle_images?.total || 0
+      }
+      if ((response.data as any)?.errors && (response.data as any).errors.length > 0) {
+        ElMessage.warning(`部分查询失败: ${(response.data as any).errors.join('; ')}`)
+      } else {
+        ElMessage.success('AI稽核查询完成')
+      }
+    } else {
+      ElMessage.error(response?.message || 'AI稽核查询失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || 'AI稽核查询失败')
+  } finally {
+    aiAuditLoading.value = false
+  }
+}
+
+const loadVehicleImagesPage = async () => {
+  if (!cloudPortalSessionId.value || !cloudPortalForm.value.plateNumber || !aiAuditResult.value?.time_range) {
+    return
+  }
+
+  vehicleImagesLoading.value = true
+  
+  try {
+    const response = await fetch('http://172.32.48.239:9000/api/portal/ai-audit/vehicle-images', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        session_id: cloudPortalSessionId.value,
+        plate_number: cloudPortalForm.value.plateNumber.split('_')[0],
+        start_time: aiAuditResult.value.time_range.start_time,
+        end_time: aiAuditResult.value.time_range.end_time,
+        page: vehicleImagesPage.value,
+        page_size: vehicleImagesPageSize.value,
+        sort: vehicleImagesSort.value
+      })
+    })
+
+    const data = await response.json()
+    
+    if (data.code === 200 && data.data?.success) {
+      if (aiAuditResult.value) {
+        aiAuditResult.value.vehicle_images = data.data
+        vehicleImagesTotal.value = data.data.total || 0
+      }
+    } else {
+      ElMessage.error(data.message || '加载车辆图库失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '加载车辆图库失败')
+  } finally {
+    vehicleImagesLoading.value = false
+  }
+}
+
+const handleVehicleImagesPageChange = (page: number) => {
+  vehicleImagesPage.value = page - 1
+  loadVehicleImagesPage()
+}
+
+const handleVehicleImagesSortChange = (sort: string) => {
+  vehicleImagesSort.value = sort
+  vehicleImagesPage.value = 0
+  loadVehicleImagesPage()
+}
+
+const selectImageForCheck = async (image: AIAuditVehicleImage, target: 'image1' | 'image2') => {
+  if (!image.picturePath) {
+    if (target === 'image1') {
+      aiAuditSelectedImage1.value = image.bigPositivePic
+    } else {
+      aiAuditSelectedImage2.value = image.bigPositivePic
+    }
+    ElMessage.success(`已选择压缩图片作为查核资料${target === 'image1' ? '1' : '2'}`)
+    return
+  }
+
+  const loadingKey = `${target}-${image.picturePath}`
+  if (originalImageLoading.value === loadingKey) {
+    return
+  }
+
+  originalImageLoading.value = loadingKey
+  try {
+    const cachedImage = originalImageCache.get(image.picturePath)
+    let originalImage: string
+
+    if (cachedImage) {
+      originalImage = cachedImage
+    } else {
+      const sessionId = localStorage.getItem('cloudPortalSessionId')
+      if (!sessionId) {
+        ElMessage.warning('请先登录云门户')
+        return
+      }
+
+      const response = await aiAuditOriginalImage({
+        session_id: sessionId,
+        picture_path: image.picturePath
+      })
+
+      if (response && response.code === 200 && response.data?.image) {
+        originalImage = response.data.image
+        originalImageCache.set(image.picturePath, originalImage)
+      } else {
+        ElMessage.warning('获取原图失败，使用压缩图片')
+        if (target === 'image1') {
+          aiAuditSelectedImage1.value = image.bigPositivePic
+        } else {
+          aiAuditSelectedImage2.value = image.bigPositivePic
+        }
+        return
+      }
+    }
+
+    if (target === 'image1') {
+      aiAuditSelectedImage1.value = originalImage
+    } else {
+      aiAuditSelectedImage2.value = originalImage
+    }
+    ElMessage.success(`已选择高清原图作为查核资料${target === 'image1' ? '1' : '2'}`)
+  } catch (error: any) {
+    ElMessage.warning('获取原图失败，使用压缩图片')
+    if (target === 'image1') {
+      aiAuditSelectedImage1.value = image.bigPositivePic
+    } else {
+      aiAuditSelectedImage2.value = image.bigPositivePic
+    }
+  } finally {
+    originalImageLoading.value = ''
+  }
+}
+
+const getPreviewImages = async (image: AIAuditVehicleImage): Promise<string[]> => {
+  if (!image.picturePath) {
+    return [getImageSrc(image.bigPositivePic)]
+  }
+
+  const cachedImage = originalImageCache.get(image.picturePath)
+  if (cachedImage) {
+    return [getImageSrc(cachedImage)]
+  }
+
+  const sessionId = localStorage.getItem('cloudPortalSessionId')
+  if (!sessionId) {
+    return [getImageSrc(image.bigPositivePic)]
+  }
+
+  try {
+    const response = await aiAuditOriginalImage({
+      session_id: sessionId,
+      picture_path: image.picturePath
+    })
+
+    if (response && response.code === 200 && response.data?.image) {
+      originalImageCache.set(image.picturePath, response.data.image)
+      return [getImageSrc(response.data.image)]
+    }
+  } catch (error) {
+    console.error('获取原图失败:', error)
+  }
+
+  return [getImageSrc(image.bigPositivePic)]
+}
+
+const previewImageList = ref<string[]>([])
+const handleImagePreview = async (image: AIAuditVehicleImage) => {
+  previewImageList.value = [getImageSrc(image.bigPositivePic)]
+  const images = await getPreviewImages(image)
+  previewImageList.value = images
+}
+
+const getImageSrc = (base64Data: string | undefined): string => {
+  if (!base64Data) return ''
+  if (base64Data.startsWith('data:image')) {
+    return base64Data
+  }
+  return 'data:image/jpeg;base64,' + base64Data
+}
+
+const saveImagesToDatabase = async () => {
+  if (!aiAuditSelectedImage1.value && !aiAuditSelectedImage2.value) {
+    ElMessage.warning('请先选择要保存的图片')
+    return
+  }
+
+  if (!selectedTable.value || !cloudPortalForm.value.passId) {
+    ElMessage.warning('缺少表名或记录ID')
+    return
+  }
+
+  aiAuditSavingImages.value = true
+  try {
+    const image1Base64 = aiAuditSelectedImage1.value
+    const image2Base64 = aiAuditSelectedImage2.value
+
+    const base64ToSave1 = image1Base64.startsWith('data:image') ? image1Base64.split(',')[1] : image1Base64
+    const base64ToSave2 = image2Base64.startsWith('data:image') ? image2Base64.split(',')[1] : image2Base64
+
+    const response = await aiAuditSaveImages({
+      table_name: selectedTable.value,
+      record_id: cloudPortalForm.value.passId,
+      image1_base64: base64ToSave1 || undefined,
+      image2_base64: base64ToSave2 || undefined
+    })
+
+    if (response && response.code === 200) {
+      ElMessage.success(`成功保存 ${(response.data as any)?.affected_rows || 0} 条记录`)
+      loadTableData()
+    } else {
+      ElMessage.error(response?.message || '保存图片失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '保存图片失败')
+  } finally {
+    aiAuditSavingImages.value = false
+  }
+}
+
+const formatFee = (fee: number) => {
+  if (fee === null || fee === undefined) return '-'
+  return (fee / 100).toFixed(2) + '元'
+}
+
+const handleVerifyPassId = async (passId: string, verifyType: string) => {
+  if (!passId || !passId.trim()) {
+    ElMessage.warning('通行标识ID不能为空')
+    return
+  }
+
+  verifyLoading.value = true
+  try {
+    const currentUser = userStore.getUserInfo
+    const response = await verifyPassId({
+      pass_id: passId.trim(),
+      verify_type: verifyType,
+      user_id: currentUser?.id,
+      username: currentUser?.username
+    })
+
+    if (response && response.code === 200 && response.data) {
+      const result = response.data as any
+
+      if (result.exists) {
+        ElMessage.success(`核查成功：找到 ${result.match_count} 条匹配记录`)
+
+        if (result.records && result.records.length > 0) {
+          const record = result.records[0]
+          const details = [
+            `车牌: ${record['实际车辆车牌号码+颜色'] || '-'}`,
+            `入口: ${record['收费入口名称'] || '-'}`,
+            `出口: ${record['收费出口名称'] || '-'}`,
+            `车型: ${record['收费车型'] || '-'}`,
+            `介质: ${record['通行介质'] || '-'}`
+          ].join('\n')
+
+          ElNotification({
+            title: `核查结果 (${result.match_count} 条匹配)`,
+            message: details,
+            type: 'success',
+            duration: 8000,
+            position: 'top-right'
+          })
+        }
+      } else {
+        ElMessage.warning('核查结果：未找到匹配记录')
+
+        ElNotification({
+          title: '核查结果',
+          message: `通行标识ID "${passId}" 在详单查询表中不存在`,
+          type: 'warning',
+          duration: 5000,
+          position: 'top-right'
+        })
+      }
+    } else {
+      ElMessage.error(response?.message || '核查失败')
+    }
+  } catch (error: any) {
+    console.error('核查失败:', error)
+    ElMessage.error(error?.message || '核查失败，请稍后重试')
+  } finally {
+    verifyLoading.value = false
+  }
 }
 
 const handleCopy = (text: string) => {

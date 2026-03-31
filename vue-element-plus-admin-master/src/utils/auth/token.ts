@@ -119,6 +119,7 @@ export async function checkAndRefreshToken(): Promise<TokenCheckResult> {
   const token = userStore.getToken
 
   if (!token) {
+    localStorage.removeItem('user')
     return { valid: false, refreshed: false, shouldLogout: true }
   }
 
@@ -128,9 +129,11 @@ export async function checkAndRefreshToken(): Promise<TokenCheckResult> {
       if (newToken) {
         return { valid: true, refreshed: true, shouldLogout: false }
       } else {
+        localStorage.removeItem('user')
         return { valid: false, refreshed: false, shouldLogout: true }
       }
     } else {
+      localStorage.removeItem('user')
       return { valid: false, refreshed: false, shouldLogout: true }
     }
   }
@@ -155,9 +158,11 @@ export async function checkTokenOnPageLoad(): Promise<void> {
     if (hasValidRefreshToken()) {
       const newToken = await refreshTokenIfNeeded()
       if (!newToken) {
+        localStorage.removeItem('user')
         router.push('/login')
       }
     } else {
+      localStorage.removeItem('user')
       userStore.logout()
       router.push('/login')
     }

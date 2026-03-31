@@ -192,13 +192,11 @@ const getStatusText = (status: string | null): string => {
   return status
 }
 
-const formatNumber = (num: number) => {
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(2) + 'M'
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(2) + 'K'
-  }
-  return num.toString()
+// ✅ 正确：加空值判断，彻底解决报错
+const formatNumber = (num) => {
+  // 关键：undefined/null 直接返回 0 或空字符串
+  if (num === undefined || num === null) return '0' 
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
 const formatDuration = (seconds: number | null): string => {

@@ -35,7 +35,7 @@ VITE_USE_MOCK=true
 VITE_USE_CSS_SPLIT=true
 
 # 是否使用在线图标
-VITE_USE_ONLINE_ICON=true
+VITE_USE_ONLINE_ICON=false
 
 # 是否隐藏全局设置按钮
 VITE_HIDE_GLOBAL_SETTING=false
