@@ -272,6 +272,14 @@ export interface AIAuditGantryTrade {
   vehiclePlateColor: string
   vehiclePlateColorName: string
   gantryOrderNumName: string
+  enVehicleTypeName?: string
+  mediaTypeName?: string
+  tradeStatus?: string
+  tradeStatusName?: string
+  receivableFee?: number
+  actualFee?: number
+  specialType?: string
+  specialTypeName?: string
 }
 
 export interface AIAuditGantryPlate {
@@ -281,6 +289,9 @@ export interface AIAuditGantryPlate {
   vehicleTypeName: string
   vehicleSpeed: number
   gantryId: string
+  picId?: string
+  gantryOrderNumName?: string
+  cameraId?: string
 }
 
 export interface AIAuditExitTrade {
@@ -294,6 +305,20 @@ export interface AIAuditExitTrade {
   specialtype: string
   cardid: string
   mediano: string
+  enVehicleTypeName?: string
+  exVehicleTypeName?: string
+  mediaTypeName?: string
+  enVehiclePlate?: string
+  exVehiclePlate?: string
+  totalReceivableFee?: number
+  totalTradeFee?: number
+  totalDiscountFee?: number
+  minFeeTradeAmount?: number
+  totalMileage?: number
+  minFeeMileage?: number
+  feeCalcMethod?: string
+  feeCalcMethodName?: string
+  specialTypeName?: string
 }
 
 export interface AIAuditSuspectedCar {
@@ -359,6 +384,7 @@ export const aiAuditBatchQuery = (data: {
   entry_time: string
   gate_time: string
   pass_id?: string
+  hours?: number
 }) => {
   return request.post<ApiResponse<AIAuditBatchQueryResult>>({
     url: '/api/cloud-portal/ai-audit/batch-query',
@@ -372,6 +398,9 @@ export const aiAuditVehicleImages = (data: {
   plate_number: string
   start_time: string
   end_time: string
+  page?: number
+  page_size?: number
+  sort?: string
 }) => {
   return request.post<ApiResponse<{ total: number; images: AIAuditVehicleImage[] }>>({
     url: '/api/cloud-portal/ai-audit/vehicle-images',
@@ -467,6 +496,25 @@ export const aiAuditOriginalImage = (data: {
 }) => {
   return request.post<ApiResponse<{ image: string }>>({
     url: '/api/cloud-portal/ai-audit/original-image',
+    data
+  })
+}
+
+export const fetchPicture = (data: {
+  session_id: string
+  picture_url: string
+}) => {
+  return request.post<ApiResponse<{
+    image?: string
+    data_url?: string
+    referer?: string
+    response_status?: number
+    response_content_type?: string
+    response_content_length?: number
+    response_headers?: Record<string, string>
+    response_body?: string
+  }>>({
+    url: '/api/cloud-portal/fetch-picture',
     data
   })
 }

@@ -28,11 +28,11 @@ class AIAuditClient:
             'Referer': f'{self.AI_AUDIT_BASE_URL}/aiAuditWeb/index.html'
         }
     
-    def _calculate_time_range(self, entry_time: str, gate_time: str) -> Dict[str, str]:
+    def _calculate_time_range(self, entry_time: str, gate_time: str, hours: int = 5) -> Dict[str, str]:
         try:
             entry_dt = datetime.strptime(entry_time, '%Y-%m-%d %H:%M:%S')
             gate_dt = datetime.strptime(gate_time, '%Y-%m-%d %H:%M:%S')
-            end_dt = gate_dt + timedelta(hours=24)
+            end_dt = gate_dt + timedelta(hours=hours)
             
             return {
                 'start_time': entry_dt.strftime('%Y-%m-%d %H:%M:%S'),
@@ -331,9 +331,10 @@ class AIAuditClient:
         plate_number: str,
         entry_time: str,
         gate_time: str,
-        pass_id: Optional[str] = None
+        pass_id: Optional[str] = None,
+        hours: int = 5
     ) -> Dict[str, Any]:
-        time_range = self._calculate_time_range(entry_time, gate_time)
+        time_range = self._calculate_time_range(entry_time, gate_time, hours)
         start_time = time_range['start_time']
         end_time = time_range['end_time']
         

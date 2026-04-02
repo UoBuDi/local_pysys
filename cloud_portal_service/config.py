@@ -2,7 +2,7 @@ import json
 import os
 import sys
 
-VERSION = "1.11"
+VERSION = "1.43"
 
 def get_base_path():
     if getattr(sys, 'frozen', False):

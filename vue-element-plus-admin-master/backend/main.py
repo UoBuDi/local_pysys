@@ -883,6 +883,207 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+class StatusConnectionManager:
+    def __init__(self):
+        self.frontend_connections: List[dict] = []
+        self.gui_connections: List[dict] = []
+        self._lock = asyncio.Lock()
+    
+    async def connect_frontend(self, websocket: WebSocket, client_id: str):
+        await websocket.accept()
+        async with self._lock:
+            self.frontend_connections.append({
+                "websocket": websocket,
+                "client_id": client_id,
+                "last_heartbeat": datetime.now()
+            })
+    
+    async def connect_gui(self, websocket: WebSocket, client_id: str):
+        await websocket.accept()
+        async with self._lock:
+            self.gui_connections.append({
+                "websocket": websocket,
+                "client_id": client_id,
+                "last_heartbeat": datetime.now()
+            })
+    
+    async def disconnect_frontend(self, websocket: WebSocket):
+        async with self._lock:
+            self.frontend_connections = [
+                conn for conn in self.frontend_connections 
+                if conn["websocket"] != websocket
+            ]
+    
+    async def disconnect_gui(self, websocket: WebSocket):
+        async with self._lock:
+            self.gui_connections = [
+                conn for conn in self.gui_connections 
+                if conn["websocket"] != websocket
+            ]
+    
+    async def update_heartbeat(self, websocket: WebSocket, client_type: str):
+        async with self._lock:
+            if client_type == "frontend":
+                for conn in self.frontend_connections:
+                    if conn["websocket"] == websocket:
+                        conn["last_heartbeat"] = datetime.now()
+                        break
+            elif client_type == "gui":
+                for conn in self.gui_connections:
+                    if conn["websocket"] == websocket:
+                        conn["last_heartbeat"] = datetime.now()
+                        break
+    
+    async def broadcast_to_frontend(self, message: dict):
+        message_str = json.dumps(message)
+        async with self._lock:
+            for conn in self.frontend_connections:
+                try:
+                    await conn["websocket"].send_text(message_str)
+                except:
+                    pass
+    
+    async def broadcast_to_gui(self, message: dict):
+        message_str = json.dumps(message)
+        async with self._lock:
+            for conn in self.gui_connections:
+                try:
+                    await conn["websocket"].send_text(message_str)
+                except:
+                    pass
+    
+    async def broadcast_all(self, message: dict):
+        await self.broadcast_to_frontend(message)
+        await self.broadcast_to_gui(message)
+    
+    def get_status(self):
+        return {
+            "frontend_count": len(self.frontend_connections),
+            "gui_count": len(self.gui_connections),
+            "frontend_clients": [
+                {
+                    "client_id": conn["client_id"],
+                    "last_heartbeat": conn["last_heartbeat"].isoformat()
+                }
+                for conn in self.frontend_connections
+            ],
+            "gui_clients": [
+                {
+                    "client_id": conn["client_id"],
+                    "last_heartbeat": conn["last_heartbeat"].isoformat()
+                }
+                for conn in self.gui_connections
+            ]
+        }
+
+status_manager = StatusConnectionManager()
+
+async def broadcast_status_periodically():
+    while True:
+        try:
+            status = status_manager.get_status()
+            await status_manager.broadcast_to_frontend({
+                "type": "status_update",
+                "data": status,
+                "timestamp": datetime.now().isoformat()
+            })
+            await status_manager.broadcast_to_gui({
+                "type": "status_update",
+                "data": status,
+                "timestamp": datetime.now().isoformat()
+            })
+        except Exception as e:
+            logger.error(f"广播状态失败: {e}")
+        await asyncio.sleep(5)
+
+@app.websocket("/ws/status/{client_type}/{client_id}")
+async def websocket_status(websocket: WebSocket, client_type: str, client_id: str):
+    if client_type not in ["frontend", "gui"]:
+        await websocket.close(code=4000, reason="Invalid client type")
+        return
+    
+    if client_type == "frontend":
+        await status_manager.connect_frontend(websocket, client_id)
+    else:
+        await status_manager.connect_gui(websocket, client_id)
+    
+    try:
+        await websocket.send_text(json.dumps({
+            "type": "connected",
+            "client_type": client_type,
+            "client_id": client_id,
+            "message": f"{client_type}客户端已连接",
+            "timestamp": datetime.now().isoformat()
+        }))
+        
+        status = status_manager.get_status()
+        await status_manager.broadcast_all({
+            "type": "client_joined",
+            "client_type": client_type,
+            "client_id": client_id,
+            "status": status,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        while True:
+            data = await websocket.receive_text()
+            try:
+                message = json.loads(data)
+                
+                if message.get("type") == "heartbeat":
+                    await status_manager.update_heartbeat(websocket, client_type)
+                    await websocket.send_text(json.dumps({
+                        "type": "heartbeat_ack",
+                        "timestamp": datetime.now().isoformat()
+                    }))
+                elif message.get("type") == "ping":
+                    await websocket.send_text(json.dumps({
+                        "type": "pong",
+                        "timestamp": datetime.now().isoformat()
+                    }))
+                elif message.get("type") == "get_status":
+                    status = status_manager.get_status()
+                    await websocket.send_text(json.dumps({
+                        "type": "status_response",
+                        "data": status,
+                        "timestamp": datetime.now().isoformat()
+                    }))
+                else:
+                    await status_manager.broadcast_all({
+                        "type": "message",
+                        "from_type": client_type,
+                        "from_id": client_id,
+                        "data": message,
+                        "timestamp": datetime.now().isoformat()
+                    })
+            except json.JSONDecodeError:
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": "Invalid JSON format"
+                }))
+    except WebSocketDisconnect:
+        if client_type == "frontend":
+            await status_manager.disconnect_frontend(websocket)
+        else:
+            await status_manager.disconnect_gui(websocket)
+        
+        status = status_manager.get_status()
+        await status_manager.broadcast_all({
+            "type": "client_left",
+            "client_type": client_type,
+            "client_id": client_id,
+            "status": status,
+            "timestamp": datetime.now().isoformat()
+        })
+
+@app.get("/api/ws/status")
+async def get_ws_status():
+    return {
+        "code": 200,
+        "message": "success",
+        "data": status_manager.get_status()
+    }
+
 # WebSocket日志处理器
 class WebSocketLogHandler(logging.Handler):
     def emit(self, record):
@@ -951,6 +1152,7 @@ async def broadcast_sync_progress():
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(broadcast_sync_progress())
+    asyncio.create_task(broadcast_status_periodically())
 
 # 获取数据库连接的依赖项
 def get_db():

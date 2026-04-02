@@ -1,6 +1,7 @@
 import logging
 import uuid
 import base64
+import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from session_manager import session_manager
@@ -17,6 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 request_log = deque(maxlen=100)
+latest_response_data = None
 
 def add_request_log(method, path, params=None, response_code=None):
     log_entry = {
@@ -31,6 +33,10 @@ def add_request_log(method, path, params=None, response_code=None):
 
 def get_request_logs():
     return list(request_log)
+
+def update_latest_response(response_data):
+    global latest_response_data
+    latest_response_data = response_data
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -61,6 +67,22 @@ def get_logs():
         'message': 'success',
         'data': get_request_logs()
     })
+
+@app.route('/api/portal/latest-response', methods=['GET'])
+def get_latest_response():
+    global latest_response_data
+    if latest_response_data:
+        return jsonify({
+            'code': 200,
+            'message': 'success',
+            'data': latest_response_data
+        })
+    else:
+        return jsonify({
+            'code': 404,
+            'message': '暂无响应数据',
+            'data': None
+        })
 
 @app.route('/api/portal/captcha', methods=['GET'])
 def get_captcha():
@@ -130,7 +152,10 @@ def login():
             'code': 200,
             'message': '登录成功',
             'data': {
-                'user_info': result['user_info']
+                'user_info': result['user_info'],
+                'access_token': result.get('access_token'),
+                'refresh_token': result.get('refresh_token'),
+                'redirect_uri': result.get('redirect_uri')
             }
         })
     else:
@@ -326,35 +351,166 @@ def ai_audit_original_image():
         return jsonify({'code': 401, 'message': '未登录或会话已过期'}), 401
     
     try:
-        ethernet2_ip = config.ETHERNET2_IP
-        img_session = create_portal_session(source_ip=ethernet2_ip)
+        if picture_path.startswith('/'):
+            full_url = f'http://api.hngsetc.com{picture_path}'
+        else:
+            full_url = picture_path
         
-        headers = {
-            'Authorization': f'Bearer {client.access_token}',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36 Edg/84.0.522.49',
+        request_headers = {
+            'Host': 'api.hngsetc.com',
             'Accept': 'application/json, text/plain, */*',
-            'DNT': '1',
+            'Authorization': client.access_token,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36 Edg/84.0.522.49',
+            'Origin': 'http://twaudit.hngsetc.com',
+            'Accept-Encoding': 'gzip, deflate',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6'
         }
         
-        response = img_session.get(picture_path, headers=headers, timeout=30)
-        restore_create_connection()
+        log_headers = {
+            'Host': 'api.hngsetc.com',
+            'Accept': 'application/json, text/plain, */*',
+            'Authorization': f'{client.access_token[:20]}...' if client.access_token else 'None',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36 Edg/84.0.522.49',
+            'Origin': 'http://twaudit.hngsetc.com'
+        }
+        
+        logger.info(f"========== 获取原图请求开始 ==========")
+        logger.info(f"请求URL: {full_url}")
+        logger.info(f"请求头: {json.dumps(log_headers, ensure_ascii=False, indent=2)}")
+        
+        response = client.session.get(full_url, headers=request_headers, timeout=30)
+        
+        logger.info(f"响应状态码: {response.status_code}")
+        logger.info(f"响应头: {json.dumps(dict(response.headers), ensure_ascii=False, indent=2)}")
+        
+        response_headers_dict = dict(response.headers)
         
         if response.status_code == 200:
             content_type = response.headers.get('Content-Type', 'image/jpeg')
+            logger.info(f"Content-Type: {content_type}")
+            logger.info(f"响应体长度: {len(response.content)} bytes")
+            
             if content_type and content_type.startswith('image'):
+                logger.info("响应类型: 图片 - 成功获取原图")
+                logger.info(f"========== 获取原图请求结束(成功) ==========")
                 image_base64 = base64.b64encode(response.content).decode('utf-8')
-                return jsonify({
+                main_content_type = content_type.split(';')[0].strip()
+                data_url = f"data:{main_content_type};base64,{image_base64}"
+                result = {
                     'code': 200,
                     'message': 'success',
                     'data': {
-                        'image': image_base64
+                        'image': image_base64,
+                        'data_url': data_url,
+                        'content_type': main_content_type,
+                        'request_url': full_url,
+                        'response_status': response.status_code,
+                        'response_content_type': content_type,
+                        'response_content_length': len(response.content),
+                        'response_headers': response_headers_dict
                     }
-                })
+                }
+                update_latest_response(result)
+                return jsonify(result)
+            elif content_type and 'application/json' in content_type:
+                logger.info(f"响应类型: JSON - 响应体内容前200字符: {response.text[:200]}")
+                
+                if response.text.startswith('data:image'):
+                    logger.info("响应体是data_url格式 - 成功获取图片")
+                    logger.info(f"========== 获取原图请求结束(data_url成功) ==========")
+                    data_url = response.text.strip()
+                    if data_url.startswith('data:image/') and ';base64,' in data_url:
+                        parts = data_url.split(';base64,')
+                        if len(parts) == 2:
+                            image_base64 = parts[1]
+                            main_content_type = parts[0].replace('data:', '')
+                            result = {
+                                'code': 200,
+                                'message': 'success',
+                                'data': {
+                                    'image': image_base64,
+                                    'data_url': data_url,
+                                    'content_type': main_content_type,
+                                    'request_url': full_url,
+                                    'response_status': response.status_code,
+                                    'response_content_type': content_type,
+                                    'response_content_length': len(response.content),
+                                    'response_headers': response_headers_dict
+                                }
+                            }
+                            update_latest_response(result)
+                            return jsonify(result)
+                    logger.error(f"data_url格式解析失败")
+                    return jsonify({
+                        'code': 500, 
+                        'message': 'data_url格式解析失败',
+                        'data': {
+                            'request_url': full_url,
+                            'response_status': response.status_code,
+                            'response_content_type': content_type,
+                            'response_headers': response_headers_dict,
+                            'response_body': response.text[:500]
+                        }
+                    }), 500
+                
+                logger.info(f"========== 获取原图请求结束(JSON错误) ==========")
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get('message', error_data.get('msg', '云门户返回错误'))
+                    logger.error(f"获取原图失败，云门户响应: {error_data}")
+                    return jsonify({
+                        'code': 500, 
+                        'message': f'云门户错误: {error_msg}',
+                        'data': {
+                            'request_url': full_url,
+                            'response_status': response.status_code,
+                            'response_content_type': content_type,
+                            'response_headers': response_headers_dict,
+                            'response_body': response.text[:2000]
+                        }
+                    }), 500
+                except:
+                    logger.error(f"获取原图失败，响应内容: {response.text[:500]}")
+                    return jsonify({
+                        'code': 500, 
+                        'message': '云门户返回异常响应',
+                        'data': {
+                            'request_url': full_url,
+                            'response_status': response.status_code,
+                            'response_content_type': content_type,
+                            'response_headers': response_headers_dict,
+                            'response_body': response.text[:2000]
+                        }
+                    }), 500
             else:
-                return jsonify({'code': 500, 'message': f'响应类型异常: {content_type}'}), 500
+                logger.info(f"响应类型: 未知 - 响应体前500字符: {response.text[:500]}")
+                logger.info(f"========== 获取原图请求结束(未知类型) ==========")
+                logger.error(f"获取原图失败，Content-Type: {content_type}, 响应长度: {len(response.content)}")
+                return jsonify({
+                    'code': 500, 
+                    'message': f'响应类型异常: {content_type}',
+                    'data': {
+                        'request_url': full_url,
+                        'response_status': response.status_code,
+                        'response_content_type': content_type,
+                        'response_headers': response_headers_dict,
+                        'response_body': response.text[:2000]
+                    }
+                }), 500
         else:
-            return jsonify({'code': 500, 'message': f'获取图片失败，状态码: {response.status_code}'}), 500
+            logger.info(f"响应体内容: {response.text[:1000]}")
+            logger.info(f"========== 获取原图请求结束(HTTP错误) ==========")
+            logger.error(f"获取图片失败，状态码: {response.status_code}, 响应: {response.text[:500]}")
+            return jsonify({
+                'code': 500, 
+                'message': f'获取图片失败，状态码: {response.status_code}',
+                'data': {
+                    'referer': referer,
+                    'response_status': response.status_code,
+                    'response_headers': response_headers_dict,
+                    'response_body': response.text[:2000]
+                }
+            }), 500
     except requests.exceptions.Timeout:
         restore_create_connection()
         logger.error("获取原始图片超时")
@@ -366,6 +522,179 @@ def ai_audit_original_image():
     except Exception as e:
         restore_create_connection()
         logger.error(f"获取原始图片失败: {e}")
+        return jsonify({'code': 500, 'message': str(e)}), 500
+
+@app.route('/api/portal/fetch-picture', methods=['POST'])
+def fetch_picture():
+    data = request.json
+    
+    if not data:
+        return jsonify({'code': 400, 'message': '请求体不能为空'}), 400
+    
+    session_id = data.get('session_id')
+    picture_url = data.get('picture_url')
+    
+    if not all([session_id, picture_url]):
+        return jsonify({'code': 400, 'message': '缺少必要参数'}), 400
+    
+    client = session_manager.get_session(session_id)
+    if not client or not client.is_logged_in():
+        return jsonify({'code': 401, 'message': '未登录或会话已过期'}), 401
+    
+    try:
+        if picture_url.startswith('/'):
+            full_url = f'http://api.hngsetc.com{picture_url}'
+        else:
+            full_url = picture_url
+        
+        request_headers = {
+            'Host': 'api.hngsetc.com',
+            'Accept': 'application/json, text/plain, */*',
+            'Authorization': client.access_token,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36 Edg/84.0.522.49',
+            'Origin': 'http://twaudit.hngsetc.com',
+            'Accept-Encoding': 'gzip, deflate',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6'
+        }
+        
+        log_headers = {
+            'Host': 'api.hngsetc.com',
+            'Accept': 'application/json, text/plain, */*',
+            'Authorization': f'{client.access_token[:20]}...' if client.access_token else 'None',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36 Edg/84.0.522.49',
+            'Origin': 'http://twaudit.hngsetc.com'
+        }
+        
+        logger.info(f"========== 获取指定图片请求开始 ==========")
+        logger.info(f"请求URL: {full_url}")
+        logger.info(f"请求头: {json.dumps(log_headers, ensure_ascii=False, indent=2)}")
+        
+        response = client.session.get(full_url, headers=request_headers, timeout=30)
+        
+        logger.info(f"响应状态码: {response.status_code}")
+        logger.info(f"响应头: {json.dumps(dict(response.headers), ensure_ascii=False, indent=2)}")
+        
+        response_headers_dict = dict(response.headers)
+        
+        if response.status_code == 200:
+            content_type = response.headers.get('Content-Type', 'image/jpeg')
+            logger.info(f"Content-Type: {content_type}")
+            logger.info(f"响应体长度: {len(response.content)} bytes")
+            
+            if content_type and content_type.startswith('image'):
+                logger.info("响应类型: 图片 - 成功获取图片")
+                logger.info(f"========== 获取指定图片请求结束(成功) ==========")
+                image_base64 = base64.b64encode(response.content).decode('utf-8')
+                main_content_type = content_type.split(';')[0].strip()
+                data_url = f"data:{main_content_type};base64,{image_base64}"
+                result = {
+                    'code': 200,
+                    'message': 'success',
+                    'data': {
+                        'image': image_base64,
+                        'data_url': data_url,
+                        'content_type': main_content_type,
+                        'request_url': full_url,
+                        'response_status': response.status_code,
+                        'response_content_type': content_type,
+                        'response_content_length': len(response.content),
+                        'response_headers': response_headers_dict
+                    }
+                }
+                update_latest_response(result)
+                return jsonify(result)
+            elif content_type and 'application/json' in content_type:
+                logger.info(f"响应类型: JSON - 响应体内容前200字符: {response.text[:200]}")
+                
+                if response.text.startswith('data:image'):
+                    logger.info("响应体是data_url格式 - 成功获取图片")
+                    logger.info(f"========== 获取指定图片请求结束(data_url成功) ==========")
+                    data_url = response.text.strip()
+                    if data_url.startswith('data:image/') and ';base64,' in data_url:
+                        parts = data_url.split(';base64,')
+                        if len(parts) == 2:
+                            image_base64 = parts[1]
+                            main_content_type = parts[0].replace('data:', '')
+                            result = {
+                                'code': 200,
+                                'message': 'success',
+                                'data': {
+                                    'image': image_base64,
+                                    'data_url': data_url,
+                                    'content_type': main_content_type,
+                                    'request_url': full_url,
+                                    'response_status': response.status_code,
+                                    'response_content_type': content_type,
+                                    'response_content_length': len(response.content),
+                                    'response_headers': response_headers_dict
+                                }
+                            }
+                            update_latest_response(result)
+                            return jsonify(result)
+                    logger.error(f"data_url格式解析失败")
+                    return jsonify({
+                        'code': 500, 
+                        'message': 'data_url格式解析失败',
+                        'data': {
+                            'request_url': full_url,
+                            'response_status': response.status_code,
+                            'response_content_type': content_type,
+                            'response_headers': response_headers_dict,
+                            'response_body': response.text[:500]
+                        }
+                    }), 500
+                
+                logger.info(f"========== 获取指定图片请求结束(JSON) ==========")
+                return jsonify({
+                    'code': 200,
+                    'message': 'success',
+                    'data': {
+                        'request_url': full_url,
+                        'response_status': response.status_code,
+                        'response_content_type': content_type,
+                        'response_headers': response_headers_dict,
+                        'response_body': response.text
+                    }
+                })
+            else:
+                logger.info(f"响应类型: 未知 - Content-Type: {content_type}")
+                logger.info(f"========== 获取指定图片请求结束(未知类型) ==========")
+                return jsonify({
+                    'code': 500, 
+                    'message': f'响应类型异常: {content_type}',
+                    'data': {
+                        'request_url': full_url,
+                        'response_status': response.status_code,
+                        'response_content_type': content_type,
+                        'response_headers': response_headers_dict,
+                        'response_body': response.text[:2000]
+                    }
+                }), 500
+        else:
+            logger.info(f"响应体内容: {response.text[:1000]}")
+            logger.info(f"========== 获取指定图片请求结束(HTTP错误) ==========")
+            logger.error(f"获取图片失败，状态码: {response.status_code}, 响应: {response.text[:500]}")
+            return jsonify({
+                'code': 500, 
+                'message': f'获取图片失败，状态码: {response.status_code}',
+                'data': {
+                    'request_url': full_url,
+                    'response_status': response.status_code,
+                    'response_headers': response_headers_dict,
+                    'response_body': response.text[:2000]
+                }
+            }), 500
+    except requests.exceptions.Timeout:
+        restore_create_connection()
+        logger.error("获取图片超时")
+        return jsonify({'code': 500, 'message': '获取图片超时'}), 500
+    except requests.exceptions.ConnectionError as e:
+        restore_create_connection()
+        logger.error(f"获取图片连接失败: {e}")
+        return jsonify({'code': 500, 'message': '无法连接到图片服务器'}), 500
+    except Exception as e:
+        restore_create_connection()
+        logger.error(f"获取图片失败: {e}")
         return jsonify({'code': 500, 'message': str(e)}), 500
 
 @app.route('/api/portal/ai-audit/gantry-trade', methods=['POST'])
@@ -549,6 +878,7 @@ def ai_audit_batch_query():
     entry_time = data.get('entry_time')
     gate_time = data.get('gate_time')
     pass_id = data.get('pass_id')
+    hours = data.get('hours', 5)
     
     if not all([session_id, plate_number, entry_time, gate_time]):
         return jsonify({'code': 400, 'message': '缺少必要参数'}), 400
@@ -563,7 +893,8 @@ def ai_audit_batch_query():
             plate_number=plate_number,
             entry_time=entry_time,
             gate_time=gate_time,
-            pass_id=pass_id
+            pass_id=pass_id,
+            hours=hours
         )
         
         return jsonify({

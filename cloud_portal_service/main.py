@@ -1,8 +1,15 @@
 import sys
 import os
+import socket
+import time
 import threading
 import logging
 import requests
+import json
+import uuid
+import asyncio
+import websockets
+from datetime import datetime
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QSpinBox, QCheckBox, QGroupBox,
@@ -46,8 +53,9 @@ class FlaskThread(QThread):
         self._is_running = True
         try:
             logger.info(f"Flask服务启动: {self.host}:{self.port}")
-            self.started_signal.emit()
             self.server = make_server(self.host, self.port, app, threaded=True)
+            self.server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.started_signal.emit()
             self.server.serve_forever()
         except Exception as e:
             logger.error(f"Flask服务错误: {e}")
@@ -60,9 +68,103 @@ class FlaskThread(QThread):
         self._is_running = False
         if self.server:
             self.server.shutdown()
+            self.server = None
         self.wait(3000)
         if self.isRunning():
             self.terminate()
+        time.sleep(0.5)
+
+class WebSocketClientThread(QThread):
+    connected_signal = Signal()
+    disconnected_signal = Signal()
+    message_received = Signal(dict)
+    error_signal = Signal(str)
+    status_updated = Signal(dict)
+    
+    def __init__(self, backend_url: str, client_id: str = None):
+        super().__init__()
+        self.backend_url = backend_url
+        self.client_id = client_id or f"gui_{uuid.uuid4().hex[:8]}"
+        self._is_running = False
+        self._websocket = None
+        self._loop = None
+        self._last_status = None
+    
+    def run(self):
+        self._is_running = True
+        self._loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
+        
+        try:
+            self._loop.run_until_complete(self._connect_and_listen())
+        except Exception as e:
+            logger.error(f"WebSocket客户端错误: {e}")
+            self.error_signal.emit(str(e))
+        finally:
+            self._loop.close()
+    
+    async def _connect_and_listen(self):
+        ws_url = f"{self.backend_url}/ws/status/gui/{self.client_id}"
+        
+        while self._is_running:
+            try:
+                logger.info(f"WebSocket连接: {ws_url}")
+                async with websockets.connect(ws_url) as websocket:
+                    self._websocket = websocket
+                    self.connected_signal.emit()
+                    logger.info("WebSocket已连接")
+                    
+                    heartbeat_task = asyncio.create_task(self._send_heartbeat())
+                    
+                    try:
+                        async for message in websocket:
+                            if not self._is_running:
+                                break
+                            try:
+                                data = json.loads(message)
+                                self.message_received.emit(data)
+                                
+                                if data.get("type") == "status_update":
+                                    self._last_status = data.get("data", {})
+                                    self.status_updated.emit(self._last_status)
+                            except json.JSONDecodeError:
+                                logger.warning(f"无效的JSON消息: {message}")
+                    finally:
+                        heartbeat_task.cancel()
+                        self._websocket = None
+                        
+            except Exception as e:
+                logger.warning(f"WebSocket连接断开: {e}")
+                self.disconnected_signal.emit()
+                
+                if self._is_running:
+                    await asyncio.sleep(5)
+    
+    async def _send_heartbeat(self):
+        while self._is_running and self._websocket:
+            try:
+                await self._websocket.send(json.dumps({
+                    "type": "heartbeat",
+                    "timestamp": datetime.now().isoformat()
+                }))
+                await asyncio.sleep(30)
+            except Exception as e:
+                logger.warning(f"心跳发送失败: {e}")
+                break
+    
+    def stop(self):
+        self._is_running = False
+        if self._websocket:
+            asyncio.run_coroutine_threadsafe(
+                self._websocket.close(),
+                self._loop
+            )
+        self.wait(3000)
+        if self.isRunning():
+            self.terminate()
+    
+    def get_last_status(self):
+        return self._last_status
 
 class ConfigDialog(QDialog):
     def __init__(self, parent=None):
@@ -201,6 +303,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.flask_thread = None
+        self.websocket_thread = None
         self.is_service_running = False
         self.request_log_timer = None
         self.init_ui()
@@ -224,6 +327,11 @@ class MainWindow(QMainWindow):
         self.status_label = QLabel("服务状态: 未启动")
         self.status_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         status_row.addWidget(self.status_label)
+        status_row.addStretch()
+        
+        self.ws_status_label = QLabel("WebSocket: 未连接")
+        self.ws_status_label.setStyleSheet("font-weight: bold; font-size: 12px; color: gray;")
+        status_row.addWidget(self.ws_status_label)
         status_row.addStretch()
         
         version_label = QLabel(f"v{config.VERSION}")
@@ -280,6 +388,44 @@ class MainWindow(QMainWindow):
         log_layout.addWidget(clear_log_btn)
         
         layout.addWidget(log_group)
+        
+        response_group = QGroupBox("响应数据")
+        response_layout = QVBoxLayout(response_group)
+        
+        self.response_text = QTextEdit()
+        self.response_text.setReadOnly(True)
+        self.response_text.setMaximumHeight(120)
+        self.response_text.setPlaceholderText("响应数据将显示在这里...")
+        response_layout.addWidget(self.response_text)
+        
+        clear_response_btn = QPushButton("清空响应数据")
+        clear_response_btn.clicked.connect(self.response_text.clear)
+        response_layout.addWidget(clear_response_btn)
+        
+        layout.addWidget(response_group)
+        
+        data_url_group = QGroupBox("Data URL 数据")
+        data_url_layout = QVBoxLayout(data_url_group)
+        
+        self.data_url_text = QTextEdit()
+        self.data_url_text.setReadOnly(True)
+        self.data_url_text.setMaximumHeight(100)
+        self.data_url_text.setPlaceholderText("data_url数据将显示在这里...")
+        data_url_layout.addWidget(self.data_url_text)
+        
+        data_url_btn_layout = QHBoxLayout()
+        clear_data_url_btn = QPushButton("清空")
+        clear_data_url_btn.clicked.connect(self.data_url_text.clear)
+        data_url_btn_layout.addWidget(clear_data_url_btn)
+        
+        copy_data_url_btn = QPushButton("复制完整Data URL")
+        copy_data_url_btn.clicked.connect(self.copy_data_url)
+        data_url_btn_layout.addWidget(copy_data_url_btn)
+        
+        data_url_btn_layout.addStretch()
+        data_url_layout.addLayout(data_url_btn_layout)
+        
+        layout.addWidget(data_url_group)
         
         info_group = QGroupBox("网络信息")
         info_layout = QFormLayout(info_group)
@@ -391,6 +537,53 @@ class MainWindow(QMainWindow):
         self.request_log_timer = QTimer(self)
         self.request_log_timer.timeout.connect(self.fetch_request_logs)
         self.request_log_timer.start(2000)
+        
+        self.start_websocket_client()
+    
+    def start_websocket_client(self):
+        if self.websocket_thread is None or not self.websocket_thread.isRunning():
+            backend_url = "ws://localhost:8000"
+            self.websocket_thread = WebSocketClientThread(backend_url)
+            self.websocket_thread.connected_signal.connect(self.on_ws_connected)
+            self.websocket_thread.disconnected_signal.connect(self.on_ws_disconnected)
+            self.websocket_thread.status_updated.connect(self.on_ws_status_updated)
+            self.websocket_thread.error_signal.connect(self.on_ws_error)
+            self.websocket_thread.start()
+            self.log_message("WebSocket客户端启动中...")
+    
+    def stop_websocket_client(self):
+        if self.websocket_thread and self.websocket_thread.isRunning():
+            self.websocket_thread.stop()
+            self.websocket_thread = None
+            self.log_message("WebSocket客户端已停止")
+    
+    @Slot()
+    def on_ws_connected(self):
+        self.log_message("WebSocket已连接到后端")
+        self.update_ws_status_display(connected=True)
+    
+    @Slot()
+    def on_ws_disconnected(self):
+        self.log_message("WebSocket与后端断开")
+        self.update_ws_status_display(connected=False)
+    
+    @Slot(dict)
+    def on_ws_status_updated(self, status):
+        frontend_count = status.get("frontend_count", 0)
+        gui_count = status.get("gui_count", 0)
+        self.log_message(f"状态更新: 前端在线 {frontend_count}, GUI在线 {gui_count}")
+    
+    @Slot(str)
+    def on_ws_error(self, error):
+        self.log_message(f"WebSocket错误: {error}")
+    
+    def update_ws_status_display(self, connected: bool):
+        if connected:
+            self.ws_status_label.setText("WebSocket: 已连接")
+            self.ws_status_label.setStyleSheet("font-weight: bold; font-size: 12px; color: green;")
+        else:
+            self.ws_status_label.setText("WebSocket: 未连接")
+            self.ws_status_label.setStyleSheet("font-weight: bold; font-size: 12px; color: red;")
     
     @Slot()
     def on_service_stopped(self):
@@ -405,6 +598,8 @@ class MainWindow(QMainWindow):
         if self.request_log_timer:
             self.request_log_timer.stop()
             self.request_log_timer = None
+        
+        self.stop_websocket_client()
     
     def fetch_request_logs(self):
         try:
@@ -417,6 +612,20 @@ class MainWindow(QMainWindow):
                 if data.get('code') == 200:
                     logs = data.get('data', [])
                     self.update_request_table(logs)
+        except:
+            pass
+        
+        try:
+            response = requests.get(
+                f"http://{config.GUI_HOST}:{config.GUI_PORT}/api/portal/latest-response",
+                timeout=2
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('code') == 200:
+                    response_data = data.get('data')
+                    if response_data:
+                        self.update_response_data(response_data)
         except:
             pass
     
@@ -455,6 +664,51 @@ class MainWindow(QMainWindow):
         from datetime import datetime
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.log_text.append(f"[{timestamp}] {message}")
+    
+    @Slot()
+    def copy_data_url(self):
+        from PySide6.QtWidgets import QApplication
+        clipboard = QApplication.clipboard()
+        data_url = self.data_url_text.toPlainText()
+        if data_url:
+            clipboard.setText(data_url)
+            self.log_message("Data URL已复制到剪贴板")
+        else:
+            self.log_message("没有Data URL数据可复制")
+    
+    def update_response_data(self, response_data):
+        from datetime import datetime
+        import json
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        
+        if response_data:
+            self.response_text.clear()
+            self.response_text.append(f"[{timestamp}] 最新响应数据:")
+            self.response_text.append("-" * 40)
+            
+            if isinstance(response_data, dict):
+                self.response_text.append(f"响应码: {response_data.get('code', 'N/A')}")
+                self.response_text.append(f"消息: {response_data.get('message', 'N/A')}")
+                
+                data = response_data.get('data', {})
+                if data:
+                    self.response_text.append(f"请求URL: {data.get('request_url', 'N/A')}")
+                    self.response_text.append(f"响应状态: {data.get('response_status', 'N/A')}")
+                    self.response_text.append(f"Content-Type: {data.get('content_type', data.get('response_content_type', 'N/A'))}")
+                    self.response_text.append(f"内容长度: {data.get('response_content_length', 'N/A')}")
+                    
+                    if data.get('image'):
+                        self.response_text.append(f"图片Base64长度: {len(data.get('image', ''))}")
+                    
+                    if data.get('data_url'):
+                        data_url = data.get('data_url', '')
+                        self.data_url_text.clear()
+                        self.data_url_text.append(f"[{timestamp}] Data URL:")
+                        self.data_url_text.append(f"类型: {data.get('content_type', 'N/A')}")
+                        self.data_url_text.append(f"总长度: {len(data_url)}")
+                        self.data_url_text.append(f"前100字符: {data_url[:100]}...")
+            else:
+                self.response_text.append(str(response_data))
     
     def closeEvent(self, event):
         if config.MINIMIZE_TO_TRAY:

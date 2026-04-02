@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, Query
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, Query, Request
 from pydantic import BaseModel
 import configparser
 import logging
@@ -10,8 +10,9 @@ import bcrypt
 import uvicorn
 import asyncio
 import json
+import httpx
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from config import load_config, save_config, get_database_config
@@ -2353,6 +2354,38 @@ async def shutdown_event():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+CLOUD_PORTAL_SERVICE_URL = "http://172.32.48.239:9000"
+
+@app.api_route("/api/cloud-portal/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+async def proxy_cloud_portal(request: Request, path: str):
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        url = f"{CLOUD_PORTAL_SERVICE_URL}/api/portal/{path}"
+        
+        headers = dict(request.headers)
+        headers.pop("host", None)
+        
+        body = await request.body()
+        
+        try:
+            response = await client.request(
+                method=request.method,
+                url=url,
+                headers=headers,
+                content=body if body else None,
+                params=request.query_params
+            )
+            
+            return JSONResponse(
+                content=response.json() if response.headers.get("content-type", "").startswith("application/json") else {"data": response.text},
+                status_code=response.status_code
+            )
+        except httpx.TimeoutException:
+            return JSONResponse(content={"code": 504, "message": "连接云门户查询服务超时"}, status_code=504)
+        except httpx.ConnectError:
+            return JSONResponse(content={"code": 503, "message": "无法连接到云门户查询服务"}, status_code=503)
+        except Exception as e:
+            return JSONResponse(content={"code": 500, "message": f"代理请求失败: {str(e)}"}, status_code=500)
 
 # 添加静态文件服务 - 前后端不分离部署
 # 注意：静态文件挂载必须放在所有API路由定义之后

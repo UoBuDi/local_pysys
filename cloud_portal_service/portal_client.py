@@ -15,6 +15,7 @@ class PortalClient:
         self.session = create_portal_session(self.source_ip)
         self.access_token: Optional[str] = None
         self.refresh_token: Optional[str] = None
+        self.redirect_uri: Optional[str] = None
         self.user_info: Optional[Dict] = None
         self.token_expires_at: Optional[float] = None
         self.login_time: Optional[float] = None
@@ -116,6 +117,7 @@ class PortalClient:
             if result.get('code', {}).get('ok'):
                 self.access_token = result['result']['global_access_token']
                 self.refresh_token = result['result']['global_refresh_token']
+                self.redirect_uri = result['result'].get('redirect_uri', '')
                 self.login_time = time.time()
                 self.token_expires_at = self.login_time + 86400
                 
@@ -125,7 +127,10 @@ class PortalClient:
                 
                 return {
                     'success': True,
-                    'user_info': self.user_info
+                    'user_info': self.user_info,
+                    'access_token': self.access_token,
+                    'refresh_token': self.refresh_token,
+                    'redirect_uri': self.redirect_uri
                 }
             else:
                 error_msg = result.get('code', {}).get('msg', '登录失败')
