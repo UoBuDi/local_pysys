@@ -483,6 +483,10 @@ export const aiAuditSaveImages = (data: {
   record_id: string
   image1_base64?: string
   image2_base64?: string
+  review_status?: string
+  check_pass_id?: string
+  special_situation?: string
+  check_split?: string
 }) => {
   return request.post<ApiResponse<{ affected_rows: number }>>({
     url: '/api/cloud-portal/ai-audit/save-images',

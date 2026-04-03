@@ -1122,9 +1122,6 @@
             <el-button type="primary" @click="executeAIAuditBatchQuery" :loading="aiAuditLoading">
               AI稽核批量查询
             </el-button>
-            <el-button type="success" @click="testFetchPicture" style="margin-left: 10px">
-              测试获取图片
-            </el-button>
             <el-button @click="handleCloudPortalLogout" style="margin-left: 10px">退出登录</el-button>
           </el-form-item>
         </div>
@@ -1242,9 +1239,10 @@
               <div v-if="aiAuditResult.exit_trade_etc?.success">
                 <div style="margin-bottom: 10px">共 {{ aiAuditResult.exit_trade_etc.total }} 条记录</div>
                 <el-table :data="aiAuditResult.exit_trade_etc.records" border max-height="300" size="small" stripe>
-                  <el-table-column prop="exVehiclePlate" label="出口车牌" show-overflow-tooltip />
-                  <el-table-column prop="enVehiclePlate" label="入口车牌" show-overflow-tooltip />
-                  <el-table-column prop="plateNumber" label="识别车牌" show-overflow-tooltip />
+                  <el-table-column prop="passid" label="流水编号" width="330" show-overflow-tooltip />
+                  <el-table-column prop="plateNumber" label="出口车牌" show-overflow-tooltip />
+                  <el-table-column prop="enVehicleIdName" label="入口车牌" show-overflow-tooltip />
+                  <el-table-column prop="identifyVehicleIdName" label="识别车牌" show-overflow-tooltip />
                   <el-table-column prop="entollstationname" label="进站名" show-overflow-tooltip />
                   <el-table-column prop="entime" label="进站时间" show-overflow-tooltip />
                   <el-table-column prop="enVehicleTypeName" label="入口车型" show-overflow-tooltip />
@@ -1252,26 +1250,26 @@
                   <el-table-column prop="extollstationname" label="出站名" show-overflow-tooltip />
                   <el-table-column prop="extime" label="出站时间" show-overflow-tooltip />
                   <el-table-column prop="mediaTypeName" label="介质类型" show-overflow-tooltip />
-                  <el-table-column prop="totalReceivableFee" label="总应收金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.totalReceivableFee) }}</template>
+                  <el-table-column prop="payfee" label="总应收金额(元)" show-overflow-tooltip>
+                    <template #default="{ row }">{{ formatFee(row.payfee) }}</template>
                   </el-table-column>
-                  <el-table-column prop="totalTradeFee" label="总交易金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.totalTradeFee) }}</template>
+                  <el-table-column prop="fee" label="总交易金额(元)" show-overflow-tooltip>
+                    <template #default="{ row }">{{ formatFee(row.fee) }}</template>
                   </el-table-column>
-                  <el-table-column prop="totalDiscountFee" label="总优惠金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.totalDiscountFee) }}</template>
+                  <el-table-column prop="discountfee" label="总优惠金额(元)" show-overflow-tooltip>
+                    <template #default="{ row }">{{ formatFee(row.discountfee) }}</template>
                   </el-table-column>
-                  <el-table-column prop="minFeeTradeAmount" label="最小费额交易金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.minFeeTradeAmount) }}</template>
+                  <el-table-column prop="shortfee" label="最小费额交易金额(元)" show-overflow-tooltip>
+                    <template #default="{ row }">{{ formatFee(row.shortfee) }}</template>
                   </el-table-column>
-                  <el-table-column prop="totalMileage" label="计费总里程数(公里)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ row.totalMileage ? (row.totalMileage / 1000).toFixed(2) : '-' }}</template>
+                  <el-table-column prop="FEEMILEAGE" label="计费总里程数(公里)" show-overflow-tooltip>
+                    <template #default="{ row }">{{ row.FEEMILEAGE ? (row.FEEMILEAGE / 1000).toFixed(2) : '-' }}</template>
                   </el-table-column>
-                  <el-table-column prop="minFeeMileage" label="最小费额里程数(公里)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ row.minFeeMileage ? (row.minFeeMileage / 1000).toFixed(2) : '-' }}</template>
+                  <el-table-column prop="SHORTFEEMILEAGE" label="最小费额里程数(公里)" show-overflow-tooltip>
+                    <template #default="{ row }">{{ row.SHORTFEEMILEAGE ? (row.SHORTFEEMILEAGE / 1000).toFixed(2) : '-' }}</template>
                   </el-table-column>
-                  <el-table-column prop="feeCalcMethodName" label="计费方式" show-overflow-tooltip />
-                  <el-table-column prop="specialTypeName" label="特情" show-overflow-tooltip />
+                  <el-table-column prop="exitFeeTypeName" label="计费方式" show-overflow-tooltip />
+                  <el-table-column prop="specialtype" label="特情" show-overflow-tooltip />
                 </el-table>
               </div>
               <el-alert v-else type="error" :closable="false">
@@ -1283,9 +1281,10 @@
               <div v-if="aiAuditResult.exit_trade_other?.success">
                 <div style="margin-bottom: 10px">共 {{ aiAuditResult.exit_trade_other.total }} 条记录</div>
                 <el-table :data="aiAuditResult.exit_trade_other.records" border max-height="300" size="small" stripe>
-                  <el-table-column prop="exVehiclePlate" label="出口车牌" show-overflow-tooltip />
-                  <el-table-column prop="enVehiclePlate" label="入口车牌" show-overflow-tooltip />
-                  <el-table-column prop="plateNumber" label="识别车牌" show-overflow-tooltip />
+                  <el-table-column prop="passid" label="流水编号" width="330" show-overflow-tooltip />
+                  <el-table-column prop="plateNumber" label="出口车牌" show-overflow-tooltip />
+                  <el-table-column prop="enVehicleIdName" label="入口车牌" show-overflow-tooltip />
+                  <el-table-column prop="identifyVehicleIdName" label="识别车牌" show-overflow-tooltip />
                   <el-table-column prop="entollstationname" label="进站名" show-overflow-tooltip />
                   <el-table-column prop="entime" label="进站时间" show-overflow-tooltip />
                   <el-table-column prop="enVehicleTypeName" label="入口车型" show-overflow-tooltip />
@@ -1293,26 +1292,26 @@
                   <el-table-column prop="extollstationname" label="出站名" show-overflow-tooltip />
                   <el-table-column prop="extime" label="出站时间" show-overflow-tooltip />
                   <el-table-column prop="mediaTypeName" label="介质类型" show-overflow-tooltip />
-                  <el-table-column prop="totalReceivableFee" label="总应收金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.totalReceivableFee) }}</template>
+                  <el-table-column prop="payfee" label="总应收金额(元)" show-overflow-tooltip>
+                    <template #default="{ row }">{{ formatFee(row.payfee) }}</template>
                   </el-table-column>
-                  <el-table-column prop="totalTradeFee" label="总交易金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.totalTradeFee) }}</template>
+                  <el-table-column prop="fee" label="总交易金额(元)" show-overflow-tooltip>
+                    <template #default="{ row }">{{ formatFee(row.fee) }}</template>
                   </el-table-column>
-                  <el-table-column prop="totalDiscountFee" label="总优惠金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.totalDiscountFee) }}</template>
+                  <el-table-column prop="discountfee" label="总优惠金额(元)" show-overflow-tooltip>
+                    <template #default="{ row }">{{ formatFee(row.discountfee) }}</template>
                   </el-table-column>
-                  <el-table-column prop="minFeeTradeAmount" label="最小费额交易金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.minFeeTradeAmount) }}</template>
+                  <el-table-column prop="shortfee" label="最小费额交易金额(元)" show-overflow-tooltip>
+                    <template #default="{ row }">{{ formatFee(row.shortfee) }}</template>
                   </el-table-column>
-                  <el-table-column prop="totalMileage" label="计费总里程数(公里)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ row.totalMileage ? (row.totalMileage / 1000).toFixed(2) : '-' }}</template>
+                  <el-table-column prop="FEEMILEAGE" label="计费总里程数(公里)" show-overflow-tooltip>
+                    <template #default="{ row }">{{ row.FEEMILEAGE ? (row.FEEMILEAGE / 1000).toFixed(2) : '-' }}</template>
                   </el-table-column>
-                  <el-table-column prop="minFeeMileage" label="最小费额里程数(公里)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ row.minFeeMileage ? (row.minFeeMileage / 1000).toFixed(2) : '-' }}</template>
+                  <el-table-column prop="SHORTFEEMILEAGE" label="最小费额里程数(公里)" show-overflow-tooltip>
+                    <template #default="{ row }">{{ row.SHORTFEEMILEAGE ? (row.SHORTFEEMILEAGE / 1000).toFixed(2) : '-' }}</template>
                   </el-table-column>
-                  <el-table-column prop="feeCalcMethodName" label="计费方式" show-overflow-tooltip />
-                  <el-table-column prop="specialTypeName" label="特情" show-overflow-tooltip />
+                  <el-table-column prop="exitFeeTypeName" label="计费方式" show-overflow-tooltip />
+                  <el-table-column prop="specialtype" label="特情" show-overflow-tooltip />
                 </el-table>
               </div>
               <el-alert v-else type="error" :closable="false">
@@ -1373,6 +1372,61 @@
               </div>
             </div>
           </div>
+
+          <!-- 信息填写区域 -->
+          <el-divider content-position="left">信息填写</el-divider>
+          <el-form label-width="120px" style="max-width: 600px">
+            <el-form-item label="复核情况">
+              <el-select
+                v-model="aiAuditReviewStatus"
+                placeholder="请选择复核情况"
+                style="width: 100%"
+              >
+                <el-option label="拆分正常" value="拆分正常" />
+                <el-option label="拆分异常" value="拆分异常" />
+                <el-option label="待删除" value="待删除" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="核查通行标识">
+              <div style="display: flex; gap: 8px; width: 100%">
+                <el-input
+                  v-model="aiAuditCheckPassId"
+                  placeholder="请输入核查通行标识"
+                  style="flex: 1"
+                />
+                <el-button
+                  type="success"
+                  :icon="Search"
+                  @click="handleVerifyPassId(aiAuditCheckPassId, '核查通行标识')"
+                  :loading="verifyLoading"
+                  :disabled="!aiAuditCheckPassId"
+                >
+                  核查
+                </el-button>
+              </div>
+            </el-form-item>
+            <el-form-item label="特情">
+              <el-input
+                v-model="aiAuditSpecialSituation"
+                type="textarea"
+                :rows="2"
+                placeholder="请输入特情"
+              />
+            </el-form-item>
+            <el-form-item label="核查拆分">
+              <el-select
+                v-model="aiAuditCheckSplit"
+                placeholder="请选择核查拆分状态"
+                style="width: 100%"
+                filterable
+                allow-create
+              >
+                <el-option label="已拆" value="已拆" />
+                <el-option label="未拆" value="未拆" />
+              </el-select>
+            </el-form-item>
+          </el-form>
+
           <div style="margin-top: 15px">
             <el-button type="primary" @click="saveImagesToDatabase" :loading="aiAuditSavingImages" :disabled="!aiAuditSelectedImage1 && !aiAuditSelectedImage2">
               保存图片到数据库
@@ -2052,6 +2106,11 @@ const originalImageLoading = ref<string>('')
 const previewLoading = ref<string>('')
 const previewLoadingText = ref<string>('')
 
+const aiAuditReviewStatus = ref<string>('')
+const aiAuditCheckPassId = ref<string>('')
+const aiAuditSpecialSituation = ref<string>('')
+const aiAuditCheckSplit = ref<string>('')
+
 const vehicleImagesPage = ref(0)
 const vehicleImagesPageSize = ref(20)
 const vehicleImagesSort = ref('picTime DESC')
@@ -2324,52 +2383,6 @@ const handleVehicleImagesSortChange = (sort: string) => {
   loadVehicleImagesPage()
 }
 
-const testFetchPicture = async () => {
-  const testUrl = '/picture-server/api/realPicture/get?stationId=G005543003003820010&path=/i/20251204/22/b/GBUPLOAD_VIPU_REQ_G005543003003820_20251204220223363.json'
-  
-  if (!cloudPortalSessionId.value) {
-    ElMessage.warning('请先登录云门户')
-    return
-  }
-  
-  console.log('========== 开始测试获取指定图片 ==========')
-  console.log('图片URL:', testUrl)
-  
-  try {
-    const response = await fetchPicture({
-      session_id: cloudPortalSessionId.value,
-      picture_url: testUrl
-    })
-    
-    console.log('========== 获取指定图片响应数据 ==========')
-    console.log('完整响应:', response)
-    console.log('响应码:', response?.code)
-    console.log('响应消息:', response?.message)
-    console.log('request_url:', response.data?.request_url)
-    console.log('response_status:', response.data?.response_status)
-    console.log('response_content_type:', response.data?.response_content_type)
-    console.log('response_content_length:', response.data?.response_content_length)
-    console.log('response_headers:', response.data?.response_headers)
-    if (response.data?.response_body) {
-      console.log('response_body:', response.data?.response_body)
-    }
-    if (response.data?.data_url) {
-      console.log('data_url前100字符:', response.data?.data_url?.substring(0, 100))
-      console.log('data_url总长度:', response.data?.data_url?.length)
-    }
-    console.log('==============================================')
-    
-    if (response && response.code === 200) {
-      ElMessage.success('获取图片成功，请查看控制台输出')
-    } else {
-      ElMessage.error(response?.message || '获取图片失败')
-    }
-  } catch (error: any) {
-    console.error('获取图片失败:', error)
-    ElMessage.error(error?.message || '获取图片失败')
-  }
-}
-
 const fetchOriginalImageWithRetry = async (
   picturePath: string,
   maxRetries: number = 2
@@ -2567,7 +2580,11 @@ const saveImagesToDatabase = async () => {
       table_name: selectedTable.value,
       record_id: cloudPortalForm.value.passId,
       image1_base64: base64ToSave1 || undefined,
-      image2_base64: base64ToSave2 || undefined
+      image2_base64: base64ToSave2 || undefined,
+      review_status: aiAuditReviewStatus.value || undefined,
+      check_pass_id: aiAuditCheckPassId.value || undefined,
+      special_situation: aiAuditSpecialSituation.value || undefined,
+      check_split: aiAuditCheckSplit.value || undefined
     })
 
     if (response && response.code === 200) {

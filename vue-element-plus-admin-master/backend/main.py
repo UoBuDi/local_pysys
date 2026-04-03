@@ -5445,6 +5445,10 @@ class SaveImagesRequest(BaseModel):
     record_id: str
     image1_base64: Optional[str] = None
     image2_base64: Optional[str] = None
+    review_status: Optional[str] = None
+    check_pass_id: Optional[str] = None
+    special_situation: Optional[str] = None
+    check_split: Optional[str] = None
 
 @app.post("/api/cloud-portal/ai-audit/vehicle-images")
 async def ai_audit_vehicle_images(request: AIAuditQueryRequest):
@@ -5715,8 +5719,24 @@ async def ai_audit_save_images(request: SaveImagesRequest):
             update_fields.append("`查核资料2` = %s")
             params.append(request.image2_base64)
         
+        if request.review_status:
+            update_fields.append("`复核情况` = %s")
+            params.append(request.review_status)
+        
+        if request.check_pass_id:
+            update_fields.append("`核查通行标识` = %s")
+            params.append(request.check_pass_id)
+        
+        if request.special_situation:
+            update_fields.append("`特情` = %s")
+            params.append(request.special_situation)
+        
+        if request.check_split:
+            update_fields.append("`核查拆分` = %s")
+            params.append(request.check_split)
+        
         if not update_fields:
-            return {"code": 400, "message": "没有需要保存的图片"}
+            return {"code": 400, "message": "没有需要保存的数据"}
         
         params.append(request.record_id)
         
