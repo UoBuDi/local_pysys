@@ -75,25 +75,25 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         symbolId: 'icon-[dir]-[name]',
         svgoOptions: true
       }),
-      PurgeIcons({
-        content: [
-          './src/**/*.vue',
-          './src/**/*.ts',
-          './src/**/*.tsx',
-          './src/**/*.js',
-          './src/**/*.jsx'
-        ],
-        extractors: [
-          {
-            extractor: (content: string) => {
-              const regex = /vi-([a-z0-9-]+):[\w\d-]+/g
-              const matches = content.match(regex) || []
-              return matches.map((icon) => icon.replace('vi-', ''))
-            },
-            extensions: ['vue', 'ts', 'js', 'tsx', 'jsx']
-          }
-        ]
-      }),
+      // PurgeIcons({
+      //   content: [
+      //     './src/**/*.vue',
+      //     './src/**/*.ts',
+      //     './src/**/*.tsx',
+      //     './src/**/*.js',
+      //     './src/**/*.jsx'
+      //   ],
+      //   extractors: [
+      //     {
+      //       extractor: (content: string) => {
+      //         const regex = /vi-([a-z0-9-]+):[\w\d-]+/g
+      //         const matches = content.match(regex) || []
+      //         return matches.map((icon) => icon.replace('vi-', ''))
+      //       },
+      //       extensions: ['vue', 'ts', 'js', 'tsx', 'jsx']
+      //     }
+      //   ]
+      // }),
       env.VITE_USE_MOCK === 'true'
         ? viteMockServe({
             ignore: /^\_/,
@@ -166,11 +166,11 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       },
       proxy: {
         '/api': {
-          target: 'http://127.0.0.1:8000',
+          target: 'http://172.32.48.254:8000',
           changeOrigin: true
         },
         '/ws': {
-          target: 'http://127.0.0.1:8000',
+          target: 'http://172.32.48.254:8000',
           changeOrigin: true,
           ws: true
         }

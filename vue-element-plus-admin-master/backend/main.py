@@ -24,12 +24,12 @@ from split_match_service import SplitMatchService
 from statistics_service import get_dashboard_statistics, run_statistics_task, update_task_status, get_latest_month_data, start_task_execution, end_task_execution, get_task_execution_history, get_check_data_connection
 from models import *
 
-SECRET_KEY = "cloud_portal_secret_key_2024"
+PASSWORD_SECRET_KEY = "cloud_portal_secret_key_2024"
 
 def encrypt_password(password: str) -> str:
     encrypted = []
     for i, char in enumerate(password):
-        key_char = SECRET_KEY[i % len(SECRET_KEY)]
+        key_char = PASSWORD_SECRET_KEY[i % len(PASSWORD_SECRET_KEY)]
         encrypted_char = chr(ord(char) ^ ord(key_char))
         encrypted.append(encrypted_char)
     return base64.b64encode(''.join(encrypted).encode()).decode()
@@ -39,11 +39,12 @@ def decrypt_password(encrypted_password: str) -> str:
         decoded = base64.b64decode(encrypted_password.encode()).decode()
         decrypted = []
         for i, char in enumerate(decoded):
-            key_char = SECRET_KEY[i % len(SECRET_KEY)]
+            key_char = PASSWORD_SECRET_KEY[i % len(PASSWORD_SECRET_KEY)]
             decrypted_char = chr(ord(char) ^ ord(key_char))
             decrypted.append(decrypted_char)
         return ''.join(decrypted)
-    except:
+    except Exception as e:
+        logger.debug(f"密码解密失败: {e}")
         return ''
 
 # 从models导入所有数据模型
@@ -197,6 +198,9 @@ config = load_config()
 
 # 从sync_service导入同步状态，避免重复定义
 from sync_service import sync_status
+
+# 初始化同步任务变量
+sync_task = None
 
 # 存储WebSocket连接
 active_connections = []
@@ -872,14 +876,26 @@ class ConnectionManager:
         self.active_connections.append(websocket)
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        try:
+            self.active_connections.remove(websocket)
+        except ValueError:
+            pass
 
     async def send_personal_message(self, message: str, websocket: WebSocket):
         await websocket.send_text(message)
 
     async def broadcast(self, message: str):
+        disconnected = []
         for connection in self.active_connections:
-            await connection.send_text(message)
+            try:
+                await connection.send_text(message)
+            except Exception as e:
+                logger.debug(f"广播消息失败，移除断开的连接: {e}")
+                disconnected.append(connection)
+        
+        # 清理断开的连接
+        for conn in disconnected:
+            self.disconnect(conn)
 
 manager = ConnectionManager()
 
@@ -940,8 +956,9 @@ class StatusConnectionManager:
             for conn in self.frontend_connections:
                 try:
                     await conn["websocket"].send_text(message_str)
-                except:
-                    pass
+                except Exception as e:
+                    logger.debug(f"WebSocket发送到前端失败: {e}")
+                    continue
     
     async def broadcast_to_gui(self, message: dict):
         message_str = json.dumps(message)
@@ -949,8 +966,9 @@ class StatusConnectionManager:
             for conn in self.gui_connections:
                 try:
                     await conn["websocket"].send_text(message_str)
-                except:
-                    pass
+                except Exception as e:
+                    logger.debug(f"WebSocket发送到GUI失败: {e}")
+                    continue
     
     async def broadcast_all(self, message: dict):
         await self.broadcast_to_frontend(message)
@@ -1089,13 +1107,18 @@ class WebSocketLogHandler(logging.Handler):
     def emit(self, record):
         try:
             log_entry = self.format(record)
-            # 通过WebSocket广播日志
-            asyncio.create_task(manager.broadcast(json.dumps({
-                "timestamp": datetime.datetime.now().isoformat(),
-                "level": record.levelname,
-                "message": log_entry
-            })))
-        except Exception:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                loop.call_soon_threadsafe(
+                    lambda: asyncio.ensure_future(
+                        manager.broadcast(json.dumps({
+                            "timestamp": datetime.now().isoformat(),
+                            "level": record.levelname,
+                            "message": log_entry
+                        }))
+                    )
+                )
+        except Exception as e:
             pass
 
 # 注册WebSocket日志处理器
@@ -2560,8 +2583,7 @@ async def verify_pass_id(
     - records: 前3条匹配记录的关键信息
     """
     import time
-    from datetime import datetime
-    
+
     query_start_time = time.time()
     logger.info(f"========== 核查通行标识开始 ==========")
     logger.info(f"核查ID: {pass_id}, 类型: {verify_type}, 用户: {username}")
@@ -3012,7 +3034,6 @@ async def path_match_search(request: PathMatchRequest):
                 # 第二步：在Python中过滤门架经过时间范围
                 filtered_results = []
                 if timeRange and len(timeRange) == 2:
-                    from datetime import datetime
                     target_start = datetime.strptime(timeRange[0], '%Y-%m-%d %H:%M:%S')
                     target_end = datetime.strptime(timeRange[1], '%Y-%m-%d %H:%M:%S')
                     
@@ -3211,7 +3232,6 @@ async def run_scheduled_task(task_name: str, user: dict = Depends(require_permis
     start_time = None
     
     try:
-        from datetime import datetime
         start_time = datetime.now()
         history_id = start_task_execution(task_name)
         
@@ -5196,25 +5216,32 @@ async def get_cloud_portal_captcha(session_id: Optional[str] = None):
         if session_id:
             params['session_id'] = session_id
         
-        response = requests.get(
+        logger.info(f"[云门户验证码] 开始请求 - session_id: {session_id}, 目标: {GUI_SERVICE_URL}/api/portal/captcha")
+        
+        loop = asyncio.get_event_loop()
+        response = await asyncio.to_thread(
+            requests.get,
             f"{GUI_SERVICE_URL}/api/portal/captcha",
             params=params,
-            timeout=10
+            timeout=15
         )
         
+        logger.info(f"[云门户验证码] 请求成功 - 状态码: {response.status_code}")
         return response.json()
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"[云门户验证码] 连接失败 - 错误: {e}")
         return JSONResponse(
             status_code=503,
             content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
         )
     except requests.exceptions.Timeout:
+        logger.error("[云门户验证码] 请求超时")
         return JSONResponse(
             status_code=504,
             content={"code": 504, "message": "连接云门户查询服务超时"}
         )
     except Exception as e:
-        logger.error(f"获取验证码失败: {e}")
+        logger.error(f"[云门户验证码] 异常 - 错误: {e}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content={"code": 500, "message": f"获取验证码失败: {str(e)}"}
@@ -5223,7 +5250,10 @@ async def get_cloud_portal_captcha(session_id: Optional[str] = None):
 @app.post("/api/cloud-portal/login")
 async def cloud_portal_login(request: CloudPortalLoginRequest):
     try:
-        response = requests.post(
+        logger.info(f"[云门户登录] 开始请求 - session_id: {request.session_id}")
+
+        response = await asyncio.to_thread(
+            requests.post,
             f"{GUI_SERVICE_URL}/api/portal/login",
             json={
                 'session_id': request.session_id,
@@ -5232,22 +5262,25 @@ async def cloud_portal_login(request: CloudPortalLoginRequest):
                 'captcha': request.captcha,
                 'uuid': request.uuid
             },
-            timeout=15
+            timeout=20
         )
-        
+
+        logger.info(f"[云门户登录] 请求成功 - 状态码: {response.status_code}")
         return response.json()
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"[云门户登录] 连接失败 - 错误: {e}")
         return JSONResponse(
             status_code=503,
             content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
         )
     except requests.exceptions.Timeout:
+        logger.error("[云门户登录] 请求超时")
         return JSONResponse(
             status_code=504,
             content={"code": 504, "message": "连接云门户查询服务超时"}
         )
     except Exception as e:
-        logger.error(f"登录失败: {e}")
+        logger.error(f"[云门户登录] 异常 - 错误: {e}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content={"code": 500, "message": f"登录失败: {str(e)}"}
@@ -5256,28 +5289,34 @@ async def cloud_portal_login(request: CloudPortalLoginRequest):
 @app.post("/api/cloud-portal/query")
 async def cloud_portal_query(request: CloudPortalQueryRequest):
     try:
-        response = requests.post(
+        logger.info(f"[云门户查询] 开始请求 - session_id: {request.session_id}")
+
+        response = await asyncio.to_thread(
+            requests.post,
             f"{GUI_SERVICE_URL}/api/portal/query",
             json={
                 'session_id': request.session_id,
                 'query_params': request.query_params
             },
-            timeout=30
+            timeout=45
         )
-        
+
+        logger.info(f"[云门户查询] 请求成功 - 状态码: {response.status_code}")
         return response.json()
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"[云门户查询] 连接失败 - 错误: {e}")
         return JSONResponse(
             status_code=503,
             content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
         )
     except requests.exceptions.Timeout:
+        logger.error("[云门户查询] 请求超时")
         return JSONResponse(
             status_code=504,
             content={"code": 504, "message": "连接云门户查询服务超时"}
         )
     except Exception as e:
-        logger.error(f"查询失败: {e}")
+        logger.error(f"[云门户查询] 异常 - 错误: {e}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content={"code": 500, "message": f"查询失败: {str(e)}"}
@@ -5286,25 +5325,31 @@ async def cloud_portal_query(request: CloudPortalQueryRequest):
 @app.get("/api/cloud-portal/status")
 async def cloud_portal_status(session_id: str):
     try:
-        response = requests.get(
+        logger.info(f"[云门户状态] 开始请求 - session_id: {session_id}")
+
+        response = await asyncio.to_thread(
+            requests.get,
             f"{GUI_SERVICE_URL}/api/portal/status",
             params={'session_id': session_id},
-            timeout=10
+            timeout=15
         )
-        
+
+        logger.info(f"[云门户状态] 请求成功 - 状态码: {response.status_code}")
         return response.json()
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"[云门户状态] 连接失败 - 错误: {e}")
         return JSONResponse(
             status_code=503,
             content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
         )
     except requests.exceptions.Timeout:
+        logger.error("[云门户状态] 请求超时")
         return JSONResponse(
             status_code=504,
             content={"code": 504, "message": "连接云门户查询服务超时"}
         )
     except Exception as e:
-        logger.error(f"获取状态失败: {e}")
+        logger.error(f"[云门户状态] 异常 - 错误: {e}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content={"code": 500, "message": f"获取状态失败: {str(e)}"}
@@ -5313,25 +5358,31 @@ async def cloud_portal_status(session_id: str):
 @app.post("/api/cloud-portal/logout")
 async def cloud_portal_logout(request: CloudPortalLogoutRequest):
     try:
-        response = requests.post(
+        logger.info(f"[云门户登出] 开始请求 - session_id: {request.session_id}")
+
+        response = await asyncio.to_thread(
+            requests.post,
             f"{GUI_SERVICE_URL}/api/portal/logout",
             json={'session_id': request.session_id},
-            timeout=10
+            timeout=15
         )
-        
+
+        logger.info(f"[云门户登出] 请求成功 - 状态码: {response.status_code}")
         return response.json()
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"[云门户登出] 连接失败 - 错误: {e}")
         return JSONResponse(
             status_code=503,
             content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
         )
     except requests.exceptions.Timeout:
+        logger.error("[云门户登出] 请求超时")
         return JSONResponse(
             status_code=504,
             content={"code": 504, "message": "连接云门户查询服务超时"}
         )
     except Exception as e:
-        logger.error(f"登出失败: {e}")
+        logger.error(f"[云门户登出] 异常 - 错误: {e}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content={"code": 500, "message": f"登出失败: {str(e)}"}
@@ -5340,24 +5391,30 @@ async def cloud_portal_logout(request: CloudPortalLogoutRequest):
 @app.get("/api/cloud-portal/health")
 async def cloud_portal_health():
     try:
-        response = requests.get(
+        logger.info("[云门户健康检查] 开始请求")
+
+        response = await asyncio.to_thread(
+            requests.get,
             f"{GUI_SERVICE_URL}/api/portal/health",
-            timeout=5
+            timeout=10
         )
-        
+
+        logger.info(f"[云门户健康检查] 请求成功 - 状态码: {response.status_code}")
         return response.json()
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"[云门户健康检查] 连接失败 - 错误: {e}")
         return JSONResponse(
             status_code=503,
             content={"code": 503, "message": "云门户查询服务未启动", "data": {"status": "offline"}}
         )
     except requests.exceptions.Timeout:
+        logger.error("[云门户健康检查] 请求超时")
         return JSONResponse(
             status_code=504,
             content={"code": 504, "message": "云门户查询服务响应超时", "data": {"status": "timeout"}}
         )
     except Exception as e:
-        logger.error(f"健康检查失败: {e}")
+        logger.error(f"[云门户健康检查] 异常 - 错误: {e}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content={"code": 500, "message": f"健康检查失败: {str(e)}", "data": {"status": "error"}}
@@ -5575,6 +5632,41 @@ async def ai_audit_batch_query(request: AIAuditBatchQueryRequest):
         return JSONResponse(
             status_code=500,
             content={"code": 500, "message": f"查询失败: {str(e)}"}
+        )
+
+class OriginalImageRequest(BaseModel):
+    session_id: str
+    picture_path: str
+
+@app.post("/api/cloud-portal/ai-audit/original-image")
+async def ai_audit_original_image(request: OriginalImageRequest):
+    try:
+        loop = asyncio.get_event_loop()
+        response = await asyncio.to_thread(
+            requests.post,
+            f"{GUI_SERVICE_URL}/api/portal/ai-audit/original-image",
+            json={
+                'session_id': request.session_id,
+                'picture_path': request.picture_path
+            },
+            timeout=30
+        )
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"获取高清原图失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"获取原图失败: {str(e)}"}
         )
 
 @app.post("/api/cloud-portal/ai-audit/select-images")

@@ -2,6 +2,7 @@ import logging
 import uuid
 import base64
 import json
+import time
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from session_manager import session_manager
@@ -86,33 +87,54 @@ def get_latest_response():
 
 @app.route('/api/portal/captcha', methods=['GET'])
 def get_captcha():
+    start_time = time.time()
     session_id = request.args.get('session_id')
+    
+    logger.info(f"[验证码] 请求开始 - session_id: {session_id}")
+    logger.info(f"[验证码] 配置信息 - PORTAL_BASE_URL: {config.PORTAL_BASE_URL}, ETHERNET2_IP: {config.ETHERNET2_IP}")
     
     if not session_id:
         session_id = str(uuid.uuid4())
     
     client = session_manager.get_session(session_id)
     if not client:
+        logger.info(f"[验证码] 创建新会话 - session_id: {session_id}")
         client = session_manager.create_session(session_id)
-    
-    result = client.get_captcha()
-    
-    if result['success']:
-        add_request_log('GET', '/api/portal/captcha', {'session_id': session_id}, 200)
-        return jsonify({
-            'code': 200,
-            'message': 'success',
-            'data': {
-                'session_id': session_id,
-                'img': result['img'],
-                'uuid': result['uuid']
-            }
-        })
     else:
+        logger.info(f"[验证码] 使用已有会话 - session_id: {session_id}")
+    
+    try:
+        logger.info(f"[验证码] 调用PortalClient.get_captcha() - 源IP: {client.source_ip or '默认'}")
+        result = client.get_captcha()
+        elapsed = time.time() - start_time
+        logger.info(f"[验证码] PortalClient返回 - 耗时: {elapsed:.2f}s, 成功: {result['success']}")
+        
+        if result['success']:
+            add_request_log('GET', '/api/portal/captcha', {'session_id': session_id}, 200)
+            logger.info(f"[验证码] 成功返回验证码 - 总耗时: {elapsed:.2f}s")
+            return jsonify({
+                'code': 200,
+                'message': 'success',
+                'data': {
+                    'session_id': session_id,
+                    'img': result['img'],
+                    'uuid': result['uuid']
+                }
+            })
+        else:
+            add_request_log('GET', '/api/portal/captcha', {'session_id': session_id}, 500)
+            logger.error(f"[验证码] 失败 - 错误: {result.get('error')}, 总耗时: {elapsed:.2f}s")
+            return jsonify({
+                'code': 500,
+                'message': result['error']
+            }), 500
+    except Exception as e:
+        elapsed = time.time() - start_time
+        logger.error(f"[验证码] 异常 - 错误: {e}, 总耗时: {elapsed:.2f}s", exc_info=True)
         add_request_log('GET', '/api/portal/captcha', {'session_id': session_id}, 500)
         return jsonify({
             'code': 500,
-            'message': result['error']
+            'message': f'获取验证码异常: {str(e)}'
         }), 500
 
 @app.route('/api/portal/login', methods=['POST'])

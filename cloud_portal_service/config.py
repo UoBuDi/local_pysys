@@ -2,7 +2,7 @@ import json
 import os
 import sys
 
-VERSION = "1.43"
+VERSION = "1.45"
 
 def get_base_path():
     if getattr(sys, 'frozen', False):
@@ -27,6 +27,12 @@ DEFAULT_CONFIG = {
         "ethernet_ip": "172.32.48.239",
         "ethernet2_ip": "10.143.164.29",
         "use_ethernet2_for_portal": True
+    },
+    "backend": {
+        "host": "0.0.0.0",
+        "port": 8000,
+        "auto_generate_url": True,
+        "url": ""
     }
 }
 
@@ -123,6 +129,43 @@ class Config:
     @property
     def ETHERNET2_IP(self):
         return self.NETWORK.get('ethernet2_ip', DEFAULT_CONFIG['network']['ethernet2_ip'])
+    
+    @property
+    def BACKEND(self):
+        return self._config.get('backend', DEFAULT_CONFIG['backend'])
+    
+    @property
+    def BACKEND_HOST(self):
+        return self.BACKEND.get('host', DEFAULT_CONFIG['backend']['host'])
+    
+    @property
+    def BACKEND_PORT(self):
+        return self.BACKEND.get('port', DEFAULT_CONFIG['backend']['port'])
+    
+    @property
+    def BACKEND_AUTO_GENERATE_URL(self):
+        return self.BACKEND.get('auto_generate_url', DEFAULT_CONFIG['backend']['auto_generate_url'])
+    
+    @property
+    def BACKEND_URL(self):
+        if self.BACKEND_AUTO_GENERATE_URL:
+            host = self.BACKEND_HOST
+            if host == "0.0.0.0" or host == "127.0.0.1":
+                import socket
+                try:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    s.connect(("8.8.8.8", 80))
+                    host = s.getsockname()[0]
+                    s.close()
+                except Exception:
+                    host = "127.0.0.1"
+            return f"http://{host}:{self.BACKEND_PORT}"
+        else:
+            url = self.BACKEND.get('url', '')
+            if url:
+                return url
+            else:
+                return f"http://127.0.0.1:{self.BACKEND_PORT}"
     
     @property
     def VERSION(self):
