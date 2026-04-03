@@ -1070,6 +1070,97 @@
           </el-descriptions-item>
         </el-descriptions>
 
+        <!-- 信息填写区域 -->
+        <el-divider content-position="left">
+          <span style="font-size: 15px; font-weight: 500; color: #303133">📝 信息填写</span>
+        </el-divider>
+        
+        <div class="info-fill-card">
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <div class="form-item-card">
+                <div class="form-item-label">
+                  <span class="label-text">复核情况</span>
+                </div>
+                <el-select
+                  v-model="aiAuditReviewStatus"
+                  placeholder="请选择复核情况"
+                  style="width: 100%"
+                  clearable
+                >
+                  <el-option label="拆分正常" value="拆分正常" />
+                  <el-option label="拆分异常" value="拆分异常" />
+                  <el-option label="待删除" value="待删除" />
+                </el-select>
+              </div>
+            </el-col>
+            
+            <el-col :span="12">
+              <div class="form-item-card">
+                <div class="form-item-label">
+                  <span class="label-text">核查拆分</span>
+                </div>
+                <el-select
+                  v-model="aiAuditCheckSplit"
+                  placeholder="请选择核查拆分状态"
+                  style="width: 100%"
+                  filterable
+                  allow-create
+                  clearable
+                >
+                  <el-option label="已拆" value="已拆" />
+                  <el-option label="未拆" value="未拆" />
+                </el-select>
+              </div>
+            </el-col>
+          </el-row>
+
+          <el-row :gutter="20" style="margin-top: 16px">
+            <el-col :span="24">
+              <div class="form-item-card">
+                <div class="form-item-label">
+                  <span class="label-text">核查通行标识</span>
+                  <el-tag size="small" type="info" style="margin-left: 8px">可核查</el-tag>
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <el-input
+                    v-model="aiAuditCheckPassId"
+                    placeholder="请输入核查通行标识"
+                    style="flex: 1"
+                    clearable
+                  />
+                  <el-button
+                    type="success"
+                    :icon="Search"
+                    @click="handleVerifyPassId(aiAuditCheckPassId, '核查通行标识')"
+                    :loading="verifyLoading"
+                    :disabled="!aiAuditCheckPassId"
+                  >
+                    核查
+                  </el-button>
+                </div>
+              </div>
+            </el-col>
+          </el-row>
+
+          <el-row :gutter="20" style="margin-top: 16px">
+            <el-col :span="24">
+              <div class="form-item-card">
+                <div class="form-item-label">
+                  <span class="label-text">特情</span>
+                </div>
+                <el-input
+                  v-model="aiAuditSpecialSituation"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="请输入特情描述"
+                  clearable
+                />
+              </div>
+            </el-col>
+          </el-row>
+        </div>
+
         <el-divider content-position="left">云门户登录</el-divider>
 
         <!-- 未登录状态 -->
@@ -1238,8 +1329,12 @@
             <el-tab-pane label="出口交易(ETC)" name="exit_trade_etc">
               <div v-if="aiAuditResult.exit_trade_etc?.success">
                 <div style="margin-bottom: 10px">共 {{ aiAuditResult.exit_trade_etc.total }} 条记录</div>
-                <el-table :data="aiAuditResult.exit_trade_etc.records" border max-height="300" size="small" stripe>
-                  <el-table-column prop="passid" label="流水编号" width="330" show-overflow-tooltip />
+                <el-table :data="aiAuditResult.exit_trade_etc.records" border max-height="300" size="small" stripe :row-class-name="getExitTradeRowClass">
+                  <el-table-column prop="passid" label="流水编号" width="330" show-overflow-tooltip>
+                    <template #default="{ row }">
+                      <span :style="row.passid === cloudPortalForm.passId ? 'font-weight: bold; color: #409EFF' : ''">{{ row.passid }}</span>
+                    </template>
+                  </el-table-column>
                   <el-table-column prop="plateNumber" label="出口车牌" show-overflow-tooltip />
                   <el-table-column prop="enVehicleIdName" label="入口车牌" show-overflow-tooltip />
                   <el-table-column prop="identifyVehicleIdName" label="识别车牌" show-overflow-tooltip />
@@ -1280,8 +1375,12 @@
             <el-tab-pane label="出口交易(其它)" name="exit_trade_other">
               <div v-if="aiAuditResult.exit_trade_other?.success">
                 <div style="margin-bottom: 10px">共 {{ aiAuditResult.exit_trade_other.total }} 条记录</div>
-                <el-table :data="aiAuditResult.exit_trade_other.records" border max-height="300" size="small" stripe>
-                  <el-table-column prop="passid" label="流水编号" width="330" show-overflow-tooltip />
+                <el-table :data="aiAuditResult.exit_trade_other.records" border max-height="300" size="small" stripe :row-class-name="getExitTradeRowClass">
+                  <el-table-column prop="passid" label="流水编号" width="330" show-overflow-tooltip>
+                    <template #default="{ row }">
+                      <span :style="row.passid === cloudPortalForm.passId ? 'font-weight: bold; color: #409EFF' : ''">{{ row.passid }}</span>
+                    </template>
+                  </el-table-column>
                   <el-table-column prop="plateNumber" label="出口车牌" show-overflow-tooltip />
                   <el-table-column prop="enVehicleIdName" label="入口车牌" show-overflow-tooltip />
                   <el-table-column prop="identifyVehicleIdName" label="识别车牌" show-overflow-tooltip />
@@ -1373,63 +1472,9 @@
             </div>
           </div>
 
-          <!-- 信息填写区域 -->
-          <el-divider content-position="left">信息填写</el-divider>
-          <el-form label-width="120px" style="max-width: 600px">
-            <el-form-item label="复核情况">
-              <el-select
-                v-model="aiAuditReviewStatus"
-                placeholder="请选择复核情况"
-                style="width: 100%"
-              >
-                <el-option label="拆分正常" value="拆分正常" />
-                <el-option label="拆分异常" value="拆分异常" />
-                <el-option label="待删除" value="待删除" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="核查通行标识">
-              <div style="display: flex; gap: 8px; width: 100%">
-                <el-input
-                  v-model="aiAuditCheckPassId"
-                  placeholder="请输入核查通行标识"
-                  style="flex: 1"
-                />
-                <el-button
-                  type="success"
-                  :icon="Search"
-                  @click="handleVerifyPassId(aiAuditCheckPassId, '核查通行标识')"
-                  :loading="verifyLoading"
-                  :disabled="!aiAuditCheckPassId"
-                >
-                  核查
-                </el-button>
-              </div>
-            </el-form-item>
-            <el-form-item label="特情">
-              <el-input
-                v-model="aiAuditSpecialSituation"
-                type="textarea"
-                :rows="2"
-                placeholder="请输入特情"
-              />
-            </el-form-item>
-            <el-form-item label="核查拆分">
-              <el-select
-                v-model="aiAuditCheckSplit"
-                placeholder="请选择核查拆分状态"
-                style="width: 100%"
-                filterable
-                allow-create
-              >
-                <el-option label="已拆" value="已拆" />
-                <el-option label="未拆" value="未拆" />
-              </el-select>
-            </el-form-item>
-          </el-form>
-
           <div style="margin-top: 15px">
             <el-button type="primary" @click="saveImagesToDatabase" :loading="aiAuditSavingImages" :disabled="!aiAuditSelectedImage1 && !aiAuditSelectedImage2">
-              保存图片到数据库
+              保存
             </el-button>
           </div>
         </div>
@@ -2169,6 +2214,13 @@ const getGantryTradeRowClass = ({ row }: { row: any }): string => {
 const getGantryPlateRowClass = ({ row }: { row: any }): string => {
   if (isGantryMatched(row.gantryId)) {
     return 'matched-gantry-row'
+  }
+  return ''
+}
+
+const getExitTradeRowClass = ({ row }: { row: any }): string => {
+  if (row.passid && cloudPortalForm.value.passId && row.passid === cloudPortalForm.value.passId) {
+    return 'matched-passid-row'
   }
   return ''
 }
@@ -4655,11 +4707,71 @@ onMounted(() => {
 }
 
 /* 匹配门架行高亮样式 */
-:deep(.matched-gantry-row) {
+::deep(.matched-gantry-row) {
   background-color: #ecf5ff !important;
 }
 
-:deep(.matched-gantry-row:hover > td) {
+::deep(.matched-gantry-row:hover > td) {
   background-color: #d9ecff !important;
+}
+
+/* 匹配流水编号行高亮样式 */
+::deep(.matched-passid-row) {
+  background-color: #f0f9ff !important;
+}
+
+::deep(.matched-passid-row:hover > td) {
+  background-color: #e0f2fe !important;
+}
+
+/* 信息填写区域样式 */
+.info-fill-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.form-item-card {
+  background: #ffffff;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.form-item-card:hover {
+  border-color: #409EFF;
+  box-shadow: 0 2px 12px rgba(64, 158, 255, 0.15);
+}
+
+.form-item-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.form-item-label .label-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+  position: relative;
+  padding-left: 10px;
+}
+
+.form-item-label .label-text::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 14px;
+  background: linear-gradient(180deg, #409EFF 0%, #66b1ff 100%);
+  border-radius: 2px;
 }
 </style>
