@@ -367,6 +367,103 @@ class PortalClient:
                 'error': str(e)
             }
     
+    def check_and_refresh_token(self) -> bool:
+        """
+        检查Token是否即将过期，如果是则自动刷新
+        """
+        if not self.access_token or not self.refresh_token:
+            logger.warning("[Token检查] 无Token或RefreshToken")
+            return False
+        
+        if not self.token_expires_at:
+            logger.warning("[Token检查] 无过期时间")
+            return False
+        
+        if time.time() > self.token_expires_at - config.TOKEN_REFRESH_THRESHOLD:
+            logger.info("[Token检查] Token即将过期，开始刷新...")
+            result = self.refresh_access_token()
+            if result['success']:
+                logger.info("[Token检查] Token刷新成功")
+                return True
+            else:
+                logger.error(f"[Token检查] Token刷新失败: {result.get('error')}")
+                return False
+        
+        return True
+    
+    def keep_alive(self, use_twaudit: bool = True) -> Dict[str, Any]:
+        """
+        发送心跳请求保持连接活跃
+        使用getUserInfo接口验证会话有效性
+        支持多域名心跳
+        """
+        if not self.access_token:
+            return {
+                'success': False,
+                'error': '未登录，无法发送心跳'
+            }
+        
+        if not self.check_and_refresh_token():
+            return {
+                'success': False,
+                'error': 'Token已失效，请重新登录'
+            }
+        
+        if use_twaudit:
+            base_url = "http://twaudit.hngsetc.com"
+            tenant_id = "fecbd87c54b34cd8863bd0640043660c"
+        else:
+            base_url = config.PORTAL_HOME_URL
+            tenant_id = "1d68da3aa0a54f158fd6dab013a81d48"
+        
+        url = f"{base_url}/gateway/user-server/user/getUserInfo.json"
+        
+        try:
+            headers = {
+                'Accept': 'application/json, text/plain, */*',
+                'DNT': '1',
+                'Authorization': f'Bearer {self.access_token}',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36 Edg/84.0.522.49',
+                'Referer': f'{base_url}/aiAuditWeb/index.html',
+                'Accept-Encoding': 'gzip, deflate',
+                'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6'
+            }
+            
+            response = self.session.get(
+                url,
+                params={'tenantId': tenant_id},
+                headers=headers,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('code', {}).get('code') == '0' or data.get('code', {}).get('ok'):
+                    logger.info(f"[心跳] 连接保持成功 - 域名: {base_url}")
+                    return {
+                        'success': True,
+                        'message': '连接保持成功'
+                    }
+            
+            logger.warning(f"[心跳] 连接保持失败 - 状态码: {response.status_code}")
+            return {
+                'success': False,
+                'error': f'心跳失败: HTTP {response.status_code}'
+            }
+            
+        except requests.exceptions.Timeout:
+            logger.error("[心跳] 请求超时")
+            return {
+                'success': False,
+                'error': '心跳请求超时'
+            }
+        except Exception as e:
+            logger.error(f"[心跳] 异常 - 错误: {e}")
+            return {
+                'success': False,
+                'error': f'心跳异常: {str(e)}'
+            }
+    
     def logout(self) -> Dict[str, Any]:
         self.access_token = None
         self.refresh_token = None

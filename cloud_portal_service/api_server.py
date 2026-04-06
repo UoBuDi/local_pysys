@@ -3,19 +3,16 @@ import uuid
 import base64
 import json
 import time
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from session_manager import session_manager
-from config import config
+from config import config, get_base_path
 from ai_audit_client import AIAuditClient
 from datetime import datetime
 from collections import deque
 from network_utils import create_portal_session, restore_create_connection
 
-logging.basicConfig(
-    level=getattr(logging, config.LOG_LEVEL),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
 logger = logging.getLogger(__name__)
 
 request_log = deque(maxlen=100)
@@ -31,6 +28,34 @@ def add_request_log(method, path, params=None, response_code=None):
     }
     request_log.append(log_entry)
     logger.info(f"请求: {method} {path} - {response_code}")
+
+def log_request_to_file(method, path, data=None, response=None):
+    try:
+        log_dir = get_base_path()
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, 'data.log')
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        log_entry = {
+            'timestamp': timestamp,
+            'type': 'request',
+            'method': method,
+            'path': path,
+            'data': data
+        }
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(log_entry, ensure_ascii=False) + '\n')
+        if response is not None:
+            response_entry = {
+                'timestamp': timestamp,
+                'type': 'response',
+                'method': method,
+                'path': path,
+                'data': response
+            }
+            with open(log_file, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(response_entry, ensure_ascii=False) + '\n')
+    except Exception as e:
+        logger.error(f"写入请求日志失败: {e}")
 
 def get_request_logs():
     return list(request_log)
@@ -87,6 +112,7 @@ def get_latest_response():
 
 @app.route('/api/portal/captcha', methods=['GET'])
 def get_captcha():
+    session_manager.update_activity()
     start_time = time.time()
     session_id = request.args.get('session_id')
     
@@ -112,6 +138,16 @@ def get_captcha():
         if result['success']:
             add_request_log('GET', '/api/portal/captcha', {'session_id': session_id}, 200)
             logger.info(f"[验证码] 成功返回验证码 - 总耗时: {elapsed:.2f}s")
+            response_data = {
+                'code': 200,
+                'message': 'success',
+                'data': {
+                    'session_id': session_id,
+                    'img': result['img'][:100] + '...' if result['img'] else None,
+                    'uuid': result['uuid']
+                }
+            }
+            log_request_to_file('GET', '/api/portal/captcha', {'session_id': session_id}, response_data)
             return jsonify({
                 'code': 200,
                 'message': 'success',
@@ -124,28 +160,33 @@ def get_captcha():
         else:
             add_request_log('GET', '/api/portal/captcha', {'session_id': session_id}, 500)
             logger.error(f"[验证码] 失败 - 错误: {result.get('error')}, 总耗时: {elapsed:.2f}s")
-            return jsonify({
+            response_data = {
                 'code': 500,
                 'message': result['error']
-            }), 500
+            }
+            log_request_to_file('GET', '/api/portal/captcha', {'session_id': session_id}, response_data)
+            return jsonify(response_data), 500
     except Exception as e:
         elapsed = time.time() - start_time
         logger.error(f"[验证码] 异常 - 错误: {e}, 总耗时: {elapsed:.2f}s", exc_info=True)
         add_request_log('GET', '/api/portal/captcha', {'session_id': session_id}, 500)
-        return jsonify({
+        response_data = {
             'code': 500,
             'message': f'获取验证码异常: {str(e)}'
-        }), 500
+        }
+        log_request_to_file('GET', '/api/portal/captcha', {'session_id': session_id}, response_data)
+        return jsonify(response_data), 500
 
 @app.route('/api/portal/login', methods=['POST'])
 def login():
+    session_manager.update_activity()
     data = request.json
     
     if not data:
-        return jsonify({
-            'code': 400,
-            'message': '请求体不能为空'
-        }), 400
+        add_request_log('POST', '/api/portal/login', None, 400)
+        response_data = {'code': 400, 'message': '请求体不能为空'}
+        log_request_to_file('POST', '/api/portal/login', data, response_data)
+        return jsonify(response_data), 400
     
     session_id = data.get('session_id')
     username = data.get('username')
@@ -154,23 +195,24 @@ def login():
     uuid_str = data.get('uuid')
     
     if not all([session_id, username, password, captcha, uuid_str]):
-        return jsonify({
-            'code': 400,
-            'message': '缺少必要参数'
-        }), 400
+        add_request_log('POST', '/api/portal/login', {'session_id': session_id}, 400)
+        response_data = {'code': 400, 'message': '缺少必要参数'}
+        log_request_to_file('POST', '/api/portal/login', data, response_data)
+        return jsonify(response_data), 400
     
     client = session_manager.get_session(session_id)
     if not client:
-        return jsonify({
-            'code': 401,
-            'message': '会话已过期，请刷新验证码'
-        }), 401
+        add_request_log('POST', '/api/portal/login', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '会话已过期，请刷新验证码'}
+        log_request_to_file('POST', '/api/portal/login', data, response_data)
+        return jsonify(response_data), 401
     
     result = client.login(username, password, captcha, uuid_str)
     
     if result['success']:
         session_manager.update_timestamp(session_id)
-        return jsonify({
+        add_request_log('POST', '/api/portal/login', {'session_id': session_id, 'username': username}, 200)
+        response_data = {
             'code': 200,
             'message': '登录成功',
             'data': {
@@ -179,75 +221,79 @@ def login():
                 'refresh_token': result.get('refresh_token'),
                 'redirect_uri': result.get('redirect_uri')
             }
-        })
+        }
+        log_request_to_file('POST', '/api/portal/login', data, response_data)
+        return jsonify(response_data)
     else:
-        return jsonify({
-            'code': 401,
-            'message': result['error']
-        }), 401
+        add_request_log('POST', '/api/portal/login', {'session_id': session_id, 'username': username}, 401)
+        response_data = {'code': 401, 'message': result['error']}
+        log_request_to_file('POST', '/api/portal/login', data, response_data)
+        return jsonify(response_data), 401
 
 @app.route('/api/portal/query', methods=['POST'])
 def query():
+    session_manager.update_activity()
     data = request.json
     
     if not data:
-        return jsonify({
-            'code': 400,
-            'message': '请求体不能为空'
-        }), 400
+        add_request_log('POST', '/api/portal/query', None, 400)
+        response_data = {'code': 400, 'message': '请求体不能为空'}
+        log_request_to_file('POST', '/api/portal/query', data, response_data)
+        return jsonify(response_data), 400
     
     session_id = data.get('session_id')
     query_params = data.get('query_params')
     
     if not session_id:
-        return jsonify({
-            'code': 400,
-            'message': '缺少session_id'
-        }), 400
+        add_request_log('POST', '/api/portal/query', None, 400)
+        response_data = {'code': 400, 'message': '缺少session_id'}
+        log_request_to_file('POST', '/api/portal/query', data, response_data)
+        return jsonify(response_data), 400
     
     if not query_params:
-        return jsonify({
-            'code': 400,
-            'message': '缺少查询参数'
-        }), 400
+        add_request_log('POST', '/api/portal/query', {'session_id': session_id}, 400)
+        response_data = {'code': 400, 'message': '缺少查询参数'}
+        log_request_to_file('POST', '/api/portal/query', data, response_data)
+        return jsonify(response_data), 400
     
     client = session_manager.get_session(session_id)
     if not client:
-        return jsonify({
-            'code': 401,
-            'message': '未登录或会话已过期'
-        }), 401
+        add_request_log('POST', '/api/portal/query', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '未登录或会话已过期'}
+        log_request_to_file('POST', '/api/portal/query', data, response_data)
+        return jsonify(response_data), 401
     
     result = client.query_pass_data(query_params)
     
     if result['success']:
         session_manager.update_timestamp(session_id)
-        return jsonify({
-            'code': 200,
-            'message': 'success',
-            'data': result['data']
-        })
+        add_request_log('POST', '/api/portal/query', {'session_id': session_id}, 200)
+        response_data = {'code': 200, 'message': 'success', 'data': result['data']}
+        log_request_to_file('POST', '/api/portal/query', data, response_data)
+        return jsonify(response_data)
     else:
-        return jsonify({
-            'code': 500,
-            'message': result['error']
-        }), 500
+        add_request_log('POST', '/api/portal/query', {'session_id': session_id}, 500)
+        response_data = {'code': 500, 'message': result['error']}
+        log_request_to_file('POST', '/api/portal/query', data, response_data)
+        return jsonify(response_data), 500
 
 @app.route('/api/portal/status', methods=['GET'])
 def status():
+    session_manager.update_activity()
     session_id = request.args.get('session_id')
     
     if not session_id:
-        return jsonify({
-            'code': 400,
-            'message': '缺少session_id'
-        }), 400
+        add_request_log('GET', '/api/portal/status', None, 400)
+        response_data = {'code': 400, 'message': '缺少session_id'}
+        log_request_to_file('GET', '/api/portal/status', {'session_id': session_id}, response_data)
+        return jsonify(response_data), 400
     
     client = session_manager.get_session(session_id)
     
     if client and client.is_logged_in():
         status_data = client.get_status()
-        return jsonify({
+        add_request_log('GET', '/api/portal/status', {'session_id': session_id}, 200)
+        response_data = {
             'code': 200,
             'message': '已登录',
             'data': {
@@ -256,28 +302,62 @@ def status():
                 'login_time': status_data['login_time'],
                 'expires_at': status_data['expires_at']
             }
-        })
+        }
+        log_request_to_file('GET', '/api/portal/status', {'session_id': session_id}, response_data)
+        return jsonify(response_data)
     else:
-        return jsonify({
-            'code': 200,
-            'message': '未登录',
-            'data': {
-                'logged_in': False
-            }
-        })
+        add_request_log('GET', '/api/portal/status', {'session_id': session_id}, 200)
+        response_data = {'code': 200, 'message': '未登录', 'data': {'logged_in': False}}
+        log_request_to_file('GET', '/api/portal/status', {'session_id': session_id}, response_data)
+        return jsonify(response_data)
 
 @app.route('/api/portal/logout', methods=['POST'])
 def logout():
+    session_manager.update_activity()
     data = request.json or {}
     session_id = data.get('session_id')
     
     if session_id:
         session_manager.remove_session(session_id)
     
-    return jsonify({
-        'code': 200,
-        'message': '登出成功'
-    })
+    add_request_log('POST', '/api/portal/logout', {'session_id': session_id}, 200)
+    response_data = {'code': 200, 'message': '登出成功'}
+    log_request_to_file('POST', '/api/portal/logout', {'session_id': session_id}, response_data)
+    return jsonify(response_data)
+
+@app.route('/api/portal/keep-alive', methods=['POST'])
+def keep_alive():
+    session_manager.update_activity()
+    data = request.json
+    session_id = data.get('session_id') if data else None
+    
+    if not session_id:
+        add_request_log('POST', '/api/portal/keep-alive', None, 400)
+        response_data = {'code': 400, 'message': '缺少session_id参数'}
+        log_request_to_file('POST', '/api/portal/keep-alive', {'session_id': session_id}, response_data)
+        return jsonify(response_data), 400
+    
+    client = session_manager.get_session(session_id)
+    if not client:
+        add_request_log('POST', '/api/portal/keep-alive', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '会话不存在或已过期', 'data': {'session_expired': True, 'need_relogin': True}}
+        log_request_to_file('POST', '/api/portal/keep-alive', {'session_id': session_id}, response_data)
+        return jsonify(response_data), 401
+    
+    result = client.keep_alive()
+    
+    if result['success']:
+        session_manager.update_timestamp(session_id)
+        add_request_log('POST', '/api/portal/keep-alive', {'session_id': session_id}, 200)
+        response_data = {'code': 200, 'message': result['message'], 'data': {'session_expired': False, 'logged_in': True}}
+        log_request_to_file('POST', '/api/portal/keep-alive', {'session_id': session_id}, response_data)
+        return jsonify(response_data)
+    else:
+        session_manager.remove_session(session_id)
+        add_request_log('POST', '/api/portal/keep-alive', {'session_id': session_id}, 500)
+        response_data = {'code': 500, 'message': result['error'], 'data': {'session_expired': True, 'need_relogin': True}}
+        log_request_to_file('POST', '/api/portal/keep-alive', {'session_id': session_id}, response_data)
+        return jsonify(response_data), 500
 
 @app.route('/api/portal/sessions', methods=['GET'])
 def get_all_sessions():
@@ -293,10 +373,14 @@ def get_all_sessions():
 
 @app.route('/api/portal/ai-audit/vehicle-images', methods=['POST'])
 def ai_audit_vehicle_images():
+    session_manager.update_activity()
     data = request.json
     
     if not data:
-        return jsonify({'code': 400, 'message': '请求体不能为空'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/vehicle-images', None, 400)
+        response_data = {'code': 400, 'message': '请求体不能为空'}
+        log_request_to_file('POST', '/api/portal/ai-audit/vehicle-images', data, response_data)
+        return jsonify(response_data), 400
     
     session_id = data.get('session_id')
     plate_number = data.get('plate_number')
@@ -307,11 +391,17 @@ def ai_audit_vehicle_images():
     sort = data.get('sort', 'picTime DESC')
     
     if not all([session_id, plate_number, start_time, end_time]):
-        return jsonify({'code': 400, 'message': '缺少必要参数'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/vehicle-images', {'session_id': session_id}, 400)
+        response_data = {'code': 400, 'message': '缺少必要参数'}
+        log_request_to_file('POST', '/api/portal/ai-audit/vehicle-images', data, response_data)
+        return jsonify(response_data), 400
     
     client = session_manager.get_session(session_id)
     if not client or not client.is_logged_in():
-        return jsonify({'code': 401, 'message': '未登录或会话已过期'}), 401
+        add_request_log('POST', '/api/portal/ai-audit/vehicle-images', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '未登录或会话已过期'}
+        log_request_to_file('POST', '/api/portal/ai-audit/vehicle-images', data, response_data)
+        return jsonify(response_data), 401
     
     try:
         ai_client = AIAuditClient(client.access_token)
@@ -344,33 +434,48 @@ def ai_audit_vehicle_images():
             
             result['images'] = processed_images
             
-            return jsonify({
-                'code': 200,
-                'message': 'success',
-                'data': result
-            })
+            add_request_log('POST', '/api/portal/ai-audit/vehicle-images', {'session_id': session_id, 'plate_number': plate_number}, 200)
+            response_data = {'code': 200, 'message': 'success', 'data': result}
+            log_request_to_file('POST', '/api/portal/ai-audit/vehicle-images', data, response_data)
+            return jsonify(response_data)
         else:
-            return jsonify({'code': 500, 'message': result['error']}), 500
+            add_request_log('POST', '/api/portal/ai-audit/vehicle-images', {'session_id': session_id, 'plate_number': plate_number}, 500)
+            response_data = {'code': 500, 'message': result['error']}
+            log_request_to_file('POST', '/api/portal/ai-audit/vehicle-images', data, response_data)
+            return jsonify(response_data), 500
     except Exception as e:
         logger.error(f"车辆图库查询失败: {e}")
-        return jsonify({'code': 500, 'message': str(e)}), 500
+        add_request_log('POST', '/api/portal/ai-audit/vehicle-images', {'session_id': session_id, 'plate_number': plate_number}, 500)
+        response_data = {'code': 500, 'message': str(e)}
+        log_request_to_file('POST', '/api/portal/ai-audit/vehicle-images', data, response_data)
+        return jsonify(response_data), 500
 
 @app.route('/api/portal/ai-audit/original-image', methods=['POST'])
 def ai_audit_original_image():
+    session_manager.update_activity()
     data = request.json
     
     if not data:
-        return jsonify({'code': 400, 'message': '请求体不能为空'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/original-image', None, 400)
+        response_data = {'code': 400, 'message': '请求体不能为空'}
+        log_request_to_file('POST', '/api/portal/ai-audit/original-image', data, response_data)
+        return jsonify(response_data), 400
     
     session_id = data.get('session_id')
     picture_path = data.get('picture_path')
     
     if not all([session_id, picture_path]):
-        return jsonify({'code': 400, 'message': '缺少必要参数'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 400)
+        response_data = {'code': 400, 'message': '缺少必要参数'}
+        log_request_to_file('POST', '/api/portal/ai-audit/original-image', data, response_data)
+        return jsonify(response_data), 400
     
     client = session_manager.get_session(session_id)
     if not client or not client.is_logged_in():
-        return jsonify({'code': 401, 'message': '未登录或会话已过期'}), 401
+        add_request_log('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '未登录或会话已过期'}
+        log_request_to_file('POST', '/api/portal/ai-audit/original-image', data, response_data)
+        return jsonify(response_data), 401
     
     try:
         if picture_path.startswith('/'):
@@ -433,6 +538,8 @@ def ai_audit_original_image():
                     }
                 }
                 update_latest_response(result)
+                add_request_log('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 200)
+                log_request_to_file('POST', '/api/portal/ai-audit/original-image', data, {'code': 200, 'message': 'success'})
                 return jsonify(result)
             elif content_type and 'application/json' in content_type:
                 logger.info(f"响应类型: JSON - 响应体内容前200字符: {response.text[:200]}")
@@ -461,9 +568,12 @@ def ai_audit_original_image():
                                 }
                             }
                             update_latest_response(result)
+                            add_request_log('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 200)
+                            log_request_to_file('POST', '/api/portal/ai-audit/original-image', data, {'code': 200, 'message': 'success'})
                             return jsonify(result)
                     logger.error(f"data_url格式解析失败")
-                    return jsonify({
+                    add_request_log('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 500)
+                    response_data = {
                         'code': 500, 
                         'message': 'data_url格式解析失败',
                         'data': {
@@ -473,14 +583,17 @@ def ai_audit_original_image():
                             'response_headers': response_headers_dict,
                             'response_body': response.text[:500]
                         }
-                    }), 500
+                    }
+                    log_request_to_file('POST', '/api/portal/ai-audit/original-image', data, response_data)
+                    return jsonify(response_data), 500
                 
                 logger.info(f"========== 获取原图请求结束(JSON错误) ==========")
                 try:
                     error_data = response.json()
                     error_msg = error_data.get('message', error_data.get('msg', '云门户返回错误'))
                     logger.error(f"获取原图失败，云门户响应: {error_data}")
-                    return jsonify({
+                    add_request_log('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 500)
+                    response_data = {
                         'code': 500, 
                         'message': f'云门户错误: {error_msg}',
                         'data': {
@@ -490,10 +603,13 @@ def ai_audit_original_image():
                             'response_headers': response_headers_dict,
                             'response_body': response.text[:2000]
                         }
-                    }), 500
+                    }
+                    log_request_to_file('POST', '/api/portal/ai-audit/original-image', data, response_data)
+                    return jsonify(response_data), 500
                 except:
                     logger.error(f"获取原图失败，响应内容: {response.text[:500]}")
-                    return jsonify({
+                    add_request_log('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 500)
+                    response_data = {
                         'code': 500, 
                         'message': '云门户返回异常响应',
                         'data': {
@@ -503,12 +619,15 @@ def ai_audit_original_image():
                             'response_headers': response_headers_dict,
                             'response_body': response.text[:2000]
                         }
-                    }), 500
+                    }
+                    log_request_to_file('POST', '/api/portal/ai-audit/original-image', data, response_data)
+                    return jsonify(response_data), 500
             else:
                 logger.info(f"响应类型: 未知 - 响应体前500字符: {response.text[:500]}")
                 logger.info(f"========== 获取原图请求结束(未知类型) ==========")
                 logger.error(f"获取原图失败，Content-Type: {content_type}, 响应长度: {len(response.content)}")
-                return jsonify({
+                add_request_log('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 500)
+                response_data = {
                     'code': 500, 
                     'message': f'响应类型异常: {content_type}',
                     'data': {
@@ -518,12 +637,15 @@ def ai_audit_original_image():
                         'response_headers': response_headers_dict,
                         'response_body': response.text[:2000]
                     }
-                }), 500
+                }
+                log_request_to_file('POST', '/api/portal/ai-audit/original-image', data, response_data)
+                return jsonify(response_data), 500
         else:
             logger.info(f"响应体内容: {response.text[:1000]}")
             logger.info(f"========== 获取原图请求结束(HTTP错误) ==========")
             logger.error(f"获取图片失败，状态码: {response.status_code}, 响应: {response.text[:500]}")
-            return jsonify({
+            add_request_log('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 500)
+            response_data = {
                 'code': 500, 
                 'message': f'获取图片失败，状态码: {response.status_code}',
                 'data': {
@@ -532,36 +654,57 @@ def ai_audit_original_image():
                     'response_headers': response_headers_dict,
                     'response_body': response.text[:2000]
                 }
-            }), 500
+            }
+            log_request_to_file('POST', '/api/portal/ai-audit/original-image', data, response_data)
+            return jsonify(response_data), 500
     except requests.exceptions.Timeout:
         restore_create_connection()
         logger.error("获取原始图片超时")
-        return jsonify({'code': 500, 'message': '获取图片超时'}), 500
+        add_request_log('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 500)
+        response_data = {'code': 500, 'message': '获取图片超时'}
+        log_request_to_file('POST', '/api/portal/ai-audit/original-image', data, response_data)
+        return jsonify(response_data), 500
     except requests.exceptions.ConnectionError as e:
         restore_create_connection()
         logger.error(f"获取原始图片连接失败: {e}")
-        return jsonify({'code': 500, 'message': '无法连接到图片服务器'}), 500
+        add_request_log('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 500)
+        response_data = {'code': 500, 'message': '无法连接到图片服务器'}
+        log_request_to_file('POST', '/api/portal/ai-audit/original-image', data, response_data)
+        return jsonify(response_data), 500
     except Exception as e:
         restore_create_connection()
         logger.error(f"获取原始图片失败: {e}")
-        return jsonify({'code': 500, 'message': str(e)}), 500
+        add_request_log('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 500)
+        response_data = {'code': 500, 'message': str(e)}
+        log_request_to_file('POST', '/api/portal/ai-audit/original-image', data, response_data)
+        return jsonify(response_data), 500
 
 @app.route('/api/portal/fetch-picture', methods=['POST'])
 def fetch_picture():
+    session_manager.update_activity()
     data = request.json
     
     if not data:
-        return jsonify({'code': 400, 'message': '请求体不能为空'}), 400
+        add_request_log('POST', '/api/portal/fetch-picture', None, 400)
+        response_data = {'code': 400, 'message': '请求体不能为空'}
+        log_request_to_file('POST', '/api/portal/fetch-picture', data, response_data)
+        return jsonify(response_data), 400
     
     session_id = data.get('session_id')
     picture_url = data.get('picture_url')
     
     if not all([session_id, picture_url]):
-        return jsonify({'code': 400, 'message': '缺少必要参数'}), 400
+        add_request_log('POST', '/api/portal/fetch-picture', {'session_id': session_id}, 400)
+        response_data = {'code': 400, 'message': '缺少必要参数'}
+        log_request_to_file('POST', '/api/portal/fetch-picture', data, response_data)
+        return jsonify(response_data), 400
     
     client = session_manager.get_session(session_id)
     if not client or not client.is_logged_in():
-        return jsonify({'code': 401, 'message': '未登录或会话已过期'}), 401
+        add_request_log('POST', '/api/portal/fetch-picture', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '未登录或会话已过期'}
+        log_request_to_file('POST', '/api/portal/fetch-picture', data, response_data)
+        return jsonify(response_data), 401
     
     try:
         if picture_url.startswith('/'):
@@ -624,6 +767,8 @@ def fetch_picture():
                     }
                 }
                 update_latest_response(result)
+                add_request_log('POST', '/api/portal/fetch-picture', {'session_id': session_id}, 200)
+                log_request_to_file('POST', '/api/portal/fetch-picture', data, {'code': 200, 'message': 'success'})
                 return jsonify(result)
             elif content_type and 'application/json' in content_type:
                 logger.info(f"响应类型: JSON - 响应体内容前200字符: {response.text[:200]}")
@@ -652,9 +797,12 @@ def fetch_picture():
                                 }
                             }
                             update_latest_response(result)
+                            add_request_log('POST', '/api/portal/fetch-picture', {'session_id': session_id}, 200)
+                            log_request_to_file('POST', '/api/portal/fetch-picture', data, {'code': 200, 'message': 'success'})
                             return jsonify(result)
                     logger.error(f"data_url格式解析失败")
-                    return jsonify({
+                    add_request_log('POST', '/api/portal/fetch-picture', {'session_id': session_id}, 500)
+                    response_data = {
                         'code': 500, 
                         'message': 'data_url格式解析失败',
                         'data': {
@@ -664,10 +812,13 @@ def fetch_picture():
                             'response_headers': response_headers_dict,
                             'response_body': response.text[:500]
                         }
-                    }), 500
+                    }
+                    log_request_to_file('POST', '/api/portal/fetch-picture', data, response_data)
+                    return jsonify(response_data), 500
                 
                 logger.info(f"========== 获取指定图片请求结束(JSON) ==========")
-                return jsonify({
+                add_request_log('POST', '/api/portal/fetch-picture', {'session_id': session_id}, 200)
+                response_data = {
                     'code': 200,
                     'message': 'success',
                     'data': {
@@ -677,11 +828,14 @@ def fetch_picture():
                         'response_headers': response_headers_dict,
                         'response_body': response.text
                     }
-                })
+                }
+                log_request_to_file('POST', '/api/portal/fetch-picture', data, response_data)
+                return jsonify(response_data)
             else:
                 logger.info(f"响应类型: 未知 - Content-Type: {content_type}")
                 logger.info(f"========== 获取指定图片请求结束(未知类型) ==========")
-                return jsonify({
+                add_request_log('POST', '/api/portal/fetch-picture', {'session_id': session_id}, 500)
+                response_data = {
                     'code': 500, 
                     'message': f'响应类型异常: {content_type}',
                     'data': {
@@ -691,12 +845,15 @@ def fetch_picture():
                         'response_headers': response_headers_dict,
                         'response_body': response.text[:2000]
                     }
-                }), 500
+                }
+                log_request_to_file('POST', '/api/portal/fetch-picture', data, response_data)
+                return jsonify(response_data), 500
         else:
             logger.info(f"响应体内容: {response.text[:1000]}")
             logger.info(f"========== 获取指定图片请求结束(HTTP错误) ==========")
             logger.error(f"获取图片失败，状态码: {response.status_code}, 响应: {response.text[:500]}")
-            return jsonify({
+            add_request_log('POST', '/api/portal/fetch-picture', {'session_id': session_id}, 500)
+            response_data = {
                 'code': 500, 
                 'message': f'获取图片失败，状态码: {response.status_code}',
                 'data': {
@@ -705,26 +862,41 @@ def fetch_picture():
                     'response_headers': response_headers_dict,
                     'response_body': response.text[:2000]
                 }
-            }), 500
+            }
+            log_request_to_file('POST', '/api/portal/fetch-picture', data, response_data)
+            return jsonify(response_data), 500
     except requests.exceptions.Timeout:
         restore_create_connection()
         logger.error("获取图片超时")
-        return jsonify({'code': 500, 'message': '获取图片超时'}), 500
+        add_request_log('POST', '/api/portal/fetch-picture', {'session_id': session_id}, 500)
+        response_data = {'code': 500, 'message': '获取图片超时'}
+        log_request_to_file('POST', '/api/portal/fetch-picture', data, response_data)
+        return jsonify(response_data), 500
     except requests.exceptions.ConnectionError as e:
         restore_create_connection()
         logger.error(f"获取图片连接失败: {e}")
-        return jsonify({'code': 500, 'message': '无法连接到图片服务器'}), 500
+        add_request_log('POST', '/api/portal/fetch-picture', {'session_id': session_id}, 500)
+        response_data = {'code': 500, 'message': '无法连接到图片服务器'}
+        log_request_to_file('POST', '/api/portal/fetch-picture', data, response_data)
+        return jsonify(response_data), 500
     except Exception as e:
         restore_create_connection()
         logger.error(f"获取图片失败: {e}")
-        return jsonify({'code': 500, 'message': str(e)}), 500
+        add_request_log('POST', '/api/portal/fetch-picture', {'session_id': session_id}, 500)
+        response_data = {'code': 500, 'message': str(e)}
+        log_request_to_file('POST', '/api/portal/fetch-picture', data, response_data)
+        return jsonify(response_data), 500
 
 @app.route('/api/portal/ai-audit/gantry-trade', methods=['POST'])
 def ai_audit_gantry_trade():
+    session_manager.update_activity()
     data = request.json
     
     if not data:
-        return jsonify({'code': 400, 'message': '请求体不能为空'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/gantry-trade', None, 400)
+        response_data = {'code': 400, 'message': '请求体不能为空'}
+        log_request_to_file('POST', '/api/portal/ai-audit/gantry-trade', data, response_data)
+        return jsonify(response_data), 400
     
     session_id = data.get('session_id')
     query_value = data.get('query_value')
@@ -732,11 +904,17 @@ def ai_audit_gantry_trade():
     end_time = data.get('end_time')
     
     if not all([session_id, query_value, start_time, end_time]):
-        return jsonify({'code': 400, 'message': '缺少必要参数'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/gantry-trade', {'session_id': session_id}, 400)
+        response_data = {'code': 400, 'message': '缺少必要参数'}
+        log_request_to_file('POST', '/api/portal/ai-audit/gantry-trade', data, response_data)
+        return jsonify(response_data), 400
     
     client = session_manager.get_session(session_id)
     if not client or not client.is_logged_in():
-        return jsonify({'code': 401, 'message': '未登录或会话已过期'}), 401
+        add_request_log('POST', '/api/portal/ai-audit/gantry-trade', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '未登录或会话已过期'}
+        log_request_to_file('POST', '/api/portal/ai-audit/gantry-trade', data, response_data)
+        return jsonify(response_data), 401
     
     try:
         ai_client = AIAuditClient(client.access_token)
@@ -747,26 +925,39 @@ def ai_audit_gantry_trade():
         )
         
         if result['success']:
-            return jsonify({
+            add_request_log('POST', '/api/portal/ai-audit/gantry-trade', {'session_id': session_id}, 200)
+            response_data = {
                 'code': 200,
                 'message': 'success',
                 'data': {
                     'total': result['total'],
                     'records': result['records']
                 }
-            })
+            }
+            log_request_to_file('POST', '/api/portal/ai-audit/gantry-trade', data, response_data)
+            return jsonify(response_data)
         else:
-            return jsonify({'code': 500, 'message': result['error']}), 500
+            add_request_log('POST', '/api/portal/ai-audit/gantry-trade', {'session_id': session_id}, 500)
+            response_data = {'code': 500, 'message': result['error']}
+            log_request_to_file('POST', '/api/portal/ai-audit/gantry-trade', data, response_data)
+            return jsonify(response_data), 500
     except Exception as e:
         logger.error(f"门架交易查询失败: {e}")
-        return jsonify({'code': 500, 'message': str(e)}), 500
+        add_request_log('POST', '/api/portal/ai-audit/gantry-trade', {'session_id': session_id}, 500)
+        response_data = {'code': 500, 'message': str(e)}
+        log_request_to_file('POST', '/api/portal/ai-audit/gantry-trade', data, response_data)
+        return jsonify(response_data), 500
 
 @app.route('/api/portal/ai-audit/gantry-plate', methods=['POST'])
 def ai_audit_gantry_plate():
+    session_manager.update_activity()
     data = request.json
     
     if not data:
-        return jsonify({'code': 400, 'message': '请求体不能为空'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/gantry-plate', None, 400)
+        response_data = {'code': 400, 'message': '请求体不能为空'}
+        log_request_to_file('POST', '/api/portal/ai-audit/gantry-plate', data, response_data)
+        return jsonify(response_data), 400
     
     session_id = data.get('session_id')
     plate_number = data.get('plate_number')
@@ -774,11 +965,17 @@ def ai_audit_gantry_plate():
     end_time = data.get('end_time')
     
     if not all([session_id, plate_number, start_time, end_time]):
-        return jsonify({'code': 400, 'message': '缺少必要参数'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/gantry-plate', {'session_id': session_id}, 400)
+        response_data = {'code': 400, 'message': '缺少必要参数'}
+        log_request_to_file('POST', '/api/portal/ai-audit/gantry-plate', data, response_data)
+        return jsonify(response_data), 400
     
     client = session_manager.get_session(session_id)
     if not client or not client.is_logged_in():
-        return jsonify({'code': 401, 'message': '未登录或会话已过期'}), 401
+        add_request_log('POST', '/api/portal/ai-audit/gantry-plate', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '未登录或会话已过期'}
+        log_request_to_file('POST', '/api/portal/ai-audit/gantry-plate', data, response_data)
+        return jsonify(response_data), 401
     
     try:
         ai_client = AIAuditClient(client.access_token)
@@ -789,26 +986,39 @@ def ai_audit_gantry_plate():
         )
         
         if result['success']:
-            return jsonify({
+            add_request_log('POST', '/api/portal/ai-audit/gantry-plate', {'session_id': session_id}, 200)
+            response_data = {
                 'code': 200,
                 'message': 'success',
                 'data': {
                     'total': result['total'],
                     'records': result['records']
                 }
-            })
+            }
+            log_request_to_file('POST', '/api/portal/ai-audit/gantry-plate', data, response_data)
+            return jsonify(response_data)
         else:
-            return jsonify({'code': 500, 'message': result['error']}), 500
+            add_request_log('POST', '/api/portal/ai-audit/gantry-plate', {'session_id': session_id}, 500)
+            response_data = {'code': 500, 'message': result['error']}
+            log_request_to_file('POST', '/api/portal/ai-audit/gantry-plate', data, response_data)
+            return jsonify(response_data), 500
     except Exception as e:
         logger.error(f"门架牌识查询失败: {e}")
-        return jsonify({'code': 500, 'message': str(e)}), 500
+        add_request_log('POST', '/api/portal/ai-audit/gantry-plate', {'session_id': session_id}, 500)
+        response_data = {'code': 500, 'message': str(e)}
+        log_request_to_file('POST', '/api/portal/ai-audit/gantry-plate', data, response_data)
+        return jsonify(response_data), 500
 
 @app.route('/api/portal/ai-audit/exit-trade', methods=['POST'])
 def ai_audit_exit_trade():
+    session_manager.update_activity()
     data = request.json
     
     if not data:
-        return jsonify({'code': 400, 'message': '请求体不能为空'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/exit-trade', None, 400)
+        response_data = {'code': 400, 'message': '请求体不能为空'}
+        log_request_to_file('POST', '/api/portal/ai-audit/exit-trade', data, response_data)
+        return jsonify(response_data), 400
     
     session_id = data.get('session_id')
     query_value = data.get('query_value')
@@ -817,11 +1027,17 @@ def ai_audit_exit_trade():
     trade_type = data.get('trade_type', 1)
     
     if not all([session_id, query_value, start_time, end_time]):
-        return jsonify({'code': 400, 'message': '缺少必要参数'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/exit-trade', {'session_id': session_id}, 400)
+        response_data = {'code': 400, 'message': '缺少必要参数'}
+        log_request_to_file('POST', '/api/portal/ai-audit/exit-trade', data, response_data)
+        return jsonify(response_data), 400
     
     client = session_manager.get_session(session_id)
     if not client or not client.is_logged_in():
-        return jsonify({'code': 401, 'message': '未登录或会话已过期'}), 401
+        add_request_log('POST', '/api/portal/ai-audit/exit-trade', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '未登录或会话已过期'}
+        log_request_to_file('POST', '/api/portal/ai-audit/exit-trade', data, response_data)
+        return jsonify(response_data), 401
     
     try:
         ai_client = AIAuditClient(client.access_token)
@@ -833,26 +1049,39 @@ def ai_audit_exit_trade():
         )
         
         if result['success']:
-            return jsonify({
+            add_request_log('POST', '/api/portal/ai-audit/exit-trade', {'session_id': session_id}, 200)
+            response_data = {
                 'code': 200,
                 'message': 'success',
                 'data': {
                     'total': result['total'],
                     'records': result['records']
                 }
-            })
+            }
+            log_request_to_file('POST', '/api/portal/ai-audit/exit-trade', data, response_data)
+            return jsonify(response_data)
         else:
-            return jsonify({'code': 500, 'message': result['error']}), 500
+            add_request_log('POST', '/api/portal/ai-audit/exit-trade', {'session_id': session_id}, 500)
+            response_data = {'code': 500, 'message': result['error']}
+            log_request_to_file('POST', '/api/portal/ai-audit/exit-trade', data, response_data)
+            return jsonify(response_data), 500
     except Exception as e:
         logger.error(f"出口交易查询失败: {e}")
-        return jsonify({'code': 500, 'message': str(e)}), 500
+        add_request_log('POST', '/api/portal/ai-audit/exit-trade', {'session_id': session_id}, 500)
+        response_data = {'code': 500, 'message': str(e)}
+        log_request_to_file('POST', '/api/portal/ai-audit/exit-trade', data, response_data)
+        return jsonify(response_data), 500
 
 @app.route('/api/portal/ai-audit/suspected-car', methods=['POST'])
 def ai_audit_suspected_car():
+    session_manager.update_activity()
     data = request.json
     
     if not data:
-        return jsonify({'code': 400, 'message': '请求体不能为空'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/suspected-car', None, 400)
+        response_data = {'code': 400, 'message': '请求体不能为空'}
+        log_request_to_file('POST', '/api/portal/ai-audit/suspected-car', data, response_data)
+        return jsonify(response_data), 400
     
     session_id = data.get('session_id')
     vehicle_or_pass_id = data.get('vehicle_or_pass_id')
@@ -860,11 +1089,17 @@ def ai_audit_suspected_car():
     end_time = data.get('end_time')
     
     if not all([session_id, vehicle_or_pass_id, start_time, end_time]):
-        return jsonify({'code': 400, 'message': '缺少必要参数'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/suspected-car', {'session_id': session_id}, 400)
+        response_data = {'code': 400, 'message': '缺少必要参数'}
+        log_request_to_file('POST', '/api/portal/ai-audit/suspected-car', data, response_data)
+        return jsonify(response_data), 400
     
     client = session_manager.get_session(session_id)
     if not client or not client.is_logged_in():
-        return jsonify({'code': 401, 'message': '未登录或会话已过期'}), 401
+        add_request_log('POST', '/api/portal/ai-audit/suspected-car', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '未登录或会话已过期'}
+        log_request_to_file('POST', '/api/portal/ai-audit/suspected-car', data, response_data)
+        return jsonify(response_data), 401
     
     try:
         ai_client = AIAuditClient(client.access_token)
@@ -875,25 +1110,38 @@ def ai_audit_suspected_car():
         )
         
         if result['success']:
-            return jsonify({
+            add_request_log('POST', '/api/portal/ai-audit/suspected-car', {'session_id': session_id}, 200)
+            response_data = {
                 'code': 200,
                 'message': 'success',
                 'data': {
                     'trade_list': result['trade_list']
                 }
-            })
+            }
+            log_request_to_file('POST', '/api/portal/ai-audit/suspected-car', data, response_data)
+            return jsonify(response_data)
         else:
-            return jsonify({'code': 500, 'message': result['error']}), 500
+            add_request_log('POST', '/api/portal/ai-audit/suspected-car', {'session_id': session_id}, 500)
+            response_data = {'code': 500, 'message': result['error']}
+            log_request_to_file('POST', '/api/portal/ai-audit/suspected-car', data, response_data)
+            return jsonify(response_data), 500
     except Exception as e:
         logger.error(f"疑难车牌追查失败: {e}")
-        return jsonify({'code': 500, 'message': str(e)}), 500
+        add_request_log('POST', '/api/portal/ai-audit/suspected-car', {'session_id': session_id}, 500)
+        response_data = {'code': 500, 'message': str(e)}
+        log_request_to_file('POST', '/api/portal/ai-audit/suspected-car', data, response_data)
+        return jsonify(response_data), 500
 
 @app.route('/api/portal/ai-audit/batch-query', methods=['POST'])
 def ai_audit_batch_query():
+    session_manager.update_activity()
     data = request.json
     
     if not data:
-        return jsonify({'code': 400, 'message': '请求体不能为空'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/batch-query', None, 400)
+        response_data = {'code': 400, 'message': '请求体不能为空'}
+        log_request_to_file('POST', '/api/portal/ai-audit/batch-query', data, response_data)
+        return jsonify(response_data), 400
     
     session_id = data.get('session_id')
     plate_number = data.get('plate_number')
@@ -901,13 +1149,20 @@ def ai_audit_batch_query():
     gate_time = data.get('gate_time')
     pass_id = data.get('pass_id')
     hours = data.get('hours', 5)
+    rows = data.get('rows', 40)
     
     if not all([session_id, plate_number, entry_time, gate_time]):
-        return jsonify({'code': 400, 'message': '缺少必要参数'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/batch-query', {'session_id': session_id}, 400)
+        response_data = {'code': 400, 'message': '缺少必要参数'}
+        log_request_to_file('POST', '/api/portal/ai-audit/batch-query', data, response_data)
+        return jsonify(response_data), 400
     
     client = session_manager.get_session(session_id)
     if not client or not client.is_logged_in():
-        return jsonify({'code': 401, 'message': '未登录或会话已过期'}), 401
+        add_request_log('POST', '/api/portal/ai-audit/batch-query', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '未登录或会话已过期'}
+        log_request_to_file('POST', '/api/portal/ai-audit/batch-query', data, response_data)
+        return jsonify(response_data), 401
     
     try:
         ai_client = AIAuditClient(client.access_token)
@@ -916,30 +1171,44 @@ def ai_audit_batch_query():
             entry_time=entry_time,
             gate_time=gate_time,
             pass_id=pass_id,
-            hours=hours
+            hours=hours,
+            rows=rows
         )
         
-        return jsonify({
+        add_request_log('POST', '/api/portal/ai-audit/batch-query', {'session_id': session_id, 'plate_number': plate_number}, 200)
+        response_data = {
             'code': 200,
             'message': 'success',
             'data': result
-        })
+        }
+        log_request_to_file('POST', '/api/portal/ai-audit/batch-query', data, response_data)
+        return jsonify(response_data)
     except Exception as e:
         logger.error(f"批量查询失败: {e}")
-        return jsonify({'code': 500, 'message': str(e)}), 500
+        add_request_log('POST', '/api/portal/ai-audit/batch-query', {'session_id': session_id, 'plate_number': plate_number}, 500)
+        response_data = {'code': 500, 'message': str(e)}
+        log_request_to_file('POST', '/api/portal/ai-audit/batch-query', data, response_data)
+        return jsonify(response_data), 500
 
 @app.route('/api/portal/ai-audit/select-images', methods=['POST'])
 def ai_audit_select_images():
+    session_manager.update_activity()
     data = request.json
     
     if not data:
-        return jsonify({'code': 400, 'message': '请求体不能为空'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/select-images', None, 400)
+        response_data = {'code': 400, 'message': '请求体不能为空'}
+        log_request_to_file('POST', '/api/portal/ai-audit/select-images', data, response_data)
+        return jsonify(response_data), 400
     
     images = data.get('images', [])
     gantry_ids = data.get('gantry_ids', [])
     
     if not images:
-        return jsonify({'code': 400, 'message': '缺少图片数据'}), 400
+        add_request_log('POST', '/api/portal/ai-audit/select-images', None, 400)
+        response_data = {'code': 400, 'message': '缺少图片数据'}
+        log_request_to_file('POST', '/api/portal/ai-audit/select-images', data, response_data)
+        return jsonify(response_data), 400
     
     try:
         ai_client = AIAuditClient('')
@@ -959,14 +1228,20 @@ def ai_audit_select_images():
                 'pic_time': selected['last_gantry'].get('picTime', '')
             }
         
-        return jsonify({
+        add_request_log('POST', '/api/portal/ai-audit/select-images', None, 200)
+        response_data = {
             'code': 200,
             'message': 'success',
             'data': result
-        })
+        }
+        log_request_to_file('POST', '/api/portal/ai-audit/select-images', data, response_data)
+        return jsonify(response_data)
     except Exception as e:
         logger.error(f"图片选取失败: {e}")
-        return jsonify({'code': 500, 'message': str(e)}), 500
+        add_request_log('POST', '/api/portal/ai-audit/select-images', None, 500)
+        response_data = {'code': 500, 'message': str(e)}
+        log_request_to_file('POST', '/api/portal/ai-audit/select-images', data, response_data)
+        return jsonify(response_data), 500
 
 @app.errorhandler(404)
 def not_found(error):

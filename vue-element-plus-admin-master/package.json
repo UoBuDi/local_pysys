@@ -45,6 +45,7 @@
     "element-plus": "2.13.2",
     "fast-xml-parser": "^5.3.6",
     "file-saver": "^2.0.5",
+    "html2canvas": "^1.4.1",
     "jszip": "^3.10.1",
     "lodash-es": "^4.17.21",
     "mitt": "^3.0.1",

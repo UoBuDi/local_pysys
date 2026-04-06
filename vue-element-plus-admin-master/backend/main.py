@@ -3420,12 +3420,23 @@ def init_cloud_portal_account_table():
                     user_id INT NOT NULL COMMENT '用户ID',
                     portal_username VARCHAR(100) NOT NULL COMMENT '云门户用户名',
                     portal_password VARCHAR(255) NOT NULL COMMENT '云门户密码(加密存储)',
+                    portal_session_id VARCHAR(255) DEFAULT NULL COMMENT '云门户会话ID',
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                     UNIQUE KEY uk_user_id (user_id),
                     INDEX idx_portal_username (portal_username)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云门户账号绑定表'
             """)
+            try:
+                cursor.execute("ALTER TABLE cloud_portal_accounts ADD COLUMN portal_session_id VARCHAR(255) DEFAULT NULL COMMENT '云门户会话ID'")
+                conn.commit()
+                logger.info("云门户账号绑定表添加portal_session_id字段成功")
+            except Exception as alter_err:
+                if "Duplicate column name" in str(alter_err):
+                    logger.info("portal_session_id字段已存在，跳过添加")
+                else:
+                    logger.warning(f"添加portal_session_id字段时出现警告: {alter_err}")
+            
             conn.commit()
             logger.info("云门户账号绑定表初始化成功")
             return True
@@ -3556,7 +3567,7 @@ async def get_cloud_portal_credentials(user: dict = Depends(get_current_user)):
         
         with conn.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.execute("""
-                SELECT portal_username, portal_password
+                SELECT portal_username, portal_password, portal_session_id
                 FROM cloud_portal_accounts
                 WHERE user_id = %s
             """, (user['id'],))
@@ -3569,7 +3580,8 @@ async def get_cloud_portal_credentials(user: dict = Depends(get_current_user)):
                     "message": "获取成功",
                     "data": {
                         "portal_username": account['portal_username'],
-                        "portal_password": decrypted_password
+                        "portal_password": decrypted_password,
+                        "portal_session_id": account['portal_session_id'] or ''
                     }
                 }
             else:
@@ -3577,6 +3589,33 @@ async def get_cloud_portal_credentials(user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"获取云门户凭证失败: {e}")
         return {"code": 500, "message": f"获取失败: {str(e)}", "data": None}
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+class CloudPortalSessionUpdate(BaseModel):
+    session_id: str
+
+@app.post("/api/cloud-portal-account/session")
+async def update_cloud_portal_session(data: CloudPortalSessionUpdate, user: dict = Depends(get_current_user)):
+    """更新云门户会话ID"""
+    try:
+        conn = create_db_connection("USER_DB", config)
+        if not conn:
+            return {"code": 500, "message": "无法连接到数据库"}
+        
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("""
+                UPDATE cloud_portal_accounts
+                SET portal_session_id = %s
+                WHERE user_id = %s
+            """, (data.session_id if data.session_id else None, user['id']))
+            conn.commit()
+            
+            return {"code": 200, "message": "会话ID更新成功"}
+    except Exception as e:
+        logger.error(f"更新云门户会话ID失败: {e}")
+        return {"code": 500, "message": f"更新失败: {str(e)}"}
     finally:
         if 'conn' in locals():
             conn.close()
@@ -5223,7 +5262,7 @@ async def get_cloud_portal_captcha(session_id: Optional[str] = None):
             requests.get,
             f"{GUI_SERVICE_URL}/api/portal/captcha",
             params=params,
-            timeout=15
+            timeout=30
         )
         
         logger.info(f"[云门户验证码] 请求成功 - 状态码: {response.status_code}")
@@ -5426,6 +5465,8 @@ class AIAuditBatchQueryRequest(BaseModel):
     entry_time: str
     gate_time: str
     pass_id: Optional[str] = None
+    hours: Optional[int] = 5
+    rows: Optional[int] = 40
 
 class AIAuditQueryRequest(BaseModel):
     session_id: str
@@ -5449,6 +5490,8 @@ class SaveImagesRequest(BaseModel):
     check_pass_id: Optional[str] = None
     special_situation: Optional[str] = None
     check_split: Optional[str] = None
+    remark: Optional[str] = None
+    clear_empty: bool = False
 
 @app.post("/api/cloud-portal/ai-audit/vehicle-images")
 async def ai_audit_vehicle_images(request: AIAuditQueryRequest):
@@ -5616,7 +5659,9 @@ async def ai_audit_batch_query(request: AIAuditBatchQueryRequest):
                 'plate_number': request.plate_number,
                 'entry_time': request.entry_time,
                 'gate_time': request.gate_time,
-                'pass_id': request.pass_id
+                'pass_id': request.pass_id,
+                'hours': request.hours,
+                'rows': request.rows
             },
             timeout=120
         )
@@ -5711,29 +5756,21 @@ async def ai_audit_save_images(request: SaveImagesRequest):
         update_fields = []
         params = []
         
-        if request.image1_base64:
-            update_fields.append("`查核资料1` = %s")
-            params.append(request.image1_base64)
+        field_mapping = {
+            'image1_base64': '查核资料1',
+            'image2_base64': '查核资料2',
+            'review_status': '复核情况',
+            'check_pass_id': '核查通行标识',
+            'special_situation': '特情',
+            'check_split': '核查拆分',
+            'remark': '备注'
+        }
         
-        if request.image2_base64:
-            update_fields.append("`查核资料2` = %s")
-            params.append(request.image2_base64)
-        
-        if request.review_status:
-            update_fields.append("`复核情况` = %s")
-            params.append(request.review_status)
-        
-        if request.check_pass_id:
-            update_fields.append("`核查通行标识` = %s")
-            params.append(request.check_pass_id)
-        
-        if request.special_situation:
-            update_fields.append("`特情` = %s")
-            params.append(request.special_situation)
-        
-        if request.check_split:
-            update_fields.append("`核查拆分` = %s")
-            params.append(request.check_split)
+        for field_name, db_column in field_mapping.items():
+            value = getattr(request, field_name, None)
+            if request.clear_empty or value:
+                update_fields.append(f"`{db_column}` = %s")
+                params.append(value if value else None)
         
         if not update_fields:
             return {"code": 400, "message": "没有需要保存的数据"}

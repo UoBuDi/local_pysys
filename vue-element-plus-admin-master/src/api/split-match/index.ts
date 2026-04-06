@@ -181,7 +181,8 @@ export const getCloudPortalCaptcha = (sessionId?: string) => {
   }
   return request.get<ApiResponse<CloudPortalCaptchaResult>>({
     url: '/api/cloud-portal/captcha',
-    params
+    params,
+    timeout: 30000
   })
 }
 
@@ -203,7 +204,8 @@ export const cloudPortalLogin = (data: {
 }) => {
   return request.post<ApiResponse<CloudPortalLoginResult>>({
     url: '/api/cloud-portal/login',
-    data
+    data,
+    timeout: 30000
   })
 }
 
@@ -321,6 +323,34 @@ export interface AIAuditExitTrade {
   specialTypeName?: string
 }
 
+export interface AIAuditAuditOrder {
+  order_id: string
+  pass_id: string
+  vehicle_no: string
+  plate_number: string
+  plate_color_name: string
+  en_time: string
+  ex_time: string
+  en_station_name: string
+  ex_station_name: string
+  en_vehicle_type_name: string
+  ex_vehicle_type_name: string
+  fee: string
+  label_code: string
+  label_code_name: string
+  loss_amount: string | null
+  order_source: string
+  order_status: number
+  order_status_name: string
+  toll_fee: string
+  penalty_fee: string
+  total_fee: string
+  review_name: string
+  review_time: string
+  operate_time: string
+  operator_name: string
+}
+
 export interface AIAuditSuspectedCar {
   rate: number
   vehiclePlate: string
@@ -370,6 +400,12 @@ export interface AIAuditBatchQueryResult {
     records: AIAuditExitTrade[]
     error?: string
   }
+  audit_order: {
+    success: boolean
+    total: number
+    records: AIAuditAuditOrder[]
+    error?: string
+  }
   suspected_car: {
     success: boolean
     trade_list: AIAuditSuspectedCar[]
@@ -385,6 +421,7 @@ export const aiAuditBatchQuery = (data: {
   gate_time: string
   pass_id?: string
   hours?: number
+  rows?: number
 }) => {
   return request.post<ApiResponse<AIAuditBatchQueryResult>>({
     url: '/api/cloud-portal/ai-audit/batch-query',
@@ -487,6 +524,8 @@ export const aiAuditSaveImages = (data: {
   check_pass_id?: string
   special_situation?: string
   check_split?: string
+  remark?: string
+  clear_empty?: boolean
 }) => {
   return request.post<ApiResponse<{ affected_rows: number }>>({
     url: '/api/cloud-portal/ai-audit/save-images',
@@ -552,7 +591,14 @@ export const deleteCloudPortalAccount = () => {
 }
 
 export const getCloudPortalCredentials = () => {
-  return request.get<ApiResponse<{ portal_username: string; portal_password: string } | null>>({
+  return request.get<ApiResponse<{ portal_username: string; portal_password: string; portal_session_id: string } | null>>({
     url: '/api/cloud-portal-account/credentials'
+  })
+}
+
+export const updateCloudPortalSession = (sessionId: string) => {
+  return request.post<ApiResponse<null>>({
+    url: '/api/cloud-portal-account/session',
+    data: { session_id: sessionId }
   })
 }

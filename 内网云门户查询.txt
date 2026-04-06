@@ -218,6 +218,7 @@ Content-Encoding: gzip
 <gzip binary body>
 <gzip binary body>内容：
 <!DOCTYPE html><html><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><link rel=icon href=/home/favicon.ico><title></title><link href=/home/css/chunk-14b9857b.0dc416de.css rel=prefetch><link href=/home/css/chunk-19b30cc7.db16557a.css rel=prefetch><link href=/home/css/chunk-2c359864.0dc416de.css rel=prefetch><link href=/home/css/chunk-3385141a.0dc416de.css rel=prefetch><link href=/home/css/chunk-46b5ac8a.91e8273e.css rel=prefetch><link href=/home/css/chunk-6a9398e1.7dbdba00.css rel=prefetch><link href=/home/css/chunk-8a24a96a.ad7dbbe9.css rel=prefetch><link href=/home/css/chunk-9ee84b7c.09383817.css rel=prefetch><link href=/home/js/chunk-14b9857b.502c1997.js rel=prefetch><link href=/home/js/chunk-19b30cc7.c9f7c867.js rel=prefetch><link href=/home/js/chunk-2c359864.cb87824d.js rel=prefetch><link href=/home/js/chunk-3385141a.39ef2a8a.js rel=prefetch><link href=/home/js/chunk-46b5ac8a.244fa1e4.js rel=prefetch><link href=/home/js/chunk-6a9398e1.cf812282.js rel=prefetch><link href=/home/js/chunk-8a24a96a.13f8e3c9.js rel=prefetch><link href=/home/js/chunk-9ee84b7c.335eed7b.js rel=prefetch><link href=/home/css/app.2aa7d111.css rel=preload as=style><link href=/home/css/chunk-vendors.1d90d08d.css rel=preload as=style><link href=/home/js/app.54d24ddd.js rel=preload as=script><link href=/home/js/chunk-vendors.e0c8b88f.js rel=preload as=script><link href=/home/css/chunk-vendors.1d90d08d.css rel=stylesheet><link href=/home/css/app.2aa7d111.css rel=stylesheet></head><body><noscript><strong>We're sorry but iview-admin doesn't work properly without JavaScript enabled. Please enable it to continue.</strong></noscript><div id=app></div><script src=/home/js/chunk-vendors.e0c8b88f.js></script><script src=/home/js/app.54d24ddd.js></script></body></html>
+获取用户信息：
 GET /gateway/user-server/user/getUserInfo.json?tenantId=1d68da3aa0a54f158fd6dab013a81d48 HTTP/1.1
 Host: home.hngsetc.com
 Accept: application/json, text/plain, */*
@@ -55530,4 +55531,132 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
       "information": "cse"
     }
   ]
+}
+
+AI稽核外部稽核工单：
+请求头：
+POST /gateway/ai-audit-server/order-review/auditOrderNoAuth HTTP/1.1
+Host: twaudit.hngsetc.com
+Content-Length: 624
+Pragma: no-cache
+Cache-Control: no-cache
+Accept: application/json, text/plain, */*
+DNT: 1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1Y2U1NWE3ODVhN2Y0YjZhOWRlYmFkNGQwOWQzYWNhMyIsImF1ZCI6ImMzYTkyYjY5NjNkODRhM2U4MjdmM2Q3OTExOWEyN2E1IiwiaXNzIjoib2F1dGgiLCJybmQiOiI3NHYxNWYzbiIsImV4cCI6MTc3NTM1NjgzOSwiaWF0IjoxNzc1MjcwNDM5fQ.Bu4PC1oQcNRQC9QebKMf01FzfMa2sb7Ve7xfi3wNdLE
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36 Edg/84.0.522.49
+Content-Type: application/json;charset=UTF-8
+Origin: http://twaudit.hngsetc.com
+Referer: http://twaudit.hngsetc.com/aiAuditWeb/index.html?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1Y2U1NWE3ODVhN2Y0YjZhOWRlYmFkNGQwOWQzYWNhMyIsImF1ZCI6ImMzYTkyYjY5NjNkODRhM2U4MjdmM2Q3OTExOWEyN2E1IiwiaXNzIjoib2F1dGgiLCJybmQiOiI3NHYxNWYzbiIsImV4cCI6MTc3NTM1NjgzOSwiaWF0IjoxNzc1MjcwNDM5fQ.Bu4PC1oQcNRQC9QebKMf01FzfMa2sb7Ve7xfi3wNdLE&refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1Y2U1NWE3ODVhN2Y0YjZhOWRlYmFkNGQwOWQzYWNhMyIsImF1ZCI6ImMzYTkyYjY5NjNkODRhM2U4MjdmM2Q3OTExOWEyN2E1IiwiaXNzIjoib2F1dGgiLCJybmQiOiI2MTd3cjBjNiIsImlydCI6IjEiLCJleHAiOjE3Nzc4NjI0MzksImlhdCI6MTc3NTI3MDQzOX0.Rt_j7Mx12zSixEBKpRQpoTVYJcy_K1LE0EgNTOenSQo
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+参数：
+{"draw":1,"start":0,"length":100,"jsonParam":"{\"order\":\"en_time desc\",\"if_multi_prov\":\"\",\"startTime\":\"\",\"endTime\":\"\",\"dbStartTime\":\"\",\"dbEndTime\":\"\",\"vehicle_no\":\"湘KKR809\",\"label_code\":\"\",\"vehicleType\":\"\",\"loss_amount_param\":\"\",\"order_source\":\"\",\"orderStatusList\":[],\"authority_list\":[],\"centerNo\":\"\",\"stationNo\":\"\",\"orderType\":\"\",\"startTollFee\":null,\"endTollFee\":null,\"startPenaltyFee\":null,\"endPenaltyFee\":null}"}
+
+响应体数据：
+{
+  "code": {
+    "code": "0",
+    "msg": "操作成功",
+    "ok": true
+  },
+  "result": {
+    "defaultLength": 10,
+    "draw": 1,
+    "length": 10,
+    "start": 0,
+    "orderName": null,
+    "orderType": "asc",
+    "jsonParam": null,
+    "recordsTotal": 1,
+    "recordsFiltered": 1,
+    "bean": null,
+    "data": [
+      {
+        "user_id": null,
+        "order": null,
+        "authority_list": null,
+        "order_id": "2afd299ab30b487ba986fcb368f3a7ce",
+        "pass_id": "012101224023001056160720260331141418",
+        "vehicle_no": "辽BWL760_1",
+        "plate_number": "辽BWL760",
+        "plate_color_name": "黄色",
+        "en_time": "2026-03-31 20:35:54",
+        "ex_time": "2026-04-01 02:19:47",
+        "en_station_name": "湖南南风坳站(省界)(停用)",
+        "ex_station_name": "湖南伏口站",
+        "en_vehicle_type_name": "二型货车",
+        "ex_vehicle_type_name": "二型货车",
+        "ex_fee_type_name": null,
+        "fee": "31417",
+        "label_code": "D98",
+        "label_code_name": "超限超载",
+        "label_code_all": "D98",
+        "loss_amount": null,
+        "beforelabel_code_name": null,
+        "order_source": "2",
+        "order_status": 8,
+        "order_status_name": "补缴成功",
+        "statis_date": null,
+        "toll_fee": "0",
+        "penalty_fee": "39100",
+        "total_fee": "39100",
+        "subjective": "2",
+        "review_name": "王色涛",
+        "review_time": "2026-04-01 11:44:49",
+        "operate_time": "2026-04-01 11:37:37",
+        "operator_name": "张雨丝",
+        "real_vehicle_type": "12",
+        "operator_id": null,
+        "last_update_time": null,
+        "auditStationId": null,
+        "auditStationName": null,
+        "operateFlag": 0,
+        "authority_unit": "G0055430030160",
+        "authorityUnitName": "湖南伏口站",
+        "if_multi_prov": 1,
+        "startTime": null,
+        "endTime": null,
+        "dbTime": null,
+        "dbStartTime": null,
+        "dbEndTime": null,
+        "centerNo": null,
+        "stationNo": null,
+        "vehicleType": null,
+        "loss_amount_param": null,
+        "dbTimeBeg": null,
+        "dbTimeEnd": null,
+        "db_time": "2026-04-01 02:30:57",
+        "nodeCode": null,
+        "orderSubStatus": null,
+        "joinStatusName": "补缴成功",
+        "joinStatusId": "system",
+        "createUsername": "220115",
+        "createRealName": "胡玲群",
+        "status": null,
+        "originalUnit": null,
+        "stationName": null,
+        "lossAmountStart": null,
+        "lossAmountEnd": null,
+        "distributeOperatorName": null,
+        "distributeTime": null,
+        "distributeOperatorOrgName": null,
+        "media_type": null,
+        "orderType": 2,
+        "provUseStatus": null,
+        "updateUnitFlag": false,
+        "updateIfMultiProvFlag": false,
+        "startTollFee": null,
+        "endTollFee": null,
+        "startPenaltyFee": null,
+        "endPenaltyFee": null,
+        "canUpdateMinistryOrdercode": false,
+        "excludeSuspicionType": null,
+        "lableCodeList": null,
+        "orderStatusList": null,
+        "orderStatusDefaultList": null,
+        "updateQuery": false
+      }
+    ],
+    "needCount": true
+  }
 }

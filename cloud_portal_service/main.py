@@ -4,22 +4,19 @@ import socket
 import time
 import threading
 import logging
-import requests
 import json
 import uuid
-import asyncio
-import websockets
+import websocket
 from datetime import datetime
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QSpinBox, QCheckBox, QGroupBox,
-    QFormLayout, QMessageBox, QSystemTrayIcon, QMenu, QTextEdit,
-    QTabWidget, QDialog, QDialogButtonBox, QComboBox
+    QFormLayout, QMessageBox, QSystemTrayIcon, QMenu,
+    QTabWidget, QDialog, QDialogButtonBox, QComboBox, QGridLayout
 )
 from PySide6.QtCore import Qt, QThread, Signal, QTimer, Slot
 from PySide6.QtGui import QIcon, QAction
 from werkzeug.serving import run_simple, make_server
-from api_server import app
 from config import config, DEFAULT_CONFIG, get_base_path
 from network_utils import get_local_ips, check_network_connectivity
 
@@ -30,6 +27,21 @@ def get_log_file_path():
 
 def setup_logging():
     log_file = get_log_file_path()
+    
+    log_dir = os.path.dirname(log_file)
+    if not os.path.exists(log_dir):
+        try:
+            os.makedirs(log_dir, exist_ok=True)
+        except Exception as e:
+            print(f"无法创建日志目录 {log_dir}: {e}")
+    
+    try:
+        with open(log_file, 'a', encoding='utf-8') as f:
+            pass
+    except Exception as e:
+        print(f"无法写入日志文件 {log_file}: {e}")
+        log_file = os.path.join(os.getcwd(), 'service.log')
+        print(f"回退到当前工作目录: {log_file}")
     
     logger = logging.getLogger()
     logger.setLevel(getattr(logging, config.LOG_LEVEL, logging.INFO))
@@ -57,13 +69,18 @@ def setup_logging():
     logging.getLogger('urllib3').setLevel(logging.WARNING)
     logging.getLogger('requests').setLevel(logging.WARNING)
     
-    return logger
+    return logger, file_handler
 
-logger = setup_logging()
+logger, log_file_handler = setup_logging()
+
+from api_server import app
 
 logger.info("="*80)
 logger.info("CloudPortalService 启动")
 logger.info(f"版本: {config.VERSION}")
+logger.info(f"sys.frozen: {getattr(sys, 'frozen', 'Not set')}")
+logger.info(f"__compiled__: {'__compiled__' in globals()}")
+logger.info(f"sys.executable: {sys.executable}")
 logger.info(f"运行目录: {get_base_path()}")
 logger.info(f"日志文件: {get_log_file_path()}")
 logger.info(f"GUI服务地址: {config.GUI_HOST}:{config.GUI_PORT}")
@@ -128,12 +145,11 @@ class FlaskThread(QThread):
     def stop(self):
         self._is_running = False
         if self.server:
-            self.server.shutdown()
+            try:
+                self.server.shutdown()
+            except Exception:
+                pass
             self.server = None
-        self.wait(3000)
-        if self.isRunning():
-            self.terminate()
-        time.sleep(0.5)
 
 class WebSocketClientThread(QThread):
     connected_signal = Signal()
@@ -147,82 +163,101 @@ class WebSocketClientThread(QThread):
         self.backend_url = backend_url
         self.client_id = client_id or f"gui_{uuid.uuid4().hex[:8]}"
         self._is_running = False
-        self._websocket = None
-        self._loop = None
+        self._ws = None
         self._last_status = None
+        self._heartbeat_thread = None
+        self._reconnect_delay = 5
+        self._max_reconnect_delay = 30
     
     def run(self):
         self._is_running = True
-        self._loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self._loop)
-        
-        try:
-            self._loop.run_until_complete(self._connect_and_listen())
-        except Exception as e:
-            logger.error(f"WebSocket客户端错误: {e}")
-            self.error_signal.emit(str(e))
-        finally:
-            self._loop.close()
-    
-    async def _connect_and_listen(self):
         ws_url = f"{self.backend_url}/ws/status/gui/{self.client_id}"
         
         while self._is_running:
             try:
                 logger.info(f"WebSocket连接: {ws_url}")
-                async with websockets.connect(ws_url) as websocket:
-                    self._websocket = websocket
-                    self.connected_signal.emit()
-                    logger.info("WebSocket已连接")
+                log_file_handler.flush()
+                
+                self._ws = websocket.WebSocketApp(
+                    ws_url,
+                    on_open=self._on_open,
+                    on_message=self._on_message,
+                    on_error=self._on_error,
+                    on_close=self._on_close
+                )
+                
+                self._ws.run_forever()
+                
+                if self._is_running:
+                    logger.info(f"WebSocket断开，{self._reconnect_delay}秒后重连...")
+                    time.sleep(self._reconnect_delay)
+                    self._reconnect_delay = min(self._reconnect_delay * 2, self._max_reconnect_delay)
                     
-                    heartbeat_task = asyncio.create_task(self._send_heartbeat())
-                    
-                    try:
-                        async for message in websocket:
-                            if not self._is_running:
-                                break
-                            try:
-                                data = json.loads(message)
-                                self.message_received.emit(data)
-                                
-                                if data.get("type") == "status_update":
-                                    self._last_status = data.get("data", {})
-                                    self.status_updated.emit(self._last_status)
-                            except json.JSONDecodeError:
-                                logger.warning(f"无效的JSON消息: {message}")
-                    finally:
-                        heartbeat_task.cancel()
-                        self._websocket = None
-                        
             except Exception as e:
-                logger.warning(f"WebSocket连接断开: {e}")
+                error_msg = f"WebSocket客户端错误: {e}"
+                logger.error(error_msg)
+                log_file_handler.flush()
+                self.error_signal.emit(str(e))
                 self.disconnected_signal.emit()
                 
                 if self._is_running:
-                    await asyncio.sleep(5)
+                    time.sleep(self._reconnect_delay)
     
-    async def _send_heartbeat(self):
-        while self._is_running and self._websocket:
+    def _on_open(self, ws):
+        logger.info("WebSocket已连接")
+        self.connected_signal.emit()
+        self._reconnect_delay = 5
+        
+        self._heartbeat_thread = threading.Thread(target=self._send_heartbeat, daemon=True)
+        self._heartbeat_thread.start()
+    
+    def _on_message(self, ws, message):
+        try:
+            data = json.loads(message)
+            self.message_received.emit(data)
+            
+            if data.get("type") == "status_update":
+                self._last_status = data.get("data", {})
+                self.status_updated.emit(self._last_status)
+            elif data.get("type") == "heartbeat_ack":
+                logger.debug(f"收到心跳响应: {data.get('timestamp')}")
+        except json.JSONDecodeError:
+            logger.warning(f"无效的JSON消息: {message}")
+    
+    def _on_error(self, ws, error):
+        if isinstance(error, Exception):
+            error_msg = f"WebSocket错误: {type(error).__name__}: {error}"
+        else:
+            error_msg = f"WebSocket错误: {error}"
+        logger.error(error_msg)
+        self.error_signal.emit(error_msg)
+    
+    def _on_close(self, ws, close_status_code, close_msg):
+        logger.info(f"WebSocket关闭: {close_status_code} - {close_msg}")
+        self.disconnected_signal.emit()
+    
+    def _send_heartbeat(self):
+        time.sleep(2)
+        while self._is_running:
             try:
-                await self._websocket.send(json.dumps({
-                    "type": "heartbeat",
-                    "timestamp": datetime.now().isoformat()
-                }))
-                await asyncio.sleep(30)
+                if self._ws and self._ws.sock:
+                    self._ws.send(json.dumps({
+                        "type": "heartbeat",
+                        "timestamp": datetime.now().isoformat()
+                    }))
+                time.sleep(30)
             except Exception as e:
                 logger.warning(f"心跳发送失败: {e}")
                 break
     
     def stop(self):
         self._is_running = False
-        if self._websocket:
-            asyncio.run_coroutine_threadsafe(
-                self._websocket.close(),
-                self._loop
-            )
-        self.wait(3000)
-        if self.isRunning():
-            self.terminate()
+        if self._ws:
+            try:
+                self._ws.close()
+            except Exception:
+                pass
+            self._ws = None
     
     def get_last_status(self):
         return self._last_status
@@ -243,7 +278,7 @@ class ConfigDialog(QDialog):
         network_tab = QWidget()
         network_layout = QVBoxLayout(network_tab)
         
-        gui_group = QGroupBox("GUI服务配置")
+        gui_group = QGroupBox("GUI监听配置")
         gui_layout = QFormLayout(gui_group)
         
         self.host_input = QLineEdit()
@@ -257,7 +292,7 @@ class ConfigDialog(QDialog):
         
         network_layout.addWidget(gui_group)
         
-        backend_group = QGroupBox("后端服务配置")
+        backend_group = QGroupBox("WebSocket配置")
         backend_layout = QFormLayout(backend_group)
         
         self.backend_host_input = QLineEdit()
@@ -268,15 +303,6 @@ class ConfigDialog(QDialog):
         self.backend_port_input.setRange(1, 65535)
         self.backend_port_input.setValue(8000)
         backend_layout.addRow("监听端口:", self.backend_port_input)
-        
-        self.auto_generate_url_checkbox = QCheckBox("自动生成访问URL")
-        self.auto_generate_url_checkbox.setChecked(True)
-        self.auto_generate_url_checkbox.stateChanged.connect(self._on_auto_generate_url_changed)
-        backend_layout.addRow("", self.auto_generate_url_checkbox)
-        
-        self.backend_url_input = QLineEdit()
-        self.backend_url_input.setPlaceholderText("http://172.32.48.239:8000 或自定义URL")
-        backend_layout.addRow("访问URL:", self.backend_url_input)
         
         test_connection_layout = QHBoxLayout()
         self.test_connection_btn = QPushButton("测试连接")
@@ -343,9 +369,6 @@ class ConfigDialog(QDialog):
         self.auto_start_checkbox = QCheckBox("启动时自动开始服务")
         general_layout.addRow("", self.auto_start_checkbox)
         
-        self.minimize_checkbox = QCheckBox("启动时最小化到系统托盘")
-        general_layout.addRow("", self.minimize_checkbox)
-        
         log_levels = ["DEBUG", "INFO", "WARNING", "ERROR"]
         self.log_level_combo = QComboBox()
         self.log_level_combo.addItems(log_levels)
@@ -367,9 +390,6 @@ class ConfigDialog(QDialog):
         self.port_input.setValue(config.GUI_PORT)
         self.backend_host_input.setText(config.BACKEND_HOST)
         self.backend_port_input.setValue(config.BACKEND_PORT)
-        self.auto_generate_url_checkbox.setChecked(config.BACKEND_AUTO_GENERATE_URL)
-        self.backend_url_input.setText(config.BACKEND_URL if not config.BACKEND_AUTO_GENERATE_URL else "")
-        self._on_auto_generate_url_changed(self.auto_generate_url_checkbox.checkState())
         self.ethernet_ip_input.setText(config.ETHERNET_IP)
         self.ethernet2_ip_input.setText(config.ETHERNET2_IP)
         self.portal_base_url_input.setText(config.PORTAL_BASE_URL)
@@ -378,32 +398,11 @@ class ConfigDialog(QDialog):
         self.client_id_input.setText(config.CLIENT_ID)
         self.session_timeout_input.setValue(config.SESSION_TIMEOUT)
         self.auto_start_checkbox.setChecked(config.AUTO_START)
-        self.minimize_checkbox.setChecked(config.MINIMIZE_TO_TRAY)
         
         log_level = config.LOG_LEVEL
         index = self.log_level_combo.findText(log_level)
         if index >= 0:
             self.log_level_combo.setCurrentIndex(index)
-    
-    @Slot(int)
-    def _on_auto_generate_url_changed(self, state):
-        is_checked = state == Qt.CheckState.Checked.value
-        self.backend_url_input.setEnabled(not is_checked)
-        if is_checked:
-            self.backend_url_input.setPlaceholderText("自动生成 (基于绑定地址和端口)")
-            host = self.backend_host_input.text() or "0.0.0.0"
-            port = self.backend_port_input.value()
-            if host == "0.0.0.0" or host == "127.0.0.1":
-                local_ips = get_local_ips()
-                if local_ips:
-                    host = local_ips[0]
-                else:
-                    host = "127.0.0.1"
-            preview_url = f"http://{host}:{port}"
-            self.backend_url_input.setToolTip(f"预览: {preview_url}")
-        else:
-            self.backend_url_input.setPlaceholderText("http://172.32.48.239:8000 或自定义URL")
-            self.backend_url_input.setToolTip("")
     
     @Slot()
     def save_and_accept(self):
@@ -423,14 +422,11 @@ class ConfigDialog(QDialog):
         
         backend_config = {
             'host': self.backend_host_input.text(),
-            'port': self.backend_port_input.value(),
-            'auto_generate_url': self.auto_generate_url_checkbox.isChecked(),
-            'url': self.backend_url_input.text() if not self.auto_generate_url_checkbox.isChecked() else ""
+            'port': self.backend_port_input.value()
         }
         config.set('backend', backend_config)
         
         config.set('auto_start', self.auto_start_checkbox.isChecked())
-        config.set('minimize_to_tray', self.minimize_checkbox.isChecked())
         config.set('portal_base_url', self.portal_base_url_input.text())
         config.set('portal_sso_url', self.portal_sso_url_input.text())
         config.set('portal_home_url', self.portal_home_url_input.text())
@@ -445,55 +441,24 @@ class ConfigDialog(QDialog):
         }
         config.set('network', network_config)
         
-        requires_restart = (
-            old_backend_host != config.BACKEND_HOST or
-            old_backend_port != config.BACKEND_PORT or
-            old_gui_host != config.GUI_HOST or
-            old_gui_port != config.GUI_PORT
-        )
-        
-        if requires_restart:
-            reply = QMessageBox.question(
-                self, "配置已保存",
-                "配置已成功保存！\n\n"
-                "检测到网络配置已更改，需要重启服务才能生效。\n\n"
-                "是否现在重启服务？",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.Yes
-            )
+        if self.parent():
+            self.parent().update_connection_info()
             
-            if reply == QMessageBox.StandardButton.Yes:
-                QMessageBox.information(self, "提示", "请手动重启服务以应用新配置")
-            else:
-                QMessageBox.information(self, "提示", "配置已保存，将在下次启动时生效")
-        else:
-            QMessageBox.information(self, "成功", "配置已保存")
+            backend_changed = (old_backend_host != config.BACKEND_HOST or 
+                              old_backend_port != config.BACKEND_PORT)
+            if backend_changed and self.parent().is_service_running:
+                self.parent().restart_websocket_client()
         
+        QMessageBox.information(self, "成功", "配置已保存并立即生效")
         self.accept()
     
     def _validate_config(self):
         """验证配置有效性"""
         host = self.backend_host_input.text().strip()
-        port = self.backend_port_input.value()
         
         if not host:
             QMessageBox.warning(self, "验证失败", "后端绑定地址不能为空")
             return False
-        
-        if host != "0.0.0.0" and host != "127.0.0.1":
-            import socket
-            try:
-                socket.inet_aton(host)
-            except socket.error:
-                QMessageBox.warning(self, "验证失败", f"无效的IP地址格式: {host}")
-                return False
-        
-        if not self.auto_generate_url_checkbox.isChecked():
-            url = self.backend_url_input.text().strip()
-            if url:
-                if not (url.startswith("http://") or url.startswith("https://")):
-                    QMessageBox.warning(self, "验证失败", "访问URL必须以 http:// 或 https:// 开头")
-                    return False
         
         return True
     
@@ -507,18 +472,12 @@ class ConfigDialog(QDialog):
         host = self.backend_host_input.text().strip() or "0.0.0.0"
         port = self.backend_port_input.value()
         
-        if self.auto_generate_url_checkbox.isChecked():
-            if host == "0.0.0.0" or host == "127.0.0.1":
-                local_ips = get_local_ips()
-                test_host = local_ips[0] if local_ips else "127.0.0.1"
-            else:
-                test_host = host
-            test_url = f"http://{test_host}:{port}"
+        if host == "0.0.0.0" or host == "127.0.0.1":
+            local_ips = get_local_ips()
+            test_host = local_ips[0] if local_ips else "127.0.0.1"
         else:
-            test_url = self.backend_url_input.text().strip()
-            if not test_url:
-                self._show_connection_result(False, "请输入访问URL")
-                return
+            test_host = host
+        test_url = f"http://{test_host}:{port}"
         
         import threading
         def do_test():
@@ -598,79 +557,196 @@ class MainWindow(QMainWindow):
     
     def init_ui(self):
         self.setWindowTitle(f"云门户查询服务 v{config.VERSION}")
-        self.setMinimumSize(800, 600)
+        self.setMinimumSize(900, 650)
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #f5f7fa;
+            }
+            QGroupBox {
+                font-weight: bold;
+                font-size: 13px;
+                border: 1px solid #dcdfe6;
+                border-radius: 6px;
+                margin-top: 12px;
+                padding-top: 10px;
+                background-color: white;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 15px;
+                padding: 0 8px;
+                color: #303133;
+            }
+            QPushButton {
+                background-color: #409EFF;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 20px;
+                font-size: 13px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #66b1ff;
+            }
+            QPushButton:pressed {
+                background-color: #3a8ee6;
+            }
+            QPushButton:disabled {
+                background-color: #a0cfff;
+            }
+            QLabel {
+                color: #606266;
+                font-size: 13px;
+            }
+        """)
         
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
+        layout.setSpacing(15)
+        layout.setContentsMargins(20, 20, 20, 20)
         
         status_group = QGroupBox("服务状态")
         status_layout = QVBoxLayout(status_group)
+        status_layout.setSpacing(12)
         
         status_row = QHBoxLayout()
-        self.status_label = QLabel("服务状态: 未启动")
-        self.status_label.setStyleSheet("font-weight: bold; font-size: 14px;")
-        status_row.addWidget(self.status_label)
+        status_row.setSpacing(20)
+        
+        status_info_layout = QVBoxLayout()
+        status_info_layout.setSpacing(8)
+        
+        self.status_label = QLabel("● 服务状态: 未启动")
+        self.status_label.setStyleSheet("""
+            font-weight: bold; 
+            font-size: 15px; 
+            color: #909399;
+            background-color: #f4f4f5;
+            padding: 4px 8px;
+            border-radius: 4px;
+        """)
+        status_info_layout.addWidget(self.status_label)
+        
+        self.ws_status_label = QLabel("● WebSocket: 未连接")
+        self.ws_status_label.setStyleSheet("""
+            font-weight: bold; 
+            font-size: 13px; 
+            color: #909399;
+            background-color: #f4f4f5;
+            padding: 4px 8px;
+            border-radius: 4px;
+        """)
+        status_info_layout.addWidget(self.ws_status_label)
+        
+        self.url_label = QLabel()
+        self.url_label.setStyleSheet("color: #909399; font-size: 12px;")
+        status_info_layout.addWidget(self.url_label)
+        
+        status_row.addLayout(status_info_layout)
         status_row.addStretch()
         
-        self.ws_status_label = QLabel("WebSocket: 未连接")
-        self.ws_status_label.setStyleSheet("font-weight: bold; font-size: 12px; color: gray;")
-        status_row.addWidget(self.ws_status_label)
-        status_row.addStretch()
-        
-        version_label = QLabel(f"v{config.VERSION}")
-        version_label.setStyleSheet("color: #409EFF; font-weight: bold;")
-        status_row.addWidget(version_label)
-        status_row.addStretch()
+        btn_layout = QVBoxLayout()
+        btn_layout.setSpacing(10)
         
         self.start_btn = QPushButton("启动服务")
         self.start_btn.clicked.connect(self.toggle_service)
-        self.start_btn.setMinimumWidth(120)
-        status_row.addWidget(self.start_btn)
+        self.start_btn.setMinimumWidth(140)
+        self.start_btn.setMinimumHeight(40)
+        btn_layout.addWidget(self.start_btn)
         
+        config_btn = QPushButton("服务配置")
+        config_btn.clicked.connect(self.show_config)
+        config_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #67C23A;
+            }
+            QPushButton:hover {
+                background-color: #85ce61;
+            }
+            QPushButton:pressed {
+                background-color: #5daf34;
+            }
+        """)
+        config_btn.setMinimumWidth(140)
+        config_btn.setMinimumHeight(40)
+        btn_layout.addWidget(config_btn)
+        
+        status_row.addLayout(btn_layout)
         status_layout.addLayout(status_row)
-        
-        self.url_label = QLabel()
-        self.url_label.setStyleSheet("color: gray;")
-        status_layout.addWidget(self.url_label)
         
         layout.addWidget(status_group)
         
-        log_group = QGroupBox("运行日志")
-        log_layout = QVBoxLayout(log_group)
+        info_group = QGroupBox("连接信息")
+        info_layout = QGridLayout(info_group)
+        info_layout.setSpacing(12)
         
-        self.log_text = QTextEdit()
-        self.log_text.setReadOnly(True)
-        self.log_text.setMaximumHeight(150)
-        log_layout.addWidget(self.log_text)
+        info_layout.addWidget(QLabel("GUI监听地址:"), 0, 0)
+        self.gui_addr_label = QLabel(f"{config.GUI_HOST}:{config.GUI_PORT}")
+        self.gui_addr_label.setStyleSheet("color: #409EFF; font-weight: bold;")
+        info_layout.addWidget(self.gui_addr_label, 0, 1)
         
-        clear_log_btn = QPushButton("清空日志")
-        clear_log_btn.clicked.connect(self.log_text.clear)
-        log_layout.addWidget(clear_log_btn)
+        info_layout.addWidget(QLabel("WebSocket地址:"), 0, 2)
+        self.ws_addr_label = QLabel(f"{config.BACKEND_HOST}:{config.BACKEND_PORT}")
+        self.ws_addr_label.setStyleSheet("color: #67C23A; font-weight: bold;")
+        info_layout.addWidget(self.ws_addr_label, 0, 3)
         
-        layout.addWidget(log_group)
-        
-        info_group = QGroupBox("网络信息")
-        info_layout = QFormLayout(info_group)
-        
+        info_layout.addWidget(QLabel("本机IP:"), 1, 0)
         local_ips = get_local_ips()
         ip_text = ', '.join(local_ips) if local_ips else '未检测到'
-        info_layout.addRow("本机IP:", QLabel(ip_text))
+        self.local_ip_label = QLabel(ip_text)
+        self.local_ip_label.setStyleSheet("color: #E6A23C; font-weight: bold;")
+        info_layout.addWidget(self.local_ip_label, 1, 1)
         
-        info_layout.addRow("以太网IP:", QLabel(config.ETHERNET_IP))
-        info_layout.addRow("以太网2IP:", QLabel(config.ETHERNET2_IP))
+        info_layout.addWidget(QLabel("以太网IP:"), 1, 2)
+        self.ethernet_ip_label = QLabel(config.ETHERNET_IP)
+        self.ethernet_ip_label.setStyleSheet("color: #909399;")
+        info_layout.addWidget(self.ethernet_ip_label, 1, 3)
+        
+        info_layout.setColumnStretch(1, 1)
+        info_layout.setColumnStretch(3, 1)
         
         layout.addWidget(info_group)
         
-        btn_layout = QHBoxLayout()
+        status_detail_group = QGroupBox("状态详情")
+        status_detail_layout = QGridLayout(status_detail_group)
+        status_detail_layout.setSpacing(12)
         
-        config_btn = QPushButton("配置")
-        config_btn.clicked.connect(self.show_config)
-        btn_layout.addWidget(config_btn)
+        status_detail_layout.addWidget(QLabel("前端在线:"), 0, 0)
+        self.frontend_count_label = QLabel("0")
+        self.frontend_count_label.setStyleSheet("color: #409EFF; font-weight: bold; font-size: 14px;")
+        status_detail_layout.addWidget(self.frontend_count_label, 0, 1)
         
-        btn_layout.addStretch()
+        status_detail_layout.addWidget(QLabel("GUI在线:"), 0, 2)
+        self.gui_count_label = QLabel("0")
+        self.gui_count_label.setStyleSheet("color: #67C23A; font-weight: bold; font-size: 14px;")
+        status_detail_layout.addWidget(self.gui_count_label, 0, 3)
         
-        layout.addLayout(btn_layout)
+        status_detail_layout.addWidget(QLabel("心跳状态:"), 0, 4)
+        self.heartbeat_status_label = QLabel("成功: 0 / 失败: 0")
+        self.heartbeat_status_label.setStyleSheet("color: #909399; font-weight: bold; font-size: 12px;")
+        status_detail_layout.addWidget(self.heartbeat_status_label, 0, 5)
+        
+        status_detail_layout.addWidget(QLabel("请求数量:"), 1, 0)
+        self.request_count_label = QLabel("0")
+        self.request_count_label.setStyleSheet("color: #E6A23C; font-weight: bold; font-size: 14px;")
+        status_detail_layout.addWidget(self.request_count_label, 1, 1)
+        
+        status_detail_layout.addWidget(QLabel("空闲倒计时:"), 1, 2)
+        self.idle_countdown_label = QLabel("--:--")
+        self.idle_countdown_label.setStyleSheet("color: #409EFF; font-weight: bold; font-size: 14px;")
+        status_detail_layout.addWidget(self.idle_countdown_label, 1, 3)
+        
+        status_detail_layout.addWidget(QLabel("最近状态:"), 2, 0)
+        self.last_status_label = QLabel("等待更新...")
+        self.last_status_label.setStyleSheet("color: #909399; font-size: 12px;")
+        status_detail_layout.addWidget(self.last_status_label, 2, 1, 1, 5)
+        
+        status_detail_layout.setColumnStretch(1, 1)
+        status_detail_layout.setColumnStretch(3, 1)
+        status_detail_layout.setColumnStretch(5, 1)
+        
+        layout.addWidget(status_detail_group)
     
     def setup_tray(self):
         self.tray_icon = QSystemTrayIcon(self)
@@ -726,6 +802,11 @@ class MainWindow(QMainWindow):
         if self.is_service_running:
             return
         
+        from session_manager import session_manager
+        expired_count = session_manager.cleanup_expired_sessions()
+        if expired_count > 0:
+            self.log_message(f"已清理 {expired_count} 个过期会话")
+        
         try:
             gui_host = config.GUI_HOST
             gui_port = config.GUI_PORT
@@ -746,12 +827,23 @@ class MainWindow(QMainWindow):
             self.log_message("正在停止服务...")
             self.flask_thread.stop()
             self.flask_thread = None
+            
+            from session_manager import session_manager
+            session_manager.cleanup_all_sessions()
+            self.log_message("已清理所有会话")
     
     @Slot()
     def on_service_started(self):
         self.is_service_running = True
-        self.status_label.setText("服务状态: 运行中")
-        self.status_label.setStyleSheet("font-weight: bold; font-size: 14px; color: green;")
+        self.status_label.setText("● 服务状态: 运行中")
+        self.status_label.setStyleSheet("""
+            font-weight: bold; 
+            font-size: 15px; 
+            color: #67C23A;
+            background-color: #f0f9eb;
+            padding: 4px 8px;
+            border-radius: 4px;
+        """)
         self.start_btn.setText("停止服务")
         self.tray_start_action.setText("停止服务")
         
@@ -782,6 +874,17 @@ class MainWindow(QMainWindow):
             self.websocket_thread = None
             self.log_message("WebSocket客户端已停止")
     
+    def restart_websocket_client(self):
+        self.log_message("正在重启WebSocket客户端...")
+        self.stop_websocket_client()
+        QTimer.singleShot(500, self.start_websocket_client)
+    
+    def update_connection_info(self):
+        self.gui_addr_label.setText(f"{config.GUI_HOST}:{config.GUI_PORT}")
+        self.ws_addr_label.setText(f"{config.BACKEND_HOST}:{config.BACKEND_PORT}")
+        self.ethernet_ip_label.setText(config.ETHERNET_IP)
+        self.log_message("连接信息已更新")
+    
     @Slot()
     def on_ws_connected(self):
         self.log_message("WebSocket已连接到后端")
@@ -796,6 +899,8 @@ class MainWindow(QMainWindow):
     def on_ws_status_updated(self, status):
         frontend_count = status.get("frontend_count", 0)
         gui_count = status.get("gui_count", 0)
+        self.frontend_count_label.setText(str(frontend_count))
+        self.gui_count_label.setText(str(gui_count))
         self.log_message(f"状态更新: 前端在线 {frontend_count}, GUI在线 {gui_count}")
     
     @Slot(str)
@@ -804,17 +909,38 @@ class MainWindow(QMainWindow):
     
     def update_ws_status_display(self, connected: bool):
         if connected:
-            self.ws_status_label.setText("WebSocket: 已连接")
-            self.ws_status_label.setStyleSheet("font-weight: bold; font-size: 12px; color: green;")
+            self.ws_status_label.setText("● WebSocket: 已连接")
+            self.ws_status_label.setStyleSheet("""
+                font-weight: bold; 
+                font-size: 13px; 
+                color: #67C23A;
+                background-color: #f0f9eb;
+                padding: 4px 8px;
+                border-radius: 4px;
+            """)
         else:
-            self.ws_status_label.setText("WebSocket: 未连接")
-            self.ws_status_label.setStyleSheet("font-weight: bold; font-size: 12px; color: red;")
+            self.ws_status_label.setText("● WebSocket: 未连接")
+            self.ws_status_label.setStyleSheet("""
+                font-weight: bold; 
+                font-size: 13px; 
+                color: #F56C6C;
+                background-color: #fef0f0;
+                padding: 4px 8px;
+                border-radius: 4px;
+            """)
     
     @Slot()
     def on_service_stopped(self):
         self.is_service_running = False
-        self.status_label.setText("服务状态: 已停止")
-        self.status_label.setStyleSheet("font-weight: bold; font-size: 14px; color: red;")
+        self.status_label.setText("● 服务状态: 已停止")
+        self.status_label.setStyleSheet("""
+            font-weight: bold; 
+            font-size: 15px; 
+            color: #F56C6C;
+            background-color: #fef0f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+        """)
         self.start_btn.setText("启动服务")
         self.tray_start_action.setText("启动服务")
         self.url_label.setText("")
@@ -827,7 +953,36 @@ class MainWindow(QMainWindow):
         self.stop_websocket_client()
     
     def fetch_request_logs(self):
-        pass
+        from session_manager import session_manager
+        from api_server import request_log
+        import time
+        
+        success = session_manager.heartbeat_success_count
+        failure = session_manager.heartbeat_failure_count
+        self.heartbeat_status_label.setText(f"成功: {success} / 失败: {failure}")
+        
+        if success + failure > 0:
+            success_rate = success / (success + failure) * 100
+            if success_rate >= 80:
+                self.heartbeat_status_label.setStyleSheet("color: #67C23A; font-weight: bold; font-size: 12px;")
+            elif success_rate >= 50:
+                self.heartbeat_status_label.setStyleSheet("color: #E6A23C; font-weight: bold; font-size: 12px;")
+            else:
+                self.heartbeat_status_label.setStyleSheet("color: #F56C6C; font-weight: bold; font-size: 12px;")
+        
+        self.request_count_label.setText(str(len(request_log)))
+        
+        elapsed = int(time.time() - session_manager.last_request_time)
+        remaining = session_manager.idle_threshold - elapsed
+        
+        if remaining > 0:
+            minutes = remaining // 60
+            seconds = remaining % 60
+            self.idle_countdown_label.setText(f"{minutes:02d}:{seconds:02d}")
+            self.idle_countdown_label.setStyleSheet("color: #409EFF; font-weight: bold; font-size: 14px;")
+        else:
+            self.idle_countdown_label.setText("空闲中")
+            self.idle_countdown_label.setStyleSheet("color: #67C23A; font-weight: bold; font-size: 14px;")
     
     @Slot(str)
     def on_service_error(self, error):
@@ -842,20 +997,11 @@ class MainWindow(QMainWindow):
     def log_message(self, message):
         from datetime import datetime
         timestamp = datetime.now().strftime("%H:%M:%S")
-        self.log_text.append(f"[{timestamp}] {message}")
+        self.last_status_label.setText(f"[{timestamp}] {message}")
     
     def closeEvent(self, event):
-        if config.MINIMIZE_TO_TRAY:
-            event.ignore()
-            self.hide()
-            self.tray_icon.showMessage(
-                "云门户查询服务",
-                "程序已最小化到系统托盘",
-                QSystemTrayIcon.MessageIcon.Information,
-                2000
-            )
-        else:
-            self.quit_app()
+        event.ignore()
+        self.quit_app()
     
     @Slot()
     def quit_app(self):
@@ -877,23 +1023,31 @@ class MainWindow(QMainWindow):
             
             self.stop_service()
         
-        self.tray_icon.hide()
-        
-        QApplication.processEvents()
-        time.sleep(0.3)
+        if hasattr(self, 'tray_icon'):
+            self.tray_icon.hide()
         
         QApplication.quit()
 
 def main():
-    app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
-    
-    window = MainWindow()
-    
-    if not config.MINIMIZE_TO_TRAY:
+    try:
+        app = QApplication(sys.argv)
+        app.setQuitOnLastWindowClosed(True)
+        
+        window = MainWindow()
         window.show()
-    
-    sys.exit(app.exec())
+        
+        sys.exit(app.exec())
+    except Exception as e:
+        import traceback
+        error_msg = f"程序启动失败:\n{str(e)}\n\n{traceback.format_exc()}"
+        print(error_msg)
+        try:
+            error_log_path = os.path.join(get_base_path(), 'error.log')
+            with open(error_log_path, 'w', encoding='utf-8') as f:
+                f.write(error_msg)
+        except:
+            pass
+        raise
 
 if __name__ == '__main__':
     main()

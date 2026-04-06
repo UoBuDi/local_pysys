@@ -2,10 +2,14 @@ import json
 import os
 import sys
 
-VERSION = "1.45"
+VERSION = "1.72"
 
 def get_base_path():
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, 'frozen', False) or '__compiled__' in globals():
+        if hasattr(sys, 'argv') and sys.argv:
+            exe_path = os.path.abspath(sys.argv[0])
+            if os.path.exists(exe_path):
+                return os.path.dirname(exe_path)
         return os.path.dirname(sys.executable)
     return os.path.dirname(os.path.abspath(__file__))
 
@@ -15,7 +19,6 @@ DEFAULT_CONFIG = {
     "gui_host": "172.32.48.239",
     "gui_port": 9000,
     "auto_start": False,
-    "minimize_to_tray": True,
     "portal_base_url": "http://api.hngsetc.com",
     "portal_sso_url": "http://sso.hngsetc.com",
     "portal_home_url": "http://home.hngsetc.com",
@@ -29,10 +32,8 @@ DEFAULT_CONFIG = {
         "use_ethernet2_for_portal": True
     },
     "backend": {
-        "host": "0.0.0.0",
-        "port": 8000,
-        "auto_generate_url": True,
-        "url": ""
+        "host": "172.32.48.254",
+        "port": 8000
     }
 }
 
@@ -87,10 +88,6 @@ class Config:
         return self._config.get('auto_start', DEFAULT_CONFIG['auto_start'])
     
     @property
-    def MINIMIZE_TO_TRAY(self):
-        return self._config.get('minimize_to_tray', DEFAULT_CONFIG['minimize_to_tray'])
-    
-    @property
     def PORTAL_BASE_URL(self):
         return self._config.get('portal_base_url', DEFAULT_CONFIG['portal_base_url'])
     
@@ -143,29 +140,8 @@ class Config:
         return self.BACKEND.get('port', DEFAULT_CONFIG['backend']['port'])
     
     @property
-    def BACKEND_AUTO_GENERATE_URL(self):
-        return self.BACKEND.get('auto_generate_url', DEFAULT_CONFIG['backend']['auto_generate_url'])
-    
-    @property
     def BACKEND_URL(self):
-        if self.BACKEND_AUTO_GENERATE_URL:
-            host = self.BACKEND_HOST
-            if host == "0.0.0.0" or host == "127.0.0.1":
-                import socket
-                try:
-                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    s.connect(("8.8.8.8", 80))
-                    host = s.getsockname()[0]
-                    s.close()
-                except Exception:
-                    host = "127.0.0.1"
-            return f"http://{host}:{self.BACKEND_PORT}"
-        else:
-            url = self.BACKEND.get('url', '')
-            if url:
-                return url
-            else:
-                return f"http://127.0.0.1:{self.BACKEND_PORT}"
+        return f"http://{self.BACKEND_HOST}:{self.BACKEND_PORT}"
     
     @property
     def VERSION(self):

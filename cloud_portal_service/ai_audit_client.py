@@ -51,7 +51,7 @@ class AIAuditClient:
         start_time: str,
         end_time: str,
         plate_color: str = "",
-        rows: int = 20,
+        rows: int = 40,
         start: int = 0,
         sort: str = "picTime DESC"
     ) -> Dict[str, Any]:
@@ -326,13 +326,85 @@ class AIAuditClient:
             logger.error(f"疑难车牌追查失败: {e}")
             return {'success': False, 'error': str(e), 'data': None}
     
+    def query_audit_order(
+        self,
+        vehicle_no: str,
+        start: int = 0,
+        length: int = 100
+    ) -> Dict[str, Any]:
+        url = f"{self.AI_AUDIT_BASE_URL}/gateway/ai-audit-server/order-review/auditOrderNoAuth"
+        
+        json_param = {
+            "order": "en_time desc",
+            "if_multi_prov": "",
+            "startTime": "",
+            "endTime": "",
+            "dbStartTime": "",
+            "dbEndTime": "",
+            "vehicle_no": vehicle_no,
+            "label_code": "",
+            "vehicleType": "",
+            "loss_amount_param": "",
+            "order_source": "",
+            "orderStatusList": [],
+            "authority_list": [],
+            "centerNo": "",
+            "stationNo": "",
+            "orderType": "",
+            "startTollFee": None,
+            "endTollFee": None,
+            "startPenaltyFee": None,
+            "endPenaltyFee": None
+        }
+        
+        payload = {
+            "draw": 1,
+            "start": start,
+            "length": length,
+            "jsonParam": json.dumps(json_param, ensure_ascii=False)
+        }
+        
+        try:
+            response = self.session.post(
+                url,
+                headers=self._get_headers(),
+                json=payload,
+                timeout=30
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            if result.get('code', {}).get('ok'):
+                return {
+                    'success': True,
+                    'data': result.get('result', {}),
+                    'total': result.get('result', {}).get('recordsTotal', 0),
+                    'records': result.get('result', {}).get('data', [])
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': result.get('code', {}).get('msg', '查询失败'),
+                    'data': None
+                }
+        except requests.exceptions.Timeout:
+            logger.error("稽核工单查询超时")
+            return {'success': False, 'error': '查询超时', 'data': None}
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"稽核工单查询连接失败: {e}")
+            return {'success': False, 'error': '无法连接到AI稽核服务器', 'data': None}
+        except Exception as e:
+            logger.error(f"稽核工单查询失败: {e}")
+            return {'success': False, 'error': str(e), 'data': None}
+    
     def batch_query_all(
         self,
         plate_number: str,
         entry_time: str,
         gate_time: str,
         pass_id: Optional[str] = None,
-        hours: int = 5
+        hours: int = 5,
+        rows: int = 40
     ) -> Dict[str, Any]:
         time_range = self._calculate_time_range(entry_time, gate_time, hours)
         start_time = time_range['start_time']
@@ -347,6 +419,7 @@ class AIAuditClient:
             'gantry_plate': None,
             'exit_trade_etc': None,
             'exit_trade_other': None,
+            'audit_order': None,
             'suspected_car': None,
             'errors': []
         }
@@ -354,7 +427,8 @@ class AIAuditClient:
         results['vehicle_images'] = self.query_vehicle_images(
             plate_number=clean_plate,
             start_time=start_time,
-            end_time=end_time
+            end_time=end_time,
+            rows=rows
         )
         if not results['vehicle_images']['success']:
             results['errors'].append(f"车辆图库查询失败: {results['vehicle_images']['error']}")
@@ -392,6 +466,12 @@ class AIAuditClient:
         )
         if not results['exit_trade_other']['success']:
             results['errors'].append(f"其它出口交易查询失败: {results['exit_trade_other']['error']}")
+        
+        results['audit_order'] = self.query_audit_order(
+            vehicle_no=clean_plate
+        )
+        if not results['audit_order']['success']:
+            results['errors'].append(f"稽核工单查询失败: {results['audit_order']['error']}")
         
         query_value = pass_id if pass_id else clean_plate
         results['suspected_car'] = self.query_suspected_car(
