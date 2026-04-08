@@ -826,7 +826,6 @@ class MainWindow(QMainWindow):
         if self.flask_thread and self.is_service_running:
             self.log_message("正在停止服务...")
             self.flask_thread.stop()
-            self.flask_thread = None
             
             from session_manager import session_manager
             session_manager.cleanup_all_sessions()

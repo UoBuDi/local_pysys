@@ -522,3 +522,115 @@ class AIAuditClient:
         elif big_positive_pic:
             return big_positive_pic
         return None
+    
+    def get_branch_centers(self) -> Dict[str, Any]:
+        url = f"{self.AI_AUDIT_BASE_URL}/gateway/ai-audit-server/basicData/orobranchcenterList.json"
+        
+        try:
+            response = self.session.get(
+                url,
+                headers=self._get_headers(),
+                timeout=30
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            if result.get('code', {}).get('ok'):
+                centers = result.get('result', [])
+                logger.info(f"成功获取分中心列表，共 {len(centers)} 个分中心")
+                return {
+                    'success': True,
+                    'data': centers
+                }
+            else:
+                error_msg = result.get('code', {}).get('msg', '未知错误')
+                logger.error(f"获取分中心列表失败: {error_msg}")
+                return {
+                    'success': False,
+                    'error': error_msg
+                }
+        except requests.exceptions.Timeout:
+            logger.error("获取分中心列表超时")
+            return {'success': False, 'error': '请求超时'}
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"获取分中心列表连接失败: {e}")
+            return {'success': False, 'error': '无法连接到AI稽核服务器'}
+        except Exception as e:
+            logger.error(f"获取分中心列表失败: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def get_road_sections(self, center_no: str) -> Dict[str, Any]:
+        url = f"{self.AI_AUDIT_BASE_URL}/gateway/ai-audit-server/basicData/roadSectionList.json"
+        params = {'centerNo': center_no}
+        
+        try:
+            response = self.session.get(
+                url,
+                headers=self._get_headers(),
+                params=params,
+                timeout=30
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            if result.get('code', {}).get('ok'):
+                sections = result.get('result', [])
+                logger.info(f"成功获取分中心 {center_no} 的路段列表，共 {len(sections)} 个路段")
+                return {
+                    'success': True,
+                    'data': sections
+                }
+            else:
+                error_msg = result.get('code', {}).get('msg', '未知错误')
+                logger.error(f"获取路段列表失败: {error_msg}")
+                return {
+                    'success': False,
+                    'error': error_msg
+                }
+        except requests.exceptions.Timeout:
+            logger.error(f"获取分中心 {center_no} 路段列表超时")
+            return {'success': False, 'error': '请求超时'}
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"获取路段列表连接失败: {e}")
+            return {'success': False, 'error': '无法连接到AI稽核服务器'}
+        except Exception as e:
+            logger.error(f"获取路段列表失败: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def get_gantry_list(self, road_section_no: str) -> Dict[str, Any]:
+        url = f"{self.AI_AUDIT_BASE_URL}/gateway/ai-audit-server/basicData/gantryInfoList.json"
+        params = {'roadSectionNo': road_section_no}
+        
+        try:
+            response = self.session.get(
+                url,
+                headers=self._get_headers(),
+                params=params,
+                timeout=30
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            if result.get('code', {}).get('ok'):
+                gantries = result.get('result', [])
+                logger.info(f"成功获取路段 {road_section_no} 的门架列表，共 {len(gantries)} 个门架")
+                return {
+                    'success': True,
+                    'data': gantries
+                }
+            else:
+                error_msg = result.get('code', {}).get('msg', '未知错误')
+                logger.error(f"获取门架列表失败: {error_msg}")
+                return {
+                    'success': False,
+                    'error': error_msg
+                }
+        except requests.exceptions.Timeout:
+            logger.error(f"获取路段 {road_section_no} 门架列表超时")
+            return {'success': False, 'error': '请求超时'}
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"获取门架列表连接失败: {e}")
+            return {'success': False, 'error': '无法连接到AI稽核服务器'}
+        except Exception as e:
+            logger.error(f"获取门架列表失败: {e}")
+            return {'success': False, 'error': str(e)}

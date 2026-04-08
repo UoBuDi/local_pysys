@@ -74,6 +74,12 @@ def create_tables():
             print("插入默认定时任务配置成功")
             
             cursor.execute("""
+                INSERT IGNORE INTO scheduled_tasks (task_name, task_type, cron_expression, is_enabled, config)
+                VALUES ('cloud_portal_data_sync', 'data_sync', '0 3 * * *', 1, '{"description": "每日凌晨3点同步云门户基础数据", "require_login": true, "output_file": "cloud_portal_basic_data.json"}')
+            """)
+            print("插入云门户数据同步任务配置成功")
+            
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS task_execution_history (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     task_name VARCHAR(100) NOT NULL COMMENT '任务名称',

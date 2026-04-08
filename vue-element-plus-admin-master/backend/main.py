@@ -22,6 +22,7 @@ from database import test_db_connection, create_db_connection, get_database_tabl
 from sync_service import generate_month_options, run_sync, stop_sync, sync_status
 from split_match_service import SplitMatchService
 from statistics_service import get_dashboard_statistics, run_statistics_task, update_task_status, get_latest_month_data, start_task_execution, end_task_execution, get_task_execution_history, get_check_data_connection
+from cloud_portal_data_service import run_cloud_portal_data_sync, get_cloud_portal_data
 from models import *
 
 PASSWORD_SECRET_KEY = "cloud_portal_secret_key_2024"
@@ -3253,6 +3254,43 @@ async def run_scheduled_task(task_name: str, user: dict = Depends(require_permis
             )
             
             return {"code": 200 if result['success'] else 500, "message": result['message'], "data": result}
+        elif task_name == 'cloud_portal_data_sync':
+            access_token = user.get('cloud_portal_token')
+            if not access_token:
+                if history_id:
+                    end_task_execution(history_id, 'failed', '云门户未登录，请先登录云门户账号')
+                return {"code": 401, "message": "云门户未登录，请先登录云门户账号"}
+            
+            portal_session_id = None
+            try:
+                conn = create_db_connection("USER_DB", config)
+                if conn:
+                    with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                        cursor.execute("SELECT portal_session_id FROM cloud_portal_accounts WHERE user_id = %s", (user['id'],))
+                        account = cursor.fetchone()
+                        if account:
+                            portal_session_id = account.get('portal_session_id')
+                    conn.close()
+            except Exception as e:
+                logger.warning(f"获取portal_session_id失败: {e}")
+            
+            result = run_cloud_portal_data_sync(access_token, portal_session_id)
+            
+            status = 'success' if result['success'] else 'failed'
+            update_task_status(task_name, status, result['message'])
+            
+            end_time = datetime.now()
+            duration = int((end_time - start_time).total_seconds()) if start_time else None
+            
+            end_task_execution(
+                history_id, 
+                status, 
+                result['message'], 
+                {'statistics': result.get('statistics')}, 
+                duration
+            )
+            
+            return {"code": 200 if result['success'] else 500, "message": result['message'], "data": result}
         else:
             if history_id:
                 end_task_execution(history_id, 'failed', f"未知的任务: {task_name}")
@@ -3293,6 +3331,99 @@ async def get_execution_history(task_name: str = None, limit: int = 20, user: di
     except Exception as e:
         logger.error(f"获取任务执行历史失败: {e}")
         return {"code": 500, "message": f"获取失败: {str(e)}", "data": []}
+
+@app.get("/api/cloud-portal-data/")
+async def get_cloud_portal_data_api(user: dict = Depends(require_permission('system:scheduled-tasks:view'))):
+    """获取云门户基础数据"""
+    try:
+        data = get_cloud_portal_data()
+        if data:
+            return {"code": 200, "message": "success", "data": data}
+        else:
+            return {"code": 404, "message": "暂无数据，请先执行数据同步", "data": None}
+    except Exception as e:
+        logger.error(f"获取云门户数据失败: {e}")
+        return {"code": 500, "message": f"获取失败: {str(e)}", "data": None}
+
+class CloudPortalDataSyncRequest(BaseModel):
+    access_token: str
+    session_id: str = None
+
+@app.post("/api/cloud-portal-data/sync")
+async def sync_cloud_portal_data(request: CloudPortalDataSyncRequest, user: dict = Depends(require_permission('system:scheduled-tasks:run'))):
+    """执行云门户数据同步"""
+    history_id = None
+    start_time = None
+    
+    try:
+        start_time = datetime.now()
+        history_id = start_task_execution('cloud_portal_data_sync')
+        
+        if not request.access_token:
+            if history_id:
+                end_task_execution(history_id, 'failed', '云门户未登录，请先登录云门户账号')
+            return {"code": 401, "message": "云门户未登录，请先登录云门户账号"}
+        
+        result = run_cloud_portal_data_sync(request.access_token, request.session_id)
+        
+        status = 'success' if result['success'] else 'failed'
+        update_task_status('cloud_portal_data_sync', status, result['message'])
+        
+        end_time = datetime.now()
+        duration = int((end_time - start_time).total_seconds()) if start_time else None
+        
+        end_task_execution(
+            history_id, 
+            status, 
+            result['message'], 
+            {'statistics': result.get('statistics')}, 
+            duration
+        )
+        
+        return {"code": 200 if result['success'] else 500, "message": result['message'], "data": result}
+    except Exception as e:
+        logger.error(f"执行云门户数据同步失败: {e}")
+        update_task_status('cloud_portal_data_sync', 'failed', str(e))
+        
+        if history_id:
+            end_time = datetime.now()
+            duration = int((end_time - start_time).total_seconds()) if start_time else None
+            end_task_execution(history_id, 'failed', str(e), None, duration)
+        
+        return {"code": 500, "message": f"执行失败: {str(e)}"}
+
+@app.get("/api/cloud-portal-data/status")
+async def get_cloud_portal_data_status(user: dict = Depends(require_permission('system:scheduled-tasks:view'))):
+    """获取云门户数据同步状态"""
+    try:
+        data = get_cloud_portal_data()
+        if data:
+            return {
+                "code": 200, 
+                "message": "success", 
+                "data": {
+                    "has_data": True,
+                    "last_update": data.get('last_update'),
+                    "total_centers": data.get('total_centers', 0),
+                    "total_road_sections": data.get('total_road_sections', 0),
+                    "total_gantries": data.get('total_gantries', 0)
+                }
+            }
+        else:
+            return {
+                "code": 200,
+                "message": "success",
+                "data": {
+                    "has_data": False,
+                    "last_update": None,
+                    "total_centers": 0,
+                    "total_road_sections": 0,
+                    "total_gantries": 0
+                }
+            }
+    except Exception as e:
+        logger.error(f"获取云门户数据状态失败: {e}")
+        return {"code": 500, "message": f"获取失败: {str(e)}", "data": None}
 
 @app.get("/api/stations/")
 async def get_stations(keyword: str = None, limit: int = 50):
@@ -5795,6 +5926,98 @@ async def ai_audit_save_images(request: SaveImagesRequest):
         return JSONResponse(
             status_code=500,
             content={"code": 500, "message": f"保存图片失败: {str(e)}"}
+        )
+
+class BranchCentersRequest(BaseModel):
+    session_id: str = None
+
+class RoadSectionsRequest(BaseModel):
+    session_id: str = None
+    center_no: str
+
+class GantryListRequest(BaseModel):
+    session_id: str = None
+    road_section_no: str
+
+@app.post("/api/cloud-portal/ai-audit/branch-centers")
+async def ai_audit_branch_centers(request: BranchCentersRequest):
+    try:
+        gui_service_url = "http://127.0.0.1:5000/api/portal/ai-audit/branch-centers"
+        response = requests.post(
+            gui_service_url,
+            json={"session_id": request.session_id},
+            timeout=30
+        )
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"获取分中心列表失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"获取分中心列表失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/ai-audit/road-sections")
+async def ai_audit_road_sections(request: RoadSectionsRequest):
+    try:
+        gui_service_url = "http://127.0.0.1:5000/api/portal/ai-audit/road-sections"
+        response = requests.post(
+            gui_service_url,
+            json={"session_id": request.session_id, "center_no": request.center_no},
+            timeout=30
+        )
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"获取路段列表失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"获取路段列表失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/ai-audit/gantry-list")
+async def ai_audit_gantry_list(request: GantryListRequest):
+    try:
+        gui_service_url = "http://127.0.0.1:5000/api/portal/ai-audit/gantry-list"
+        response = requests.post(
+            gui_service_url,
+            json={"session_id": request.session_id, "road_section_no": request.road_section_no},
+            timeout=30
+        )
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"获取门架列表失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"获取门架列表失败: {str(e)}"}
         )
 
 @app.on_event("shutdown")

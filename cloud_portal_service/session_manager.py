@@ -45,6 +45,12 @@ class SessionManager:
         self.min_keep_alive_interval = 600
         self.max_keep_alive_interval = 1200
         
+        self.retry_on_failure = True
+        self.max_retry_count = 3
+        self.retry_interval = 30
+        self.retry_backoff = 1.5
+        self.retry_states: Dict[str, Dict] = {}
+        
         self._start_cleanup_thread()
         self._start_keep_alive_thread()
         self._register_shutdown_handlers()
@@ -74,6 +80,7 @@ class SessionManager:
             
             self.sessions.clear()
             self.session_timestamps.clear()
+            self.retry_states.clear()
         
         logger.info("[关闭] SessionManager已关闭")
     
@@ -111,6 +118,9 @@ class SessionManager:
             
             if session_id in self.session_timestamps:
                 del self.session_timestamps[session_id]
+            
+            if session_id in self.retry_states:
+                del self.retry_states[session_id]
     
     def update_timestamp(self, session_id: str) -> None:
         with self.session_lock:
@@ -118,11 +128,9 @@ class SessionManager:
                 self.session_timestamps[session_id] = time.time()
     
     def update_activity(self) -> None:
-        """更新全局活动时间戳"""
         self.last_request_time = time.time()
     
     def is_idle(self) -> bool:
-        """检测是否处于空闲状态"""
         return time.time() - self.last_request_time > self.idle_threshold
     
     def get_all_sessions(self) -> Dict[str, Dict]:
@@ -134,7 +142,9 @@ class SessionManager:
                     'logged_in': status['logged_in'],
                     'user_info': status['user_info'],
                     'login_time': status['login_time'],
-                    'last_activity': self.session_timestamps.get(session_id)
+                    'last_activity': self.session_timestamps.get(session_id),
+                    'needs_relogin': status.get('needs_relogin', False),
+                    'relogin_reason': status.get('relogin_reason')
                 }
             return result
     
@@ -177,6 +187,49 @@ class SessionManager:
         self.keep_alive_thread.start()
         logger.info("[心跳服务] 已启动")
     
+    def _keep_alive_with_retry(self, session_id: str, client: PortalClient) -> Dict:
+        result = client.keep_alive()
+        
+        if result['success']:
+            self.retry_states.pop(session_id, None)
+            self.consecutive_failures[session_id] = 0
+            return result
+        
+        if not self.retry_on_failure:
+            return result
+        
+        retry_state = self.retry_states.get(session_id, {
+            'count': 0,
+            'next_interval': self.retry_interval
+        })
+        
+        while retry_state['count'] < self.max_retry_count and self.running:
+            retry_state['count'] += 1
+            wait_time = retry_state['next_interval']
+            
+            logger.info(f"[重试] 会话 {session_id} 第 {retry_state['count']} 次重试，等待 {wait_time}秒")
+            
+            for _ in range(wait_time):
+                if not self.running:
+                    break
+                time.sleep(1)
+            
+            if not self.running:
+                break
+            
+            retry_state['next_interval'] = int(wait_time * self.retry_backoff)
+            
+            result = client.keep_alive()
+            if result['success']:
+                logger.info(f"[重试成功] 会话 {session_id} 第 {retry_state['count']} 次重试成功")
+                self.retry_states.pop(session_id, None)
+                self.consecutive_failures[session_id] = 0
+                return result
+        
+        logger.error(f"[重试失败] 会话 {session_id} 重试 {retry_state['count']} 次后仍然失败")
+        self.retry_states[session_id] = retry_state
+        return result
+    
     def _keep_alive_loop(self):
         while self.running:
             try:
@@ -184,7 +237,11 @@ class SessionManager:
                     for session_id, client in list(self.sessions.items()):
                         if client.access_token:
                             logger.debug(f"[心跳] 发送心跳 - session_id: {session_id}")
-                            result = client.keep_alive()
+                            
+                            if self.retry_on_failure:
+                                result = self._keep_alive_with_retry(session_id, client)
+                            else:
+                                result = client.keep_alive()
                             
                             if result['success']:
                                 self.heartbeat_success_count += 1
@@ -196,6 +253,8 @@ class SessionManager:
                                 
                                 if self.consecutive_failures[session_id] >= self.alert_threshold:
                                     logger.error(f"[告警] 会话 {session_id} 心跳连续失败 {self.consecutive_failures[session_id]} 次")
+                                    client.needs_relogin = True
+                                    client.relogin_reason = f"心跳连续失败 {self.consecutive_failures[session_id]} 次"
                             
                             total = self.heartbeat_success_count + self.heartbeat_failure_count
                             if total > 0 and total % self.heartbeat_log_interval == 0:
@@ -206,18 +265,16 @@ class SessionManager:
                                 )
                 
                 delay = random.randint(self.min_keep_alive_interval, self.max_keep_alive_interval)
-                time.sleep(delay)
+                for _ in range(delay):
+                    if not self.running:
+                        break
+                    time.sleep(1)
                 
             except Exception as e:
                 logger.error(f"[心跳循环] 异常 - 错误: {e}")
                 time.sleep(60)
     
     def cleanup_all_sessions(self) -> None:
-        """
-        清理所有会话（服务停止时调用）
-        用于解决停止服务后再启动服务时Token刷新失败的问题
-        注意：此方法在主线程中调用，需要避免阻塞
-        """
         logger.info("[清理] 开始清理所有会话...")
         
         with self.session_lock:
@@ -235,6 +292,7 @@ class SessionManager:
             self.sessions.clear()
             self.session_timestamps.clear()
             self.consecutive_failures.clear()
+            self.retry_states.clear()
             self.heartbeat_success_count = 0
             self.heartbeat_failure_count = 0
             

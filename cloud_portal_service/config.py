@@ -2,7 +2,7 @@ import json
 import os
 import sys
 
-VERSION = "1.72"
+VERSION = "1.75"
 
 def get_base_path():
     if getattr(sys, 'frozen', False) or '__compiled__' in globals():

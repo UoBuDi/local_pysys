@@ -45,7 +45,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
   </module>
   <module name="PySide6" kind="CompiledPythonPackage" usage="import path parent" reason="Included to allow post load workaround code." source_path="${sys.prefix}\Lib\site-packages\PySide6\__init__.py" distribution="PySide6,PySide6_Addons,PySide6_Essentials">
     <plugin-influence name="options-nanny" influence="condition-used" condition="use_pyside6" tags_used="use_pyside6" result="true" />
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="10" merged_total="728" />
+    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="10" merged_total="728" />
     <distribution-usages>
       <distribution-usage name="shiboken6" />
     </distribution-usages>
@@ -131,14 +131,14 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     <module_usages />
   </module>
   <module name="__main__" kind="PythonMainModule" usage="root_module" reason="Root module" source_path="${cwd}\main.py">
-    <optimization-time pass="1" time="0.12" micro_passes="4" max_branch_merge="38" merged_total="2590" />
+    <optimization-time pass="1" time="0.20" micro_passes="4" max_branch_merge="38" merged_total="2630" />
     <distribution-usages>
-      <distribution-usage name="requests" />
-      <distribution-usage name="websockets" />
+      <distribution-usage name="websocket-client" />
       <distribution-usage name="PySide6" />
       <distribution-usage name="PySide6_Addons" />
       <distribution-usage name="PySide6_Essentials" />
       <distribution-usage name="Werkzeug" />
+      <distribution-usage name="requests" />
     </distribution-usages>
     <module_usages>
       <module_usage name="sys" finding="absolute" line="1" />
@@ -147,26 +147,31 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="time" finding="absolute" line="4" />
       <module_usage name="threading" finding="absolute" line="5" />
       <module_usage name="logging" finding="absolute" line="6" />
-      <module_usage name="requests" finding="absolute" line="7" />
-      <module_usage name="json" finding="absolute" line="8" />
-      <module_usage name="uuid" finding="absolute" line="9" />
-      <module_usage name="asyncio" finding="absolute" line="10" />
-      <module_usage name="websockets" finding="absolute" line="11" />
-      <module_usage name="datetime" finding="absolute" line="12" />
-      <module_usage name="PySide6.QtWidgets" finding="absolute" line="13" />
-      <module_usage name="PySide6.QtCore" finding="absolute" line="19" />
-      <module_usage name="PySide6.QtGui" finding="absolute" line="20" />
-      <module_usage name="werkzeug.serving" finding="absolute" line="21" />
-      <module_usage name="api_server" finding="absolute" line="22" />
-      <module_usage name="config" finding="absolute" line="23" />
-      <module_usage name="network_utils" finding="absolute" line="24" />
-      <module_usage name="ntpath" finding="absolute" line="29" />
-      <module_usage name="socket" finding="absolute" line="484" />
-      <module_usage name="threading" finding="absolute" line="523" />
-      <module_usage name="requests" finding="absolute" line="525" />
-      <module_usage name="socket" finding="absolute" line="558" />
-      <module_usage name="ntpath" finding="absolute" line="678" />
-      <module_usage name="datetime" finding="absolute" line="843" />
+      <module_usage name="json" finding="absolute" line="7" />
+      <module_usage name="uuid" finding="absolute" line="8" />
+      <module_usage name="websocket" finding="absolute" line="9" />
+      <module_usage name="datetime" finding="absolute" line="10" />
+      <module_usage name="PySide6.QtWidgets" finding="absolute" line="11" />
+      <module_usage name="PySide6.QtCore" finding="absolute" line="17" />
+      <module_usage name="PySide6.QtGui" finding="absolute" line="18" />
+      <module_usage name="werkzeug.serving" finding="absolute" line="19" />
+      <module_usage name="config" finding="absolute" line="20" />
+      <module_usage name="network_utils" finding="absolute" line="21" />
+      <module_usage name="ntpath" finding="absolute" line="26" />
+      <module_usage name="ntpath" finding="absolute" line="43" />
+      <module_usage name="api_server" finding="absolute" line="76" />
+      <module_usage name="threading" finding="absolute" line="482" />
+      <module_usage name="requests" finding="absolute" line="484" />
+      <module_usage name="socket" finding="absolute" line="517" />
+      <module_usage name="ntpath" finding="absolute" line="754" />
+      <module_usage name="session_manager" finding="absolute" line="805" />
+      <module_usage name="session_manager" finding="absolute" line="830" />
+      <module_usage name="session_manager" finding="absolute" line="955" />
+      <module_usage name="api_server" finding="absolute" line="956" />
+      <module_usage name="time" finding="absolute" line="957" />
+      <module_usage name="datetime" finding="absolute" line="997" />
+      <module_usage name="traceback" finding="absolute" line="1040" />
+      <module_usage name="ntpath" finding="absolute" line="1044" />
       <module_usage name="_collections_abc" finding="absolute" line="1" />
       <module_usage name="_opcode_metadata" finding="absolute" line="1" />
       <module_usage name="_weakrefset" finding="absolute" line="1" />
@@ -471,14 +476,14 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="__parents_main__" kind="CompiledPythonModule" usage="plugins" reason="Auto enable multiprocessing freeze support" source_path="${cwd}\main.py">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="38" merged_total="2643" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="38" merged_total="2683" />
     <distribution-usages>
-      <distribution-usage name="requests" />
-      <distribution-usage name="websockets" />
+      <distribution-usage name="websocket-client" />
       <distribution-usage name="PySide6" />
       <distribution-usage name="PySide6_Addons" />
       <distribution-usage name="PySide6_Essentials" />
       <distribution-usage name="Werkzeug" />
+      <distribution-usage name="requests" />
     </distribution-usages>
     <module_usages>
       <module_usage name="sys" finding="absolute" line="1" />
@@ -487,29 +492,34 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="time" finding="absolute" line="4" />
       <module_usage name="threading" finding="absolute" line="5" />
       <module_usage name="logging" finding="absolute" line="6" />
-      <module_usage name="requests" finding="absolute" line="7" />
-      <module_usage name="json" finding="absolute" line="8" />
-      <module_usage name="uuid" finding="absolute" line="9" />
-      <module_usage name="asyncio" finding="absolute" line="10" />
-      <module_usage name="websockets" finding="absolute" line="11" />
-      <module_usage name="datetime" finding="absolute" line="12" />
-      <module_usage name="PySide6.QtWidgets" finding="absolute" line="13" />
-      <module_usage name="PySide6.QtCore" finding="absolute" line="19" />
-      <module_usage name="PySide6.QtGui" finding="absolute" line="20" />
-      <module_usage name="werkzeug.serving" finding="absolute" line="21" />
-      <module_usage name="api_server" finding="absolute" line="22" />
-      <module_usage name="config" finding="absolute" line="23" />
-      <module_usage name="network_utils" finding="absolute" line="24" />
-      <module_usage name="ntpath" finding="absolute" line="29" />
-      <module_usage name="socket" finding="absolute" line="484" />
-      <module_usage name="threading" finding="absolute" line="523" />
-      <module_usage name="requests" finding="absolute" line="525" />
-      <module_usage name="socket" finding="absolute" line="558" />
-      <module_usage name="ntpath" finding="absolute" line="678" />
-      <module_usage name="datetime" finding="absolute" line="843" />
-      <module_usage name="sys" finding="absolute" line="902" />
-      <module_usage name="builtins" finding="absolute" line="903" />
-      <module_usage name="multiprocessing.spawn" finding="absolute" line="906" />
+      <module_usage name="json" finding="absolute" line="7" />
+      <module_usage name="uuid" finding="absolute" line="8" />
+      <module_usage name="websocket" finding="absolute" line="9" />
+      <module_usage name="datetime" finding="absolute" line="10" />
+      <module_usage name="PySide6.QtWidgets" finding="absolute" line="11" />
+      <module_usage name="PySide6.QtCore" finding="absolute" line="17" />
+      <module_usage name="PySide6.QtGui" finding="absolute" line="18" />
+      <module_usage name="werkzeug.serving" finding="absolute" line="19" />
+      <module_usage name="config" finding="absolute" line="20" />
+      <module_usage name="network_utils" finding="absolute" line="21" />
+      <module_usage name="ntpath" finding="absolute" line="26" />
+      <module_usage name="ntpath" finding="absolute" line="43" />
+      <module_usage name="api_server" finding="absolute" line="76" />
+      <module_usage name="threading" finding="absolute" line="482" />
+      <module_usage name="requests" finding="absolute" line="484" />
+      <module_usage name="socket" finding="absolute" line="517" />
+      <module_usage name="ntpath" finding="absolute" line="754" />
+      <module_usage name="session_manager" finding="absolute" line="805" />
+      <module_usage name="session_manager" finding="absolute" line="830" />
+      <module_usage name="session_manager" finding="absolute" line="955" />
+      <module_usage name="api_server" finding="absolute" line="956" />
+      <module_usage name="time" finding="absolute" line="957" />
+      <module_usage name="datetime" finding="absolute" line="997" />
+      <module_usage name="traceback" finding="absolute" line="1040" />
+      <module_usage name="ntpath" finding="absolute" line="1044" />
+      <module_usage name="sys" finding="absolute" line="1055" />
+      <module_usage name="builtins" finding="absolute" line="1056" />
+      <module_usage name="multiprocessing.spawn" finding="absolute" line="1059" />
     </module_usages>
   </module>
   <module name="__parents_main__-preLoad" kind="CompiledPythonModule" usage="plugins" reason="Scrubbing multiprocessing fork arguments from sys.argv." source_path="${cwd}\__parents_main__-preLoad.py">
@@ -1022,7 +1032,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="ai_audit_client" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${cwd}\ai_audit_client.py">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="16" merged_total="832" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="20" merged_total="1240" />
     <distribution-usages>
       <distribution-usage name="requests" />
     </distribution-usages>
@@ -1038,7 +1048,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="api_server" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${cwd}\api_server.py">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="32" merged_total="1919" />
+    <optimization-time pass="1" time="0.09" micro_passes="4" max_branch_merge="36" merged_total="3418" />
     <distribution-usages>
       <distribution-usage name="Flask" />
       <distribution-usage name="Flask-Cors" />
@@ -1049,19 +1059,21 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="base64" finding="absolute" line="3" />
       <module_usage name="json" finding="absolute" line="4" />
       <module_usage name="time" finding="absolute" line="5" />
-      <module_usage name="flask" finding="absolute" line="6" />
-      <module_usage name="flask.Flask" finding="not-found" line="6" />
-      <module_usage name="flask.request" finding="not-found" line="6" />
-      <module_usage name="flask.jsonify" finding="not-found" line="6" />
-      <module_usage name="flask_cors" finding="absolute" line="7" />
-      <module_usage name="flask_cors.CORS" finding="not-found" line="7" />
-      <module_usage name="session_manager" finding="absolute" line="8" />
-      <module_usage name="config" finding="absolute" line="9" />
-      <module_usage name="ai_audit_client" finding="absolute" line="10" />
-      <module_usage name="datetime" finding="absolute" line="11" />
-      <module_usage name="collections" finding="absolute" line="12" />
-      <module_usage name="collections.deque" finding="not-found" line="12" />
-      <module_usage name="network_utils" finding="absolute" line="13" />
+      <module_usage name="os" finding="absolute" line="6" />
+      <module_usage name="flask" finding="absolute" line="7" />
+      <module_usage name="flask.Flask" finding="not-found" line="7" />
+      <module_usage name="flask.request" finding="not-found" line="7" />
+      <module_usage name="flask.jsonify" finding="not-found" line="7" />
+      <module_usage name="flask_cors" finding="absolute" line="8" />
+      <module_usage name="flask_cors.CORS" finding="not-found" line="8" />
+      <module_usage name="session_manager" finding="absolute" line="9" />
+      <module_usage name="config" finding="absolute" line="10" />
+      <module_usage name="ai_audit_client" finding="absolute" line="11" />
+      <module_usage name="datetime" finding="absolute" line="12" />
+      <module_usage name="collections" finding="absolute" line="13" />
+      <module_usage name="collections.deque" finding="not-found" line="13" />
+      <module_usage name="network_utils" finding="absolute" line="14" />
+      <module_usage name="ntpath" finding="absolute" line="36" />
     </module_usages>
   </module>
   <module name="argparse" kind="UncompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\argparse.py">
@@ -1637,7 +1649,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="blinker" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\blinker\__init__.py" distribution="blinker">
-    <optimization-time pass="1" time="0.00" micro_passes="2" />
+    <optimization-time pass="1" time="0.02" micro_passes="2" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
       <module_usage name="__future__" finding="absolute" line="1" />
@@ -1661,7 +1673,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="blinker.base" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\blinker\base.py" distribution="blinker">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="25" merged_total="1332" />
+    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="25" merged_total="1332" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="collections.abc" finding="not-found" line="3" />
@@ -1731,7 +1743,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="charset_normalizer.api" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\charset_normalizer\api.py" distribution="charset-normalizer">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="104" merged_total="1671" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="104" merged_total="1671" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="logging" finding="absolute" line="3" />
@@ -1745,7 +1757,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="charset_normalizer.cd" kind="PythonExtensionModule" usage="import" reason="Extension module needed for standalone mode." source_path="${sys.prefix}\Lib\site-packages\charset_normalizer\cd.cp313-win_amd64.pyd" distribution="charset-normalizer">
-    <optimization-time pass="1" time="0.00" />
+    <optimization-time pass="1" time="0.02" />
     <module_usages />
   </module>
   <module name="charset_normalizer.constant" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\charset_normalizer\constant.py" distribution="charset-normalizer">
@@ -1771,11 +1783,11 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="charset_normalizer.md" kind="PythonExtensionModule" usage="plugin:implicit-imports" reason="Extension module needed for standalone mode." source_path="${sys.prefix}\Lib\site-packages\charset_normalizer\md.cp313-win_amd64.pyd" distribution="charset-normalizer">
-    <optimization-time pass="1" time="0.03" />
+    <optimization-time pass="1" time="0.09" />
     <module_usages />
   </module>
   <module name="charset_normalizer.models" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\charset_normalizer\models.py" distribution="charset-normalizer">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="28" merged_total="961" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="28" merged_total="961" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="encodings.aliases" finding="absolute" line="3" />
@@ -1790,7 +1802,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="charset_normalizer.utils" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\charset_normalizer\utils.py" distribution="charset-normalizer">
-    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="17" merged_total="1546" />
+    <optimization-time pass="1" time="0.05" micro_passes="5" max_branch_merge="17" merged_total="1546" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="importlib" finding="absolute" line="3" />
@@ -1814,7 +1826,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="click" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\click\__init__.py" distribution="click">
-    <optimization-time pass="1" time="0.05" micro_passes="3" max_branch_merge="12" merged_total="46" />
+    <optimization-time pass="1" time="0.02" micro_passes="3" max_branch_merge="12" merged_total="46" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
       <module_usage name="__future__" finding="absolute" line="8" />
@@ -1889,7 +1901,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="click._compat" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\click\_compat.py" distribution="click">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="28" merged_total="1387" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="28" merged_total="1387" />
     <distribution-usages>
       <distribution-usage name="colorama" />
     </distribution-usages>
@@ -1914,7 +1926,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="click._termui_impl" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\click\_termui_impl.py" distribution="click">
-    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="25" merged_total="2278" />
+    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="25" merged_total="2278" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="7" />
       <module_usage name="collections.abc" finding="not-found" line="9" />
@@ -1978,7 +1990,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="click._winconsole" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\click\_winconsole.py" distribution="click">
-    <optimization-time pass="1" time="0.09" micro_passes="4" max_branch_merge="12" merged_total="938" />
+    <optimization-time pass="1" time="0.06" micro_passes="4" max_branch_merge="12" merged_total="938" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="9" />
       <module_usage name="collections.abc" finding="not-found" line="11" />
@@ -2009,7 +2021,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="click.core" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\click\core.py" distribution="click">
-    <optimization-time pass="1" time="0.05" micro_passes="5" max_branch_merge="38" merged_total="10524" />
+    <optimization-time pass="1" time="0.33" micro_passes="5" max_branch_merge="38" merged_total="10524" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="collections.abc" finding="not-found" line="3" />
@@ -2090,7 +2102,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="click.exceptions" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\click\exceptions.py" distribution="click">
-    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="17" merged_total="2103" />
+    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="17" merged_total="2103" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="collections.abc" finding="not-found" line="3" />
@@ -2104,7 +2116,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="click.formatting" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\click\formatting.py" distribution="click">
-    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="17" merged_total="1181" />
+    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="17" merged_total="1181" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="collections.abc" finding="not-found" line="3" />
@@ -2125,7 +2137,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="click.parser" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\click\parser.py" distribution="click">
-    <optimization-time pass="1" time="0.05" micro_passes="5" max_branch_merge="23" merged_total="1860" />
+    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="23" merged_total="1860" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="25" />
       <module_usage name="collections.abc" finding="not-found" line="27" />
@@ -2146,7 +2158,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="click.shell_completion" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\click\shell_completion.py" distribution="click">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="18" merged_total="1758" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="18" merged_total="1758" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="collections.abc" finding="not-found" line="3" />
@@ -2168,7 +2180,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="click.termui" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\click\termui.py" distribution="click">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="22" merged_total="1037" />
+    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="22" merged_total="1037" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="collections.abc" finding="not-found" line="3" />
@@ -2227,7 +2239,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="click.types" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\click\types.py" distribution="click">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="18" merged_total="4131" />
+    <optimization-time pass="1" time="0.06" micro_passes="4" max_branch_merge="18" merged_total="4131" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="collections.abc" finding="not-found" line="3" />
@@ -2327,7 +2339,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="warnings" finding="absolute" line="36" />
     </module_usages>
   </module>
-  <module name="collections" kind="UncompiledPythonPackage" usage="import" reason="Technically required for CPython library startup." source_path="${sys.prefix}\Lib\collections\__init__.py">
+  <module name="collections" kind="UncompiledPythonPackage" usage="import path parent" reason="Technically required for CPython library startup." source_path="${sys.prefix}\Lib\collections\__init__.py">
     <optimization-time pass="1" time="0.08" micro_passes="5" max_branch_merge="75" merged_total="7869" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
@@ -2361,7 +2373,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="colorama.ansi" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\colorama\ansi.py" distribution="colorama">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="23" merged_total="947" />
+    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="23" merged_total="947" />
     <module_usages />
   </module>
   <module name="colorama.ansitowin32" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\colorama\ansitowin32.py" distribution="colorama">
@@ -2385,7 +2397,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="colorama.win32" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\colorama\win32.py" distribution="colorama">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="13" merged_total="514" />
+    <optimization-time pass="1" time="0.05" micro_passes="4" max_branch_merge="13" merged_total="514" />
     <module_usages>
       <module_usage name="ctypes" finding="absolute" line="10" />
       <module_usage name="ctypes" finding="absolute" line="11" />
@@ -2463,13 +2475,12 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="config" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${cwd}\config.py">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="32" merged_total="492" />
+    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="30" merged_total="442" />
     <module_usages>
       <module_usage name="json" finding="absolute" line="1" />
       <module_usage name="os" finding="absolute" line="2" />
       <module_usage name="sys" finding="absolute" line="3" />
-      <module_usage name="ntpath" finding="absolute" line="12" />
-      <module_usage name="socket" finding="absolute" line="154" />
+      <module_usage name="ntpath" finding="absolute" line="16" />
     </module_usages>
   </module>
   <module name="configparser" kind="UncompiledPythonModule" usage="stdlib" reason="Including as part of the non-excluded parts of standard library." source_path="${sys.prefix}\Lib\configparser.py">
@@ -2542,7 +2553,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.exceptions" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\exceptions.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="10" merged_total="983" />
+    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="10" merged_total="983" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="typing" finding="absolute" line="7" />
@@ -2557,7 +2568,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.hazmat._oid" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\_oid.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="35" merged_total="1048" />
+    <optimization-time pass="1" time="0.05" micro_passes="4" max_branch_merge="35" merged_total="1048" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="cryptography.hazmat.bindings._rust" finding="absolute" line="7" />
@@ -2565,7 +2576,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="cryptography.hazmat.primitives.hashes" finding="relative" line="10" />
     </module_usages>
   </module>
-  <module name="cryptography.hazmat.backends" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\backends\__init__.py" distribution="cryptography">
+  <module name="cryptography.hazmat.backends" kind="CompiledPythonPackage" usage="import path parent" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\backends\__init__.py" distribution="cryptography">
     <optimization-time pass="1" time="0.00" micro_passes="2" max_branch_merge="1" merged_total="4" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
@@ -2583,7 +2594,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.hazmat.backends.openssl.backend" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\backends\openssl\backend.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.05" micro_passes="4" max_branch_merge="46" merged_total="324" />
+    <optimization-time pass="1" time="0.08" micro_passes="4" max_branch_merge="46" merged_total="324" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="cryptography.hazmat.bindings._rust" finding="absolute" line="7" />
@@ -2626,7 +2637,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.hazmat.bindings.openssl.binding" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\bindings\openssl\binding.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="13" merged_total="262" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="13" merged_total="262" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="os" finding="absolute" line="7" />
@@ -2658,7 +2669,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.hazmat.decrepit.ciphers.algorithms" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\decrepit\ciphers\algorithms.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.11" micro_passes="4" max_branch_merge="12" merged_total="988" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="12" merged_total="988" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="cryptography.hazmat.primitives._cipheralgorithm" finding="absolute" line="7" />
@@ -2686,8 +2697,8 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="cryptography.utils" finding="relative" line="9" />
     </module_usages>
   </module>
-  <module name="cryptography.hazmat.primitives._serialization" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\_serialization.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="12" merged_total="1050" />
+  <module name="cryptography.hazmat.primitives._serialization" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\_serialization.py" distribution="cryptography">
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="12" merged_total="1050" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="abc" finding="absolute" line="7" />
@@ -2696,7 +2707,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="cryptography.hazmat.primitives.hashes" finding="absolute" line="10" />
     </module_usages>
   </module>
-  <module name="cryptography.hazmat.primitives.asymmetric" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\__init__.py" distribution="cryptography">
+  <module name="cryptography.hazmat.primitives.asymmetric" kind="CompiledPythonPackage" usage="import path parent" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\__init__.py" distribution="cryptography">
     <optimization-time pass="1" time="0.00" micro_passes="2" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
@@ -2727,8 +2738,8 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="cryptography.utils" finding="absolute" line="13" />
     </module_usages>
   </module>
-  <module name="cryptography.hazmat.primitives.asymmetric.ec" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\ec.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="23" merged_total="2835" />
+  <module name="cryptography.hazmat.primitives.asymmetric.ec" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\ec.py" distribution="cryptography">
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="23" merged_total="2835" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="abc" finding="absolute" line="7" />
@@ -2747,7 +2758,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.hazmat.primitives.asymmetric.ed25519" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\ed25519.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.05" micro_passes="3" max_branch_merge="11" merged_total="207" />
+    <optimization-time pass="1" time="0.03" micro_passes="3" max_branch_merge="11" merged_total="207" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="abc" finding="absolute" line="7" />
@@ -2762,7 +2773,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.hazmat.primitives.asymmetric.ed448" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\ed448.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="11" merged_total="270" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="11" merged_total="270" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="abc" finding="absolute" line="7" />
@@ -2776,7 +2787,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="cryptography.hazmat.backends.openssl.backend" finding="absolute" line="83" />
     </module_usages>
   </module>
-  <module name="cryptography.hazmat.primitives.asymmetric.padding" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\padding.py" distribution="cryptography">
+  <module name="cryptography.hazmat.primitives.asymmetric.padding" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\padding.py" distribution="cryptography">
     <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="13" merged_total="700" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
@@ -2788,8 +2799,8 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="cryptography.hazmat.primitives.asymmetric.rsa" finding="relative" line="13" />
     </module_usages>
   </module>
-  <module name="cryptography.hazmat.primitives.asymmetric.rsa" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\rsa.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="21" merged_total="585" />
+  <module name="cryptography.hazmat.primitives.asymmetric.rsa" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\rsa.py" distribution="cryptography">
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="21" merged_total="585" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="abc" finding="absolute" line="7" />
@@ -2806,7 +2817,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.hazmat.primitives.asymmetric.types" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\types.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="8" merged_total="32" />
+    <optimization-time pass="1" time="0.05" micro_passes="4" max_branch_merge="8" merged_total="32" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="typing" finding="absolute" line="7" />
@@ -2833,7 +2844,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.hazmat.primitives.asymmetric.x25519" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\x25519.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.00" micro_passes="3" max_branch_merge="11" merged_total="202" />
+    <optimization-time pass="1" time="0.03" micro_passes="3" max_branch_merge="11" merged_total="202" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="abc" finding="absolute" line="7" />
@@ -2848,7 +2859,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.hazmat.primitives.asymmetric.x448" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\x448.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="11" merged_total="264" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="11" merged_total="264" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="abc" finding="absolute" line="7" />
@@ -2871,8 +2882,8 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="cryptography.hazmat.primitives.ciphers.base" finding="absolute" line="11" />
     </module_usages>
   </module>
-  <module name="cryptography.hazmat.primitives.ciphers.algorithms" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\ciphers\algorithms.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="11" merged_total="775" />
+  <module name="cryptography.hazmat.primitives.ciphers.algorithms" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\ciphers\algorithms.py" distribution="cryptography">
+    <optimization-time pass="1" time="0.06" micro_passes="4" max_branch_merge="11" merged_total="775" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="cryptography" finding="absolute" line="7" />
@@ -2902,7 +2913,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="cryptography.utils" finding="absolute" line="13" />
     </module_usages>
   </module>
-  <module name="cryptography.hazmat.primitives.ciphers.modes" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\ciphers\modes.py" distribution="cryptography">
+  <module name="cryptography.hazmat.primitives.ciphers.modes" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\ciphers\modes.py" distribution="cryptography">
     <optimization-time pass="1" time="0.00" micro_passes="3" max_branch_merge="13" merged_total="1243" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
@@ -2932,7 +2943,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.hazmat.primitives.serialization" kind="CompiledPythonPackage" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\serialization\__init__.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.02" micro_passes="2" max_branch_merge="11" merged_total="50" />
+    <optimization-time pass="1" time="0.03" micro_passes="2" max_branch_merge="11" merged_total="50" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
       <module_usage name="__future__" finding="absolute" line="5" />
@@ -2948,7 +2959,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.hazmat.primitives.serialization.ssh" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\hazmat\primitives\serialization\ssh.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="61" merged_total="6323" />
+    <optimization-time pass="1" time="0.17" micro_passes="5" max_branch_merge="61" merged_total="6323" />
     <distribution-usages>
       <distribution-usage name="bcrypt" />
     </distribution-usages>
@@ -3048,7 +3059,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="cryptography.x509.oid" finding="absolute" line="38" />
     </module_usages>
   </module>
-  <module name="cryptography.x509.certificate_transparency" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\x509\certificate_transparency.py" distribution="cryptography">
+  <module name="cryptography.x509.certificate_transparency" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\x509\certificate_transparency.py" distribution="cryptography">
     <optimization-time pass="1" time="0.00" micro_passes="2" max_branch_merge="11" merged_total="165" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
@@ -3058,7 +3069,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.x509.extensions" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\x509\extensions.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.09" micro_passes="5" max_branch_merge="21" merged_total="11719" />
+    <optimization-time pass="1" time="0.38" micro_passes="5" max_branch_merge="21" merged_total="11719" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="abc" finding="absolute" line="7" />
@@ -3084,7 +3095,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.x509.general_name" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\x509\general_name.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="12" merged_total="1630" />
+    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="12" merged_total="1630" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="abc" finding="absolute" line="7" />
@@ -3096,7 +3107,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.x509.name" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\x509\name.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="25" merged_total="1694" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="25" merged_total="1694" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="binascii" finding="absolute" line="7" />
@@ -3119,7 +3130,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="cryptography.x509.verification" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\cryptography\x509\verification.py" distribution="cryptography">
-    <optimization-time pass="1" time="0.00" micro_passes="2" max_branch_merge="2" merged_total="4" />
+    <optimization-time pass="1" time="0.02" micro_passes="2" max_branch_merge="2" merged_total="4" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="5" />
       <module_usage name="typing" finding="absolute" line="7" />
@@ -3249,7 +3260,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
   </module>
   <module name="dotenv" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\dotenv\__init__.py" distribution="python-dotenv">
     <plugin-influence name="anti-bloat" influence="condition-used" condition="not use_ipython" tags_used="use_ipython" result="true" />
-    <optimization-time pass="1" time="0.00" micro_passes="3" max_branch_merge="6" merged_total="66" />
+    <optimization-time pass="1" time="0.02" micro_passes="3" max_branch_merge="6" merged_total="66" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
       <module_usage name="typing" finding="absolute" line="1" />
@@ -3295,7 +3306,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="typing" finding="absolute" line="3" />
     </module_usages>
   </module>
-  <module name="email" kind="UncompiledPythonPackage" usage="import path parent" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\email\__init__.py">
+  <module name="email" kind="UncompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\email\__init__.py">
     <optimization-time pass="1" time="0.00" micro_passes="3" max_branch_merge="4" merged_total="56" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
@@ -3359,7 +3370,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="binascii" finding="absolute" line="38" />
     </module_usages>
   </module>
-  <module name="email.charset" kind="UncompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\email\charset.py">
+  <module name="email.charset" kind="UncompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\email\charset.py">
     <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="18" merged_total="620" />
     <module_usages>
       <module_usage name="functools" finding="absolute" line="12" />
@@ -3388,7 +3399,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="quopri" finding="absolute" line="16" />
     </module_usages>
   </module>
-  <module name="email.errors" kind="UncompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\email\errors.py">
+  <module name="email.errors" kind="UncompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\email\errors.py">
     <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="10" merged_total="3480" />
     <module_usages />
   </module>
@@ -3490,14 +3501,14 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="email.message" finding="absolute" line="11" />
     </module_usages>
   </module>
-  <module name="email.quoprimime" kind="UncompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\email\quoprimime.py">
+  <module name="email.quoprimime" kind="UncompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\email\quoprimime.py">
     <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="18" merged_total="680" />
     <module_usages>
       <module_usage name="re" finding="absolute" line="42" />
       <module_usage name="string" finding="absolute" line="44" />
     </module_usages>
   </module>
-  <module name="email.utils" kind="UncompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\email\utils.py">
+  <module name="email.utils" kind="UncompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\email\utils.py">
     <plugin-influence name="anti-bloat" influence="condition-used" condition="not has_builtin_module(&quot;_socket&quot;)" tags_used="has_builtin_module" result="true" />
     <optimization-time pass="1" time="0.05" micro_passes="5" max_branch_merge="20" merged_total="2082" />
     <module_usages>
@@ -4360,7 +4371,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="flask" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\flask\__init__.py" distribution="Flask">
-    <optimization-time pass="1" time="0.09" micro_passes="3" max_branch_merge="5" merged_total="16" />
+    <optimization-time pass="1" time="0.08" micro_passes="3" max_branch_merge="5" merged_total="16" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
       <module_usage name="__future__" finding="absolute" line="1" />
@@ -4411,7 +4422,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="flask.app" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\flask\app.py" distribution="Flask">
-    <optimization-time pass="1" time="0.05" micro_passes="5" max_branch_merge="47" merged_total="2814" />
+    <optimization-time pass="1" time="0.11" micro_passes="5" max_branch_merge="47" merged_total="2814" />
     <distribution-usages>
       <distribution-usage name="click" />
       <distribution-usage name="Werkzeug" />
@@ -4503,7 +4514,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="flask.cli" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\flask\cli.py" distribution="Flask">
-    <optimization-time pass="1" time="0.12" micro_passes="6" max_branch_merge="23" merged_total="4308" />
+    <optimization-time pass="1" time="0.17" micro_passes="6" max_branch_merge="23" merged_total="4308" />
     <distribution-usages>
       <distribution-usage name="click" />
       <distribution-usage name="Werkzeug" />
@@ -4556,7 +4567,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="flask.config" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\flask\config.py" distribution="Flask">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="16" merged_total="1153" />
+    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="16" merged_total="1153" />
     <distribution-usages>
       <distribution-usage name="Werkzeug" />
     </distribution-usages>
@@ -4616,7 +4627,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="flask.helpers" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\flask\helpers.py" distribution="Flask">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="18" merged_total="555" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="18" merged_total="555" />
     <distribution-usages>
       <distribution-usage name="Werkzeug" />
     </distribution-usages>
@@ -4669,7 +4680,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="flask.json.tag" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\flask\json\tag.py" distribution="Flask">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="13" merged_total="1540" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="13" merged_total="1540" />
     <distribution-usages>
       <distribution-usage name="MarkupSafe" />
       <distribution-usage name="Werkzeug" />
@@ -4713,7 +4724,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="flask.sansio.app" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\flask\sansio\app.py" distribution="Flask">
-    <optimization-time pass="1" time="0.00" micro_passes="6" max_branch_merge="51" merged_total="1580" />
+    <optimization-time pass="1" time="0.19" micro_passes="6" max_branch_merge="51" merged_total="1580" />
     <distribution-usages>
       <distribution-usage name="Werkzeug" />
     </distribution-usages>
@@ -4760,7 +4771,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="flask.sansio.blueprints" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\flask\sansio\blueprints.py" distribution="Flask">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="30" merged_total="1313" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="30" merged_total="1313" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="os" finding="absolute" line="3" />
@@ -4810,7 +4821,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="flask.sessions" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\flask\sessions.py" distribution="Flask">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="19" merged_total="876" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="19" merged_total="876" />
     <distribution-usages>
       <distribution-usage name="itsdangerous" />
       <distribution-usage name="Werkzeug" />
@@ -4932,7 +4943,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="flask_cors.core" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\flask_cors\core.py" distribution="Flask-Cors">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="12" merged_total="1138" />
+    <optimization-time pass="1" time="0.05" micro_passes="4" max_branch_merge="12" merged_total="1138" />
     <distribution-usages>
       <distribution-usage name="Flask" />
       <distribution-usage name="Werkzeug" />
@@ -5194,7 +5205,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="html.entities" finding="absolute" line="15" />
     </module_usages>
   </module>
-  <module name="http" kind="UncompiledPythonPackage" usage="import path parent" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\http\__init__.py">
+  <module name="http" kind="UncompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\http\__init__.py">
     <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="77" merged_total="354" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
@@ -5217,7 +5228,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="ssl" finding="absolute" line="1450" />
     </module_usages>
   </module>
-  <module name="http.cookiejar" kind="UncompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\http\cookiejar.py">
+  <module name="http.cookiejar" kind="UncompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\http\cookiejar.py">
     <optimization-time pass="1" time="0.08" micro_passes="8" max_branch_merge="35" merged_total="14304" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="31" />
@@ -5281,7 +5292,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="subprocess" finding="absolute" line="1208" />
     </module_usages>
   </module>
-  <module name="idna" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\idna\__init__.py" distribution="idna">
+  <module name="idna" kind="CompiledPythonPackage" usage="plugin:implicit-imports" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\idna\__init__.py" distribution="idna">
     <optimization-time pass="1" time="0.02" micro_passes="2" max_branch_merge="18" merged_total="36" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
@@ -5291,7 +5302,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="idna.core" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\idna\core.py" distribution="idna">
-    <optimization-time pass="1" time="0.06" micro_passes="5" max_branch_merge="18" merged_total="2307" />
+    <optimization-time pass="1" time="0.08" micro_passes="5" max_branch_merge="18" merged_total="2307" />
     <module_usages>
       <module_usage name="bisect" finding="absolute" line="1" />
       <module_usage name="re" finding="absolute" line="2" />
@@ -5362,7 +5373,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="importlib.abc" kind="CompiledPythonModule" usage="import" reason="Including as part of the non-excluded parts of standard library." source_path="${sys.prefix}\Lib\importlib\abc.py">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="13" merged_total="911" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="13" merged_total="911" />
     <module_usages>
       <module_usage name="importlib" finding="absolute" line="2" />
       <module_usage name="_bootstrap_external" finding="relative" line="2" />
@@ -5659,7 +5670,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="itsdangerous" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\itsdangerous\__init__.py" distribution="itsdangerous">
-    <optimization-time pass="1" time="0.02" micro_passes="3" max_branch_merge="5" merged_total="16" />
+    <optimization-time pass="1" time="0.06" micro_passes="3" max_branch_merge="5" merged_total="16" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
       <module_usage name="__future__" finding="absolute" line="1" />
@@ -5713,7 +5724,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="itsdangerous.serializer" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\itsdangerous\serializer.py" distribution="itsdangerous">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="29" merged_total="858" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="29" merged_total="858" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="collections.abc" finding="not-found" line="3" />
@@ -5727,7 +5738,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="itsdangerous.signer" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\itsdangerous\signer.py" distribution="itsdangerous">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="16" merged_total="797" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="16" merged_total="797" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="collections.abc" finding="not-found" line="3" />
@@ -5742,7 +5753,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="itsdangerous.timed" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\itsdangerous\timed.py" distribution="itsdangerous">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="18" merged_total="662" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="18" merged_total="662" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="collections.abc" finding="not-found" line="3" />
@@ -5779,7 +5790,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="jinja2" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\jinja2\__init__.py" distribution="Jinja2">
-    <optimization-time pass="1" time="0.11" micro_passes="2" />
+    <optimization-time pass="1" time="0.27" micro_passes="2" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
       <module_usage name="jinja2.bccache" finding="relative" line="6" />
@@ -5853,7 +5864,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="jinja2.compiler" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\jinja2\compiler.py" distribution="Jinja2">
-    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="115" merged_total="7706" />
+    <optimization-time pass="1" time="0.16" micro_passes="5" max_branch_merge="115" merged_total="7706" />
     <distribution-usages>
       <distribution-usage name="MarkupSafe" />
     </distribution-usages>
@@ -5915,7 +5926,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
   </module>
   <module name="jinja2.environment" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\jinja2\environment.py" distribution="Jinja2">
     <plugin-influence name="anti-bloat" influence="condition-used" condition="before_python35" tags_used="before_python35" result="false" />
-    <optimization-time pass="1" time="0.06" micro_passes="5" max_branch_merge="45" merged_total="4081" />
+    <optimization-time pass="1" time="0.14" micro_passes="5" max_branch_merge="45" merged_total="4081" />
     <distribution-usages>
       <distribution-usage name="MarkupSafe" />
     </distribution-usages>
@@ -5988,7 +5999,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="jinja2.exceptions" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\jinja2\exceptions.py" distribution="Jinja2">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="11" merged_total="1482" />
+    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="11" merged_total="1482" />
     <module_usages>
       <module_usage name="typing" finding="absolute" line="1" />
       <module_usage name="jinja2.runtime" finding="relative" line="38" />
@@ -5996,7 +6007,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="jinja2.ext" kind="CompiledPythonModule" usage="plugin:implicit-imports" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\jinja2\ext.py" distribution="Jinja2">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="42" merged_total="2649" />
+    <optimization-time pass="1" time="0.06" micro_passes="4" max_branch_merge="42" merged_total="2649" />
     <distribution-usages>
       <distribution-usage name="MarkupSafe" />
     </distribution-usages>
@@ -6022,7 +6033,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="jinja2.filters" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\jinja2\filters.py" distribution="Jinja2">
-    <optimization-time pass="1" time="0.06" micro_passes="5" max_branch_merge="18" merged_total="3972" />
+    <optimization-time pass="1" time="0.11" micro_passes="5" max_branch_merge="18" merged_total="3972" />
     <distribution-usages>
       <distribution-usage name="MarkupSafe" />
     </distribution-usages>
@@ -6060,7 +6071,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="jinja2.idtracking" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\jinja2\idtracking.py" distribution="Jinja2">
-    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="23" merged_total="1969" />
+    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="23" merged_total="1969" />
     <module_usages>
       <module_usage name="typing" finding="absolute" line="1" />
       <module_usage name="jinja2" finding="absolute" line="3" />
@@ -6070,7 +6081,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
   </module>
   <module name="jinja2.lexer" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\jinja2\lexer.py" distribution="Jinja2">
     <plugin-influence name="anti-bloat" influence="condition-used" condition="before_python3" tags_used="before_python3" result="false" />
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="52" merged_total="2661" />
+    <optimization-time pass="1" time="0.06" micro_passes="5" max_branch_merge="52" merged_total="2661" />
     <module_usages>
       <module_usage name="re" finding="absolute" line="7" />
       <module_usage name="typing" finding="absolute" line="8" />
@@ -6084,7 +6095,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="jinja2.loaders" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\jinja2\loaders.py" distribution="Jinja2">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="20" merged_total="3395" />
+    <optimization-time pass="1" time="0.05" micro_passes="5" max_branch_merge="20" merged_total="3395" />
     <module_usages>
       <module_usage name="importlib.util" finding="absolute" line="5" />
       <module_usage name="os" finding="absolute" line="6" />
@@ -6124,7 +6135,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="jinja2.nodes" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\jinja2\nodes.py" distribution="Jinja2">
-    <optimization-time pass="1" time="0.12" micro_passes="5" max_branch_merge="22" merged_total="12149" />
+    <optimization-time pass="1" time="0.42" micro_passes="5" max_branch_merge="22" merged_total="12149" />
     <distribution-usages>
       <distribution-usage name="MarkupSafe" />
     </distribution-usages>
@@ -6150,7 +6161,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="jinja2.parser" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\jinja2\parser.py" distribution="Jinja2">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="58" merged_total="2935" />
+    <optimization-time pass="1" time="0.06" micro_passes="4" max_branch_merge="58" merged_total="2935" />
     <module_usages>
       <module_usage name="typing" finding="absolute" line="3" />
       <module_usage name="typing" finding="absolute" line="4" />
@@ -6163,7 +6174,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="jinja2.runtime" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\jinja2\runtime.py" distribution="Jinja2">
-    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="31" merged_total="3501" />
+    <optimization-time pass="1" time="0.16" micro_passes="5" max_branch_merge="31" merged_total="3501" />
     <distribution-usages>
       <distribution-usage name="MarkupSafe" />
     </distribution-usages>
@@ -6209,7 +6220,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="jinja2.utils" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\jinja2\utils.py" distribution="Jinja2">
-    <optimization-time pass="1" time="0.03" micro_passes="6" max_branch_merge="26" merged_total="3102" />
+    <optimization-time pass="1" time="0.06" micro_passes="6" max_branch_merge="26" merged_total="3102" />
     <distribution-usages>
       <distribution-usage name="MarkupSafe" />
     </distribution-usages>
@@ -6827,7 +6838,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="network_utils" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${cwd}\network_utils.py">
-    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="8" merged_total="239" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="8" merged_total="239" />
     <distribution-usages>
       <distribution-usage name="requests" />
       <distribution-usage name="urllib3" />
@@ -7059,7 +7070,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="portal_client" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${cwd}\portal_client.py">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="18" merged_total="988" />
+    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="18" merged_total="1008" />
     <distribution-usages>
       <distribution-usage name="requests" />
     </distribution-usages>
@@ -7249,7 +7260,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
   </module>
   <module name="requests" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\requests\__init__.py" distribution="requests">
     <plugin-influence name="implicit-imports" influence="condition-used" condition="not has_module(&quot;chardet&quot;)" tags_used="has_module" result="true" />
-    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="16" merged_total="595" />
+    <optimization-time pass="1" time="0.14" micro_passes="4" max_branch_merge="16" merged_total="595" />
     <distribution-usages>
       <distribution-usage name="urllib3" />
       <distribution-usage name="charset-normalizer" />
@@ -7295,7 +7306,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="requests.adapters" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\requests\adapters.py" distribution="requests">
-    <optimization-time pass="1" time="0.08" micro_passes="4" max_branch_merge="21" merged_total="1134" />
+    <optimization-time pass="1" time="0.05" micro_passes="4" max_branch_merge="21" merged_total="1156" />
     <distribution-usages>
       <distribution-usage name="urllib3" />
     </distribution-usages>
@@ -7333,7 +7344,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="requests.auth" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\requests\auth.py" distribution="requests">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="45" merged_total="1060" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="45" merged_total="1060" />
     <module_usages>
       <module_usage name="hashlib" finding="absolute" line="8" />
       <module_usage name="os" finding="absolute" line="9" />
@@ -7359,7 +7370,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="requests.compat" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\requests\compat.py" distribution="requests">
-    <optimization-time pass="1" time="0.02" micro_passes="3" max_branch_merge="10" merged_total="92" />
+    <optimization-time pass="1" time="0.08" micro_passes="3" max_branch_merge="10" merged_total="92" />
     <distribution-usages>
       <distribution-usage name="charset-normalizer" />
     </distribution-usages>
@@ -7384,7 +7395,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="requests.cookies" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\requests\cookies.py" distribution="requests">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="31" merged_total="2082" />
+    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="31" merged_total="2200" />
     <module_usages>
       <module_usage name="calendar" finding="absolute" line="10" />
       <module_usage name="copy" finding="absolute" line="11" />
@@ -7396,7 +7407,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="requests.exceptions" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\requests\exceptions.py" distribution="requests">
-    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="10" merged_total="3254" />
+    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="10" merged_total="3189" />
     <distribution-usages>
       <distribution-usage name="urllib3" />
     </distribution-usages>
@@ -7410,7 +7421,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     <module_usages />
   </module>
   <module name="requests.models" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\requests\models.py" distribution="requests">
-    <optimization-time pass="1" time="0.06" micro_passes="5" max_branch_merge="28" merged_total="3808" />
+    <optimization-time pass="1" time="0.05" micro_passes="5" max_branch_merge="28" merged_total="3808" />
     <distribution-usages>
       <distribution-usage name="urllib3" />
       <distribution-usage name="idna" />
@@ -7443,7 +7454,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="requests.packages" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\requests\packages.py" distribution="requests">
-    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="6" merged_total="161" />
+    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="6" merged_total="161" />
     <distribution-usages>
       <distribution-usage name="charset-normalizer" />
     </distribution-usages>
@@ -7455,7 +7466,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="requests.sessions" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\requests\sessions.py" distribution="requests">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="41" merged_total="1865" />
+    <optimization-time pass="1" time="0.06" micro_passes="4" max_branch_merge="41" merged_total="1887" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="8" />
       <module_usage name="sys" finding="absolute" line="9" />
@@ -7483,15 +7494,15 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="requests.structures" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\requests\structures.py" distribution="requests">
-    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="17" merged_total="599" />
+    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="17" merged_total="652" />
     <module_usages>
       <module_usage name="collections" finding="absolute" line="8" />
       <module_usage name="collections.OrderedDict" finding="not-found" line="8" />
       <module_usage name="requests.compat" finding="relative" line="10" />
     </module_usages>
   </module>
-  <module name="requests.utils" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\requests\utils.py" distribution="requests">
-    <optimization-time pass="1" time="0.03" micro_passes="6" max_branch_merge="17" merged_total="4788" />
+  <module name="requests.utils" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\requests\utils.py" distribution="requests">
+    <optimization-time pass="1" time="0.05" micro_passes="6" max_branch_merge="17" merged_total="4788" />
     <distribution-usages>
       <distribution-usage name="urllib3" />
     </distribution-usages>
@@ -7593,16 +7604,18 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="session_manager" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${cwd}\session_manager.py">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="21" merged_total="1126" />
+    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="25" merged_total="2016" />
     <module_usages>
       <module_usage name="time" finding="absolute" line="1" />
       <module_usage name="threading" finding="absolute" line="2" />
       <module_usage name="logging" finding="absolute" line="3" />
       <module_usage name="atexit" finding="absolute" line="4" />
       <module_usage name="signal" finding="absolute" line="5" />
-      <module_usage name="typing" finding="absolute" line="6" />
-      <module_usage name="portal_client" finding="absolute" line="7" />
-      <module_usage name="config" finding="absolute" line="8" />
+      <module_usage name="random" finding="absolute" line="6" />
+      <module_usage name="typing" finding="absolute" line="7" />
+      <module_usage name="portal_client" finding="absolute" line="8" />
+      <module_usage name="config" finding="absolute" line="9" />
+      <module_usage name="threading" finding="absolute" line="310" />
     </module_usages>
   </module>
   <module name="shiboken6" kind="CompiledPythonPackage" usage="plugin:implicit-imports" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\shiboken6\__init__.py" distribution="shiboken6">
@@ -8189,7 +8202,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="typing_extensions" kind="CompiledPythonModule" usage="plugin:implicit-imports" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\typing_extensions.py" distribution="typing_extensions">
-    <optimization-time pass="1" time="0.08" micro_passes="6" max_branch_merge="40" merged_total="12781" />
+    <optimization-time pass="1" time="0.20" micro_passes="6" max_branch_merge="40" merged_total="12781" />
     <module_usages>
       <module_usage name="abc" finding="absolute" line="1" />
       <module_usage name="builtins" finding="absolute" line="2" />
@@ -8226,7 +8239,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="os" finding="absolute" line="1" />
     </module_usages>
   </module>
-  <module name="urllib.error" kind="UncompiledPythonModule" usage="plugin:implicit-imports" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\urllib\error.py">
+  <module name="urllib.error" kind="UncompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\urllib\error.py">
     <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="14" merged_total="525" />
     <module_usages>
       <module_usage name="io" finding="absolute" line="13" />
@@ -8248,7 +8261,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="unicodedata" finding="absolute" line="426" />
     </module_usages>
   </module>
-  <module name="urllib.request" kind="UncompiledPythonModule" usage="plugin:implicit-imports" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\urllib\request.py">
+  <module name="urllib.request" kind="UncompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\urllib\request.py">
     <optimization-time pass="1" time="0.20" micro_passes="6" max_branch_merge="42" merged_total="19376" />
     <module_usages>
       <module_usage name="base64" finding="absolute" line="84" />
@@ -8294,14 +8307,14 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="winreg" finding="absolute" line="2752" />
     </module_usages>
   </module>
-  <module name="urllib.response" kind="UncompiledPythonModule" usage="plugin:implicit-imports" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\urllib\response.py">
+  <module name="urllib.response" kind="UncompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\urllib\response.py">
     <optimization-time pass="1" time="0.00" micro_passes="3" max_branch_merge="11" merged_total="427" />
     <module_usages>
       <module_usage name="tempfile" finding="absolute" line="9" />
     </module_usages>
   </module>
-  <module name="urllib3" kind="CompiledPythonPackage" usage="import path parent" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\__init__.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.06" micro_passes="4" max_branch_merge="5" merged_total="105" />
+  <module name="urllib3" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\__init__.py" distribution="urllib3">
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="5" merged_total="105" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
       <module_usage name="__future__" finding="absolute" line="5" />
@@ -8348,7 +8361,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="urllib3._request_methods" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\_request_methods.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="12" merged_total="296" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="12" merged_total="296" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="json" finding="absolute" line="3" />
@@ -8364,8 +8377,8 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="1" merged_total="1" />
     <module_usages />
   </module>
-  <module name="urllib3.connection" kind="CompiledPythonModule" usage="plugin:implicit-imports" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\connection.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="37" merged_total="2798" />
+  <module name="urllib3.connection" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\connection.py" distribution="urllib3">
+    <optimization-time pass="1" time="0.06" micro_passes="5" max_branch_merge="37" merged_total="2798" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="datetime" finding="absolute" line="3" />
@@ -8413,7 +8426,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="urllib3.connectionpool" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\connectionpool.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="41" merged_total="1863" />
+    <optimization-time pass="1" time="0.06" micro_passes="4" max_branch_merge="41" merged_total="1863" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="errno" finding="absolute" line="3" />
@@ -8444,14 +8457,14 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="urllib3.util.util" finding="relative" line="52" />
     </module_usages>
   </module>
-  <module name="urllib3.contrib" kind="CompiledPythonPackage" usage="plugin:implicit-imports" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\contrib\__init__.py" distribution="urllib3">
+  <module name="urllib3.contrib" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\contrib\__init__.py" distribution="urllib3">
     <optimization-time pass="1" time="0.00" micro_passes="2" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
     </module_usages>
   </module>
   <module name="urllib3.contrib.pyopenssl" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\contrib\pyopenssl.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="23" merged_total="1769" />
+    <optimization-time pass="1" time="0.05" micro_passes="5" max_branch_merge="23" merged_total="1769" />
     <distribution-usages>
       <distribution-usage name="cryptography" />
       <distribution-usage name="idna" />
@@ -8477,7 +8490,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="urllib3.contrib.socks" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\contrib\socks.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.02" micro_passes="3" max_branch_merge="10" merged_total="748" />
+    <optimization-time pass="1" time="0.08" micro_passes="3" max_branch_merge="10" merged_total="748" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="41" />
       <module_usage name="socks" finding="not-found" line="44" />
@@ -8494,7 +8507,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="urllib3.exceptions" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\exceptions.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.06" micro_passes="5" max_branch_merge="10" merged_total="5206" />
+    <optimization-time pass="1" time="0.11" micro_passes="5" max_branch_merge="10" merged_total="5206" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="socket" finding="absolute" line="3" />
@@ -8504,7 +8517,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="http.client" finding="absolute" line="7" />
     </module_usages>
   </module>
-  <module name="urllib3.fields" kind="CompiledPythonModule" usage="plugin:implicit-imports" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\fields.py" distribution="urllib3">
+  <module name="urllib3.fields" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\fields.py" distribution="urllib3">
     <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="11" merged_total="597" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
@@ -8518,7 +8531,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="urllib3.filepost" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\filepost.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="11" merged_total="176" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="11" merged_total="176" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="binascii" finding="absolute" line="3" />
@@ -8530,7 +8543,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="urllib3.http2" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\http2\__init__.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.03" micro_passes="3" max_branch_merge="10" merged_total="58" />
+    <optimization-time pass="1" time="0.05" micro_passes="3" max_branch_merge="10" merged_total="58" />
     <distribution-lookups>
       <distribution-lookup name="h2" found="no" />
     </distribution-lookups>
@@ -8557,7 +8570,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="urllib3.http2.connection" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\http2\connection.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="19" merged_total="2116" />
+    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="19" merged_total="2063" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="logging" finding="absolute" line="3" />
@@ -8583,7 +8596,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="urllib3.poolmanager" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\poolmanager.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="25" merged_total="1507" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="25" merged_total="1463" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="functools" finding="absolute" line="3" />
@@ -8608,7 +8621,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="urllib3.response" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\response.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="41" merged_total="5307" />
+    <optimization-time pass="1" time="0.12" micro_passes="5" max_branch_merge="41" merged_total="5307" />
     <distribution-usages>
       <distribution-usage name="backports.tarfile" />
     </distribution-usages>
@@ -8644,8 +8657,8 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="io" finding="absolute" line="987" />
     </module_usages>
   </module>
-  <module name="urllib3.util" kind="CompiledPythonPackage" usage="import path parent" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\util\__init__.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.03" micro_passes="2" max_branch_merge="8" merged_total="30" />
+  <module name="urllib3.util" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\util\__init__.py" distribution="urllib3">
+    <optimization-time pass="1" time="0.00" micro_passes="2" max_branch_merge="8" merged_total="30" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
       <module_usage name="__future__" finding="absolute" line="2" />
@@ -8660,7 +8673,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="urllib3.util.connection" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\util\connection.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="10" merged_total="362" />
+    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="10" merged_total="362" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="socket" finding="absolute" line="3" />
@@ -8678,7 +8691,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="urllib3.util.request" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\util\request.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="13" merged_total="639" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="13" merged_total="639" />
     <distribution-usages>
       <distribution-usage name="backports.tarfile" />
     </distribution-usages>
@@ -8707,7 +8720,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="urllib3.util.retry" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\util\retry.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="37" merged_total="1225" />
+    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="37" merged_total="1172" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="email" finding="absolute" line="3" />
@@ -8722,7 +8735,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="urllib3.util.util" finding="relative" line="21" />
     </module_usages>
   </module>
-  <module name="urllib3.util.ssl_" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\util\ssl_.py" distribution="urllib3">
+  <module name="urllib3.util.ssl_" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\util\ssl_.py" distribution="urllib3">
     <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="29" merged_total="915" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
@@ -8775,7 +8788,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="urllib3.util.url" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\urllib3\util\url.py" distribution="urllib3">
-    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="25" merged_total="1585" />
+    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="25" merged_total="1585" />
     <distribution-usages>
       <distribution-usage name="idna" />
     </distribution-usages>
@@ -8874,29 +8887,169 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
       <module_usage name="argparse" finding="absolute" line="684" />
     </module_usages>
   </module>
-  <module name="websockets" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websockets\__init__.py" distribution="websockets">
-    <optimization-time pass="1" time="0.00" micro_passes="3" max_branch_merge="1" merged_total="1" />
+  <module name="websocket" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\__init__.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.05" micro_passes="2" max_branch_merge="2" merged_total="4" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
-      <module_usage name="__future__" finding="absolute" line="1" />
-      <module_usage name="websockets.imports" finding="relative" line="6" />
-      <module_usage name="websockets.version" finding="relative" line="7" />
+      <module_usage name="websocket._abnf" finding="relative" line="20" />
+      <module_usage name="websocket._app" finding="relative" line="21" />
+      <module_usage name="websocket._core" finding="relative" line="25" />
+      <module_usage name="websocket._exceptions" finding="relative" line="26" />
+      <module_usage name="websocket._logging" finding="relative" line="27" />
+      <module_usage name="websocket._socket" finding="relative" line="28" />
     </module_usages>
   </module>
-  <module name="websockets.imports" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websockets\imports.py" distribution="websockets">
-    <optimization-time pass="1" time="0.00" micro_passes="3" max_branch_merge="12" merged_total="124" />
+  <module name="websocket._abnf" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\_abnf.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="24" merged_total="1162" />
     <module_usages>
-      <module_usage name="__future__" finding="absolute" line="1" />
-      <module_usage name="warnings" finding="absolute" line="3" />
-      <module_usage name="collections.abc" finding="not-found" line="4" />
+      <module_usage name="array" finding="absolute" line="1" />
+      <module_usage name="os" finding="absolute" line="2" />
+      <module_usage name="struct" finding="absolute" line="3" />
+      <module_usage name="sys" finding="absolute" line="4" />
+      <module_usage name="threading" finding="absolute" line="5" />
+      <module_usage name="typing" finding="absolute" line="6" />
+      <module_usage name="websocket._exceptions" finding="relative" line="8" />
+      <module_usage name="websocket._utils" finding="relative" line="9" />
+      <module_usage name="wsaccel.xormask" finding="not-found" line="35" />
+    </module_usages>
+  </module>
+  <module name="websocket._app" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\_app.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.03" micro_passes="6" max_branch_merge="30" merged_total="1535" />
+    <module_usages>
+      <module_usage name="inspect" finding="absolute" line="1" />
+      <module_usage name="socket" finding="absolute" line="2" />
+      <module_usage name="threading" finding="absolute" line="3" />
+      <module_usage name="time" finding="absolute" line="4" />
       <module_usage name="typing" finding="absolute" line="5" />
+      <module_usage name="websocket" finding="absolute" line="7" />
+      <module_usage name="websocket._logging" finding="relative" line="7" />
+      <module_usage name="websocket._abnf" finding="relative" line="8" />
+      <module_usage name="websocket._core" finding="relative" line="9" />
+      <module_usage name="websocket._exceptions" finding="relative" line="10" />
+      <module_usage name="websocket._ssl_compat" finding="relative" line="15" />
+      <module_usage name="websocket._url" finding="relative" line="16" />
+      <module_usage name="websocket._dispatcher" finding="relative" line="17" />
     </module_usages>
   </module>
-  <module name="websockets.version" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websockets\version.py" distribution="websockets">
-    <optimization-time pass="1" time="0.00" micro_passes="4" />
+  <module name="websocket._cookiejar" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\_cookiejar.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="10" merged_total="445" />
     <module_usages>
-      <module_usage name="__future__" finding="absolute" line="1" />
-      <module_usage name="importlib.metadata" finding="absolute" line="3" />
+      <module_usage name="http.cookies" finding="absolute" line="1" />
+      <module_usage name="typing" finding="absolute" line="2" />
+    </module_usages>
+  </module>
+  <module name="websocket._core" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\_core.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.06" micro_passes="4" max_branch_merge="39" merged_total="1085" />
+    <module_usages>
+      <module_usage name="socket" finding="absolute" line="1" />
+      <module_usage name="struct" finding="absolute" line="2" />
+      <module_usage name="threading" finding="absolute" line="3" />
+      <module_usage name="time" finding="absolute" line="4" />
+      <module_usage name="typing" finding="absolute" line="5" />
+      <module_usage name="websocket._abnf" finding="relative" line="8" />
+      <module_usage name="websocket._exceptions" finding="relative" line="9" />
+      <module_usage name="websocket._handshake" finding="relative" line="14" />
+      <module_usage name="websocket._http" finding="relative" line="15" />
+      <module_usage name="websocket._logging" finding="relative" line="16" />
+      <module_usage name="websocket._socket" finding="relative" line="17" />
+      <module_usage name="websocket._ssl_compat" finding="relative" line="18" />
+      <module_usage name="websocket._utils" finding="relative" line="19" />
+      <module_usage name="websocket._dispatcher" finding="relative" line="20" />
+    </module_usages>
+  </module>
+  <module name="websocket._dispatcher" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\_dispatcher.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="10" merged_total="605" />
+    <module_usages>
+      <module_usage name="time" finding="absolute" line="1" />
+      <module_usage name="socket" finding="absolute" line="2" />
+      <module_usage name="inspect" finding="absolute" line="3" />
+      <module_usage name="selectors" finding="absolute" line="4" />
+      <module_usage name="typing" finding="absolute" line="5" />
+      <module_usage name="websocket" finding="absolute" line="9" />
+      <module_usage name="websocket._logging" finding="relative" line="9" />
+      <module_usage name="websocket._socket" finding="relative" line="10" />
+    </module_usages>
+  </module>
+  <module name="websocket._exceptions" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\_exceptions.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="10" merged_total="1034" />
+    <module_usages />
+  </module>
+  <module name="websocket._handshake" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\_handshake.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="19" merged_total="812" />
+    <module_usages>
+      <module_usage name="hashlib" finding="absolute" line="20" />
+      <module_usage name="hmac" finding="absolute" line="21" />
+      <module_usage name="os" finding="absolute" line="22" />
+      <module_usage name="base64" finding="absolute" line="23" />
+      <module_usage name="http" finding="absolute" line="24" />
+      <module_usage name="http.HTTPStatus" finding="not-found" line="24" />
+      <module_usage name="websocket._cookiejar" finding="relative" line="26" />
+      <module_usage name="websocket._exceptions" finding="relative" line="27" />
+      <module_usage name="websocket._http" finding="relative" line="28" />
+      <module_usage name="websocket._logging" finding="relative" line="29" />
+      <module_usage name="websocket._socket" finding="relative" line="30" />
+      <module_usage name="websocket._socket" finding="relative" line="147" />
+    </module_usages>
+  </module>
+  <module name="websocket._http" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\_http.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.09" micro_passes="7" max_branch_merge="22" merged_total="2963" />
+    <module_usages>
+      <module_usage name="errno" finding="absolute" line="20" />
+      <module_usage name="os" finding="absolute" line="21" />
+      <module_usage name="socket" finding="absolute" line="22" />
+      <module_usage name="base64" finding="absolute" line="23" />
+      <module_usage name="websocket._exceptions" finding="relative" line="25" />
+      <module_usage name="websocket._logging" finding="relative" line="30" />
+      <module_usage name="websocket._socket" finding="relative" line="31" />
+      <module_usage name="websocket._ssl_compat" finding="relative" line="32" />
+      <module_usage name="websocket._url" finding="relative" line="33" />
+      <module_usage name="python_socks._errors" finding="not-found" line="38" />
+      <module_usage name="python_socks._types" finding="not-found" line="39" />
+      <module_usage name="python_socks.sync" finding="not-found" line="40" />
+    </module_usages>
+  </module>
+  <module name="websocket._logging" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\_logging.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.00" micro_passes="3" max_branch_merge="9" merged_total="162" />
+    <module_usages>
+      <module_usage name="logging" finding="absolute" line="1" />
+      <module_usage name="logging" finding="absolute" line="24" />
+      <module_usage name="logging.NullHandler" finding="not-found" line="24" />
+    </module_usages>
+  </module>
+  <module name="websocket._socket" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\_socket.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="5" merged_total="489" />
+    <module_usages>
+      <module_usage name="errno" finding="absolute" line="1" />
+      <module_usage name="selectors" finding="absolute" line="2" />
+      <module_usage name="socket" finding="absolute" line="3" />
+      <module_usage name="typing" finding="absolute" line="4" />
+      <module_usage name="websocket._exceptions" finding="relative" line="6" />
+      <module_usage name="websocket._ssl_compat" finding="relative" line="10" />
+      <module_usage name="websocket._utils" finding="relative" line="11" />
+    </module_usages>
+  </module>
+  <module name="websocket._ssl_compat" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\_ssl_compat.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="10" merged_total="563" />
+    <module_usages>
+      <module_usage name="ssl" finding="absolute" line="47" />
+      <module_usage name="ssl" finding="absolute" line="48" />
+    </module_usages>
+  </module>
+  <module name="websocket._url" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\_url.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="12" merged_total="485" />
+    <module_usages>
+      <module_usage name="ipaddress" finding="absolute" line="1" />
+      <module_usage name="os" finding="absolute" line="2" />
+      <module_usage name="typing" finding="absolute" line="3" />
+      <module_usage name="urllib.parse" finding="absolute" line="4" />
+      <module_usage name="websocket._exceptions" finding="relative" line="5" />
+    </module_usages>
+  </module>
+  <module name="websocket._utils" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\websocket\_utils.py" distribution="websocket-client">
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="8" merged_total="244" />
+    <module_usages>
+      <module_usage name="typing" finding="absolute" line="1" />
+      <module_usage name="wsaccel.utf8validator" finding="not-found" line="35" />
     </module_usages>
   </module>
   <module name="werkzeug" kind="CompiledPythonPackage" usage="import path parent" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\__init__.py" distribution="Werkzeug">
@@ -8916,7 +9069,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug._internal" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\_internal.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="16" merged_total="594" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="16" merged_total="594" />
     <distribution-usages>
       <distribution-usage name="colorama" />
     </distribution-usages>
@@ -8932,7 +9085,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.datastructures" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\datastructures\__init__.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.08" micro_passes="2" />
+    <optimization-time pass="1" time="0.14" micro_passes="2" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
       <module_usage name="werkzeug.datastructures.accept" finding="relative" line="1" />
@@ -8972,7 +9125,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.datastructures.accept" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\datastructures\accept.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="22" merged_total="1643" />
+    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="22" merged_total="1643" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="codecs" finding="absolute" line="3" />
@@ -8981,7 +9134,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.datastructures.auth" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\datastructures\auth.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="26" merged_total="630" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="26" merged_total="630" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="base64" finding="absolute" line="3" />
@@ -9052,7 +9205,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.datastructures.mixins" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\datastructures\mixins.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="19" merged_total="986" />
+    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="19" merged_total="986" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="itertools" finding="absolute" line="3" />
@@ -9068,7 +9221,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.datastructures.structures" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\datastructures\structures.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.08" micro_passes="5" max_branch_merge="33" merged_total="5982" />
+    <optimization-time pass="1" time="0.28" micro_passes="5" max_branch_merge="33" merged_total="5982" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="collections.abc" finding="not-found" line="3" />
@@ -9085,7 +9238,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.debug" kind="CompiledPythonPackage" usage="import path parent" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\debug\__init__.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.05" micro_passes="5" max_branch_merge="24" merged_total="1957" />
+    <optimization-time pass="1" time="0.08" micro_passes="5" max_branch_merge="24" merged_total="1957" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
       <module_usage name="__future__" finding="absolute" line="1" />
@@ -9121,7 +9274,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.debug.console" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\debug\console.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="15" merged_total="1019" />
+    <optimization-time pass="1" time="0.05" micro_passes="5" max_branch_merge="15" merged_total="1019" />
     <distribution-usages>
       <distribution-usage name="MarkupSafe" />
     </distribution-usages>
@@ -9142,7 +9295,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.debug.repr" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\debug\repr.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="28" merged_total="1145" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="28" merged_total="1145" />
     <distribution-usages>
       <distribution-usage name="MarkupSafe" />
     </distribution-usages>
@@ -9161,7 +9314,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.debug.tbtools" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\debug\tbtools.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="28" merged_total="1500" />
+    <optimization-time pass="1" time="0.03" micro_passes="5" max_branch_merge="28" merged_total="1500" />
     <distribution-usages>
       <distribution-usage name="MarkupSafe" />
     </distribution-usages>
@@ -9183,7 +9336,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.exceptions" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\exceptions.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.20" micro_passes="5" max_branch_merge="20" merged_total="5693" />
+    <optimization-time pass="1" time="0.09" micro_passes="5" max_branch_merge="20" merged_total="5693" />
     <distribution-usages>
       <distribution-usage name="MarkupSafe" />
     </distribution-usages>
@@ -9205,7 +9358,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.formparser" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\formparser.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="27" merged_total="888" />
+    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="27" merged_total="888" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="typing" finding="absolute" line="3" />
@@ -9233,7 +9386,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.http" kind="CompiledPythonModule" usage="import fromlist" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\http.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="27" merged_total="2992" />
+    <optimization-time pass="1" time="0.08" micro_passes="4" max_branch_merge="27" merged_total="2992" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="email.utils" finding="absolute" line="3" />
@@ -9282,7 +9435,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.middleware.shared_data" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\middleware\shared_data.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="26" merged_total="673" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="26" merged_total="673" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="11" />
       <module_usage name="importlib.util" finding="absolute" line="13" />
@@ -9309,7 +9462,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.routing" kind="CompiledPythonPackage" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\routing\__init__.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.08" micro_passes="2" />
+    <optimization-time pass="1" time="0.12" micro_passes="2" />
     <module_usages>
       <module_usage name="os" finding="absolute" line="1" />
       <module_usage name="werkzeug.routing.converters" finding="relative" line="108" />
@@ -9363,7 +9516,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.routing.map" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\routing\map.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="28" merged_total="1911" />
+    <optimization-time pass="1" time="0.06" micro_passes="4" max_branch_merge="28" merged_total="1911" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="typing" finding="absolute" line="3" />
@@ -9398,7 +9551,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.routing.matcher" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\routing\matcher.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="16" merged_total="1296" />
+    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="16" merged_total="1296" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="re" finding="absolute" line="3" />
@@ -9414,7 +9567,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.routing.rules" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\routing\rules.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="32" merged_total="2933" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="32" merged_total="2933" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="ast" finding="absolute" line="3" />
@@ -9454,7 +9607,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.sansio.multipart" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\sansio\multipart.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="36" merged_total="1643" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="36" merged_total="1643" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="re" finding="absolute" line="3" />
@@ -9469,7 +9622,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.sansio.request" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\sansio\request.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.05" micro_passes="4" max_branch_merge="51" merged_total="483" />
+    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="51" merged_total="483" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="typing" finding="absolute" line="3" />
@@ -9522,7 +9675,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.sansio.response" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\sansio\response.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.05" micro_passes="4" max_branch_merge="59" merged_total="1110" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="59" merged_total="1110" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="typing" finding="absolute" line="3" />
@@ -9578,7 +9731,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.security" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\security.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="22" merged_total="605" />
+    <optimization-time pass="1" time="0.00" micro_passes="5" max_branch_merge="22" merged_total="605" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="hashlib" finding="absolute" line="3" />
@@ -9591,7 +9744,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.serving" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\serving.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.08" micro_passes="4" max_branch_merge="24" merged_total="3061" />
+    <optimization-time pass="1" time="0.12" micro_passes="4" max_branch_merge="24" merged_total="3061" />
     <distribution-usages>
       <distribution-usage name="colorama" />
       <distribution-usage name="cryptography" />
@@ -9642,7 +9795,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.test" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\test.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.03" micro_passes="6" max_branch_merge="43" merged_total="4547" />
+    <optimization-time pass="1" time="0.19" micro_passes="6" max_branch_merge="43" merged_total="4547" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="dataclasses" finding="absolute" line="3" />
@@ -9700,7 +9853,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.urls" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\urls.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="18" merged_total="535" />
+    <optimization-time pass="1" time="0.00" micro_passes="4" max_branch_merge="18" merged_total="535" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="codecs" finding="absolute" line="3" />
@@ -9722,7 +9875,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.utils" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\utils.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.06" micro_passes="5" max_branch_merge="48" merged_total="2142" />
+    <optimization-time pass="1" time="0.05" micro_passes="5" max_branch_merge="48" merged_total="2142" />
     <distribution-usages>
       <distribution-usage name="MarkupSafe" />
     </distribution-usages>
@@ -9771,7 +9924,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.wrappers.request" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\wrappers\request.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="46" merged_total="982" />
+    <optimization-time pass="1" time="0.03" micro_passes="4" max_branch_merge="46" merged_total="982" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="functools" finding="absolute" line="3" />
@@ -9805,7 +9958,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <module name="werkzeug.wrappers.response" kind="CompiledPythonModule" usage="import" reason="Instructed by user to follow to all modules." source_path="${sys.prefix}\Lib\site-packages\werkzeug\wrappers\response.py" distribution="Werkzeug">
-    <optimization-time pass="1" time="0.02" micro_passes="4" max_branch_merge="47" merged_total="1433" />
+    <optimization-time pass="1" time="0.09" micro_passes="4" max_branch_merge="47" merged_total="1433" />
     <module_usages>
       <module_usage name="__future__" finding="absolute" line="1" />
       <module_usage name="json" finding="absolute" line="3" />
@@ -9962,7 +10115,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     </module_usages>
   </module>
   <performance>
-    <memory_usage name="after_launch" value="43274240" />
+    <memory_usage name="after_launch" value="43499520" />
   </performance>
   <data_composer blob_size="None" />
   <command_line>
@@ -10021,7 +10174,7 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Administrator\\AppDat
     <distribution name="shiboken6" version="6.11.0" installer="pip" />
     <distribution name="typing_extensions" version="4.15.0" installer="pip" />
     <distribution name="urllib3" version="2.6.3" installer="pip" />
-    <distribution name="websockets" version="16.0" installer="pip" />
+    <distribution name="websocket-client" version="1.9.0" installer="pip" />
   </distributions>
   <python python_exe="${sys.prefix}\python.exe" python_flavor="CPython Official" python_version="3.13.7" os_name="Windows" os_release="11" arch_name="x86_64" filesystem_encoding="utf-8" gil="yes">
     <search_path>

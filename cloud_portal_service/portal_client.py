@@ -30,6 +30,9 @@ class PortalClient:
         self.user_info: Optional[Dict] = None
         self.token_expires_at: Optional[float] = None
         self.login_time: Optional[float] = None
+        
+        self.needs_relogin: bool = False
+        self.relogin_reason: Optional[str] = None
     
     def _validate_source_ip(self, ip: str) -> bool:
         if not ip:
@@ -211,6 +214,9 @@ class PortalClient:
                 self.login_time = time.time()
                 self.token_expires_at = self.login_time + 86400
                 
+                self.needs_relogin = False
+                self.relogin_reason = None
+                
                 self._fetch_user_info()
                 
                 logger.info(f"[登录] 用户 {username} 登录成功")
@@ -353,30 +359,39 @@ class PortalClient:
                 self.refresh_token = result['result'].get('global_refresh_token', self.refresh_token)
                 self.token_expires_at = time.time() + 86400
                 
+                self.needs_relogin = False
+                self.relogin_reason = None
+                
                 logger.info("Token刷新成功")
                 return {'success': True}
             else:
+                error_msg = result.get('code', {}).get('msg', '刷新失败')
+                self.needs_relogin = True
+                self.relogin_reason = f"Token刷新失败: {error_msg}"
                 return {
                     'success': False,
-                    'error': result.get('code', {}).get('msg', '刷新失败')
+                    'error': error_msg
                 }
         except Exception as e:
             logger.error(f"刷新Token失败: {e}")
+            self.needs_relogin = True
+            self.relogin_reason = f"Token刷新异常: {str(e)}"
             return {
                 'success': False,
                 'error': str(e)
             }
     
     def check_and_refresh_token(self) -> bool:
-        """
-        检查Token是否即将过期，如果是则自动刷新
-        """
         if not self.access_token or not self.refresh_token:
             logger.warning("[Token检查] 无Token或RefreshToken")
+            self.needs_relogin = True
+            self.relogin_reason = "无有效Token"
             return False
         
         if not self.token_expires_at:
             logger.warning("[Token检查] 无过期时间")
+            self.needs_relogin = True
+            self.relogin_reason = "Token过期时间未知"
             return False
         
         if time.time() > self.token_expires_at - config.TOKEN_REFRESH_THRESHOLD:
@@ -392,11 +407,6 @@ class PortalClient:
         return True
     
     def keep_alive(self, use_twaudit: bool = True) -> Dict[str, Any]:
-        """
-        发送心跳请求保持连接活跃
-        使用getUserInfo接口验证会话有效性
-        支持多域名心跳
-        """
         if not self.access_token:
             return {
                 'success': False,
@@ -470,6 +480,8 @@ class PortalClient:
         self.user_info = None
         self.token_expires_at = None
         self.login_time = None
+        self.needs_relogin = False
+        self.relogin_reason = None
         
         logger.info("用户已登出")
         return {'success': True}
@@ -488,7 +500,9 @@ class PortalClient:
             'logged_in': self.is_logged_in(),
             'user_info': self.user_info if self.is_logged_in() else None,
             'login_time': self.login_time,
-            'expires_at': self.token_expires_at
+            'expires_at': self.token_expires_at,
+            'needs_relogin': self.needs_relogin,
+            'relogin_reason': self.relogin_reason
         }
     
     def __del__(self):

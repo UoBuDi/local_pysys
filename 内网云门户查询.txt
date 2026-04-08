@@ -55660,3 +55660,780 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
     "needCount": true
   }
 }
+
+分中心列表（orobranchcenterList）POST 数据模板:
+GET /gateway/ai-audit-server/basicData/orobranchcenterList.json HTTP/1.1
+Host: twaudit.hngsetc.com
+Accept: application/json, text/plain, */*
+DNT: 1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1Y2U1NWE3ODVhN2Y0YjZhOWRlYmFkNGQwOWQzYWNhMyIsImF1ZCI6ImMzYTkyYjY5NjNkODRhM2U4MjdmM2Q3OTExOWEyN2E1IiwiaXNzIjoib2F1dGgiLCJybmQiOiJtNzQxdHQxaSIsImV4cCI6MTc3NTUyODkwNywiaWF0IjoxNzc1NDQyNTA3fQ.7WDG8fTnt2NK5h8A5O-k0gK9rxCvcP_RkJ3S5p2yFX0
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36 Edg/84.0.522.49
+Referer: http://twaudit.hngsetc.com/aiAuditWeb/index.html?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1Y2U1NWE3ODVhN2Y0YjZhOWRlYmFkNGQwOWQzYWNhMyIsImF1ZCI6ImMzYTkyYjY5NjNkODRhM2U4MjdmM2Q3OTExOWEyN2E1IiwiaXNzIjoib2F1dGgiLCJybmQiOiJtNzQxdHQxaSIsImV4cCI6MTc3NTUyODkwNywiaWF0IjoxNzc1NDQyNTA3fQ.7WDG8fTnt2NK5h8A5O-k0gK9rxCvcP_RkJ3S5p2yFX0&refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1Y2U1NWE3ODVhN2Y0YjZhOWRlYmFkNGQwOWQzYWNhMyIsImF1ZCI6ImMzYTkyYjY5NjNkODRhM2U4MjdmM2Q3OTExOWEyN2E1IiwiaXNzIjoib2F1dGgiLCJybmQiOiJxNGQzaTV5NSIsImlydCI6IjEiLCJleHAiOjE3NzgwMzQ1MDcsImlhdCI6MTc3NTQ0MjUwN30.-qWSRfAaHwu1oA2BPWhlCFqufDgHHQEo3g6TNzlXk3E
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+响应体数据模板：
+{
+  "code": {
+    "code": "0",
+    "msg": "操作成功",
+    "ok": true
+  },
+  "result": [
+    {
+      "centerNo": "4303036",
+      "centerName": "岳阳分公司"
+    },
+    {
+      "centerNo": "4303035",
+      "centerName": "长沙分公司"
+    },
+    {
+      "centerNo": "4303020",
+      "centerName": "长永/长潭高速分中心"
+    },
+    {
+      "centerNo": "4303034",
+      "centerName": "潭耒高速分中心"
+    },
+    {
+      "centerNo": "4303041",
+      "centerName": "株洲分公司"
+    },
+    {
+      "centerNo": "4303043",
+      "centerName": "衡阳分公司"
+    },
+    {
+      "centerNo": "4303040",
+      "centerName": "郴州分公司"
+    },
+    {
+      "centerNo": "4303013",
+      "centerName": "东常高速分中心"
+    },
+    {
+      "centerNo": "4303045",
+      "centerName": "常德分公司"
+    },
+    {
+      "centerNo": "4303044",
+      "centerName": "益阳分公司"
+    },
+    {
+      "centerNo": "4303010",
+      "centerName": "安邵高速分中心"
+    },
+    {
+      "centerNo": "4303042",
+      "centerName": "邵阳分公司"
+    },
+    {
+      "centerNo": "4303039",
+      "centerName": "永州分公司"
+    },
+    {
+      "centerNo": "4303049",
+      "centerName": "永蓝高速分中心"
+    },
+    {
+      "centerNo": "4303022",
+      "centerName": "岳常高速分中心"
+    },
+    {
+      "centerNo": "4303037",
+      "centerName": "湘西分公司"
+    },
+    {
+      "centerNo": "4303038",
+      "centerName": "怀化分公司"
+    },
+    {
+      "centerNo": "4303048",
+      "centerName": "娄底分公司"
+    },
+    {
+      "centerNo": "4303064",
+      "centerName": "炉慈桑龙高速分中心"
+    },
+    {
+      "centerNo": "4303005",
+      "centerName": "醴潭高速分中心"
+    },
+    {
+      "centerNo": "4303047",
+      "centerName": "湘潭分公司"
+    },
+    {
+      "centerNo": "4303063",
+      "centerName": "金醴高速分中心"
+    },
+    {
+      "centerNo": "4303015",
+      "centerName": "长沙绕城西南段分中心"
+    },
+    {
+      "centerNo": "4303016",
+      "centerName": "长沙绕城西北段分中心"
+    },
+    {
+      "centerNo": "4303012",
+      "centerName": "随岳高速分中心"
+    },
+    {
+      "centerNo": "4303017",
+      "centerName": "湘衡高速分中心"
+    },
+    {
+      "centerNo": "4303052",
+      "centerName": "临连高速分中心"
+    },
+    {
+      "centerNo": "4303025",
+      "centerName": "长益高速分中心"
+    },
+    {
+      "centerNo": "4303021",
+      "centerName": "益常高速分中心"
+    },
+    {
+      "centerNo": "4303046",
+      "centerName": "张家界分公司"
+    },
+    {
+      "centerNo": "4303057",
+      "centerName": "衡永高速分中心"
+    },
+    {
+      "centerNo": "4303004",
+      "centerName": "长韶娄高速分中心"
+    },
+    {
+      "centerNo": "4303051",
+      "centerName": "安慈高速分中心"
+    },
+    {
+      "centerNo": "4303009",
+      "centerName": "长浏高速分中心"
+    },
+    {
+      "centerNo": "4303029",
+      "centerName": "益阳南线分中心"
+    },
+    {
+      "centerNo": "4303054",
+      "centerName": "平益高速分中心"
+    },
+    {
+      "centerNo": "4303024",
+      "centerName": "长株高速分中心"
+    },
+    {
+      "centerNo": "4303007",
+      "centerName": "宜凤高速分中心"
+    },
+    {
+      "centerNo": "4303023",
+      "centerName": "长潭西线高速分中心"
+    },
+    {
+      "centerNo": "4303027",
+      "centerName": "机场高速分中心"
+    },
+    {
+      "centerNo": "4303018",
+      "centerName": "现代投资怀化分公司"
+    },
+    {
+      "centerNo": "4303014",
+      "centerName": "衡邵高速分中心"
+    }
+  ]
+}
+
+获取分中心路段列表（roadSectionList.json） POST数据模板：
+GET /gateway/ai-audit-server/basicData/roadSectionList.json?centerNo=4303010 HTTP/1.1
+Host: twaudit.hngsetc.com
+Accept: application/json, text/plain, */*
+DNT: 1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1Y2U1NWE3ODVhN2Y0YjZhOWRlYmFkNGQwOWQzYWNhMyIsImF1ZCI6ImMzYTkyYjY5NjNkODRhM2U4MjdmM2Q3OTExOWEyN2E1IiwiaXNzIjoib2F1dGgiLCJybmQiOiJtNzQxdHQxaSIsImV4cCI6MTc3NTUyODkwNywiaWF0IjoxNzc1NDQyNTA3fQ.7WDG8fTnt2NK5h8A5O-k0gK9rxCvcP_RkJ3S5p2yFX0
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36 Edg/84.0.522.49
+Referer: http://twaudit.hngsetc.com/aiAuditWeb/index.html?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1Y2U1NWE3ODVhN2Y0YjZhOWRlYmFkNGQwOWQzYWNhMyIsImF1ZCI6ImMzYTkyYjY5NjNkODRhM2U4MjdmM2Q3OTExOWEyN2E1IiwiaXNzIjoib2F1dGgiLCJybmQiOiJtNzQxdHQxaSIsImV4cCI6MTc3NTUyODkwNywiaWF0IjoxNzc1NDQyNTA3fQ.7WDG8fTnt2NK5h8A5O-k0gK9rxCvcP_RkJ3S5p2yFX0&refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1Y2U1NWE3ODVhN2Y0YjZhOWRlYmFkNGQwOWQzYWNhMyIsImF1ZCI6ImMzYTkyYjY5NjNkODRhM2U4MjdmM2Q3OTExOWEyN2E1IiwiaXNzIjoib2F1dGgiLCJybmQiOiJxNGQzaTV5NSIsImlydCI6IjEiLCJleHAiOjE3NzgwMzQ1MDcsImlhdCI6MTc3NTQ0MjUwN30.-qWSRfAaHwu1oA2BPWhlCFqufDgHHQEo3g6TNzlXk3E
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+响应体数据：
+{
+  "code": {
+    "code": "0",
+    "msg": "操作成功",
+    "ok": true
+  },
+  "result": [
+    {
+      "roadSectionNo": "G0055430030",
+      "roadSectionName": "安邵高速"
+    }
+  ]
+}
+
+
+分中心门架列表（gantryInfoList）POST 数据模板:：
+GET /gateway/ai-audit-server/basicData/gantryInfoList.json?roadSectionNo=G0055430030 HTTP/1.1
+Host: twaudit.hngsetc.com
+Accept: application/json, text/plain, */*
+DNT: 1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1Y2U1NWE3ODVhN2Y0YjZhOWRlYmFkNGQwOWQzYWNhMyIsImF1ZCI6ImMzYTkyYjY5NjNkODRhM2U4MjdmM2Q3OTExOWEyN2E1IiwiaXNzIjoib2F1dGgiLCJybmQiOiJtNzQxdHQxaSIsImV4cCI6MTc3NTUyODkwNywiaWF0IjoxNzc1NDQyNTA3fQ.7WDG8fTnt2NK5h8A5O-k0gK9rxCvcP_RkJ3S5p2yFX0
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36 Edg/84.0.522.49
+Referer: http://twaudit.hngsetc.com/aiAuditWeb/index.html?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1Y2U1NWE3ODVhN2Y0YjZhOWRlYmFkNGQwOWQzYWNhMyIsImF1ZCI6ImMzYTkyYjY5NjNkODRhM2U4MjdmM2Q3OTExOWEyN2E1IiwiaXNzIjoib2F1dGgiLCJybmQiOiJtNzQxdHQxaSIsImV4cCI6MTc3NTUyODkwNywiaWF0IjoxNzc1NDQyNTA3fQ.7WDG8fTnt2NK5h8A5O-k0gK9rxCvcP_RkJ3S5p2yFX0&refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1Y2U1NWE3ODVhN2Y0YjZhOWRlYmFkNGQwOWQzYWNhMyIsImF1ZCI6ImMzYTkyYjY5NjNkODRhM2U4MjdmM2Q3OTExOWEyN2E1IiwiaXNzIjoib2F1dGgiLCJybmQiOiJxNGQzaTV5NSIsImlydCI6IjEiLCJleHAiOjE3NzgwMzQ1MDcsImlhdCI6MTc3NTQ0MjUwN30.-qWSRfAaHwu1oA2BPWhlCFqufDgHHQEo3g6TNzlXk3E
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+
+响应体数据：
+{
+  "code": {
+    "code": "0",
+    "msg": "操作成功",
+    "ok": true
+  },
+  "result": [
+    {
+      "id": "G005543003003210010",
+      "name": "清塘铺（入口）",
+      "type": "3",
+      "typeName": null,
+      "hex": "482102",
+      "lat": "28.07484800",
+      "lng": "111.75944000",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030150"
+    },
+    {
+      "id": "G005543003003220010",
+      "name": "清塘铺（出口）",
+      "type": "4",
+      "typeName": null,
+      "hex": "492102",
+      "lat": "28.07466500",
+      "lng": "111.75948500",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030150"
+    },
+    {
+      "id": "G005543003003310010",
+      "name": "伏口站-清塘铺站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "482103",
+      "lat": "27.93367000",
+      "lng": "111.79266000",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030160"
+    },
+    {
+      "id": "G005543003003320010",
+      "name": "清塘铺站-伏口站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "492103",
+      "lat": "27.93287600",
+      "lng": "111.79179600",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030160"
+    },
+    {
+      "id": "G005543003003410010",
+      "name": "伏口（入口）",
+      "type": "3",
+      "typeName": null,
+      "hex": "482104",
+      "lat": "27.91944900",
+      "lng": "111.78635600",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030160"
+    },
+    {
+      "id": "G005543003003420010",
+      "name": "伏口（出口）",
+      "type": "4",
+      "typeName": null,
+      "hex": "492104",
+      "lat": "27.91952500",
+      "lng": "111.78655100",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030160"
+    },
+    {
+      "id": "G005543003003510010",
+      "name": "龙塘站-伏口站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "482105",
+      "lat": "27.90712200",
+      "lng": "111.78725700",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030160"
+    },
+    {
+      "id": "G005543003003520010",
+      "name": "伏口站-龙塘站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "492105",
+      "lat": "27.90649900",
+      "lng": "111.78717000",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030160"
+    },
+    {
+      "id": "G005543003003610010",
+      "name": "龙塘（入口）",
+      "type": "3",
+      "typeName": null,
+      "hex": "482106",
+      "lat": "27.81956400",
+      "lng": "111.77065300",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030170"
+    },
+    {
+      "id": "G005543003003620010",
+      "name": "龙塘（出口）",
+      "type": "4",
+      "typeName": null,
+      "hex": "492106",
+      "lat": "27.81968200",
+      "lng": "111.77054100",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030170"
+    },
+    {
+      "id": "G005543003003710010",
+      "name": "龙塘互通立交-龙塘站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "482107",
+      "lat": "27.81501500",
+      "lng": "111.75957200",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030170"
+    },
+    {
+      "id": "G005543003003720010",
+      "name": "龙塘站-龙塘互通立交1",
+      "type": "0",
+      "typeName": null,
+      "hex": "492107",
+      "lat": "27.81531900",
+      "lng": "111.76015400",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030170"
+    },
+    {
+      "id": "G005543003003810010",
+      "name": "涟源东站-龙塘互通立交1",
+      "type": "0",
+      "typeName": null,
+      "hex": "482108",
+      "lat": "27.70628700",
+      "lng": "111.72010100",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030180"
+    },
+    {
+      "id": "G005543003003820010",
+      "name": "龙塘互通立交-涟源东站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "492108",
+      "lat": "27.70660400",
+      "lng": "111.71986100",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030180"
+    },
+    {
+      "id": "G005543003003910010",
+      "name": "涟源东（入口）",
+      "type": "3",
+      "typeName": null,
+      "hex": "482109",
+      "lat": "27.69642200",
+      "lng": "111.72117100",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030180"
+    },
+    {
+      "id": "G005543003003920010",
+      "name": "涟源东（出口）",
+      "type": "4",
+      "typeName": null,
+      "hex": "492109",
+      "lat": "27.69664800",
+      "lng": "111.72102300",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030180"
+    },
+    {
+      "id": "G005543003004010010",
+      "name": "涟源互通立交-涟源东站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "48210A",
+      "lat": "27.68082400",
+      "lng": "111.72486900",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030180"
+    },
+    {
+      "id": "G005543003004020010",
+      "name": "涟源东站-涟源互通立交1",
+      "type": "0",
+      "typeName": null,
+      "hex": "49210A",
+      "lat": "27.68142000",
+      "lng": "111.72494700",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030180"
+    },
+    {
+      "id": "G005543003004110010",
+      "name": "白马站-涟源互通立交1",
+      "type": "0",
+      "typeName": null,
+      "hex": "48210B",
+      "lat": "27.61010900",
+      "lng": "111.69682900",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030190"
+    },
+    {
+      "id": "G005543003004120010",
+      "name": "涟源互通立交-白马站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "49210B",
+      "lat": "27.61040000",
+      "lng": "111.69696300",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030190"
+    },
+    {
+      "id": "G005543003004210010",
+      "name": "白马（入口）",
+      "type": "3",
+      "typeName": null,
+      "hex": "48210C",
+      "lat": "27.60046200",
+      "lng": "111.68751500",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030190"
+    },
+    {
+      "id": "G005543003004220010",
+      "name": "白马（出口）",
+      "type": "4",
+      "typeName": null,
+      "hex": "49210C",
+      "lat": "27.60036700",
+      "lng": "111.68710300",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030190"
+    },
+    {
+      "id": "G005543003004310010",
+      "name": "寸石站-白马站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "48210D",
+      "lat": "27.59462100",
+      "lng": "111.67639900",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030190"
+    },
+    {
+      "id": "G005543003004320010",
+      "name": "白马站-寸石站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "49210D",
+      "lat": "27.59407000",
+      "lng": "111.67601700",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030190"
+    },
+    {
+      "id": "G005543003004410010",
+      "name": "新邵互通立交-寸石站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "48210E",
+      "lat": "27.46040700",
+      "lng": "111.56931200",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030190"
+    },
+    {
+      "id": "G005543003004420010",
+      "name": "寸石站-新邵互通立交1",
+      "type": "0",
+      "typeName": null,
+      "hex": "49210E",
+      "lat": "27.45989800",
+      "lng": "111.56921300",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030190"
+    },
+    {
+      "id": "G005543003004510010",
+      "name": "新邵西站-新邵互通立交1",
+      "type": "0",
+      "typeName": null,
+      "hex": "48210F",
+      "lat": "27.34568900",
+      "lng": "111.43583600",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030200"
+    },
+    {
+      "id": "G005543003004520010",
+      "name": "新邵互通立交-新邵西站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "49210F",
+      "lat": "27.34539500",
+      "lng": "111.43560800",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030200"
+    },
+    {
+      "id": "G005543003004610010",
+      "name": "新邵西（入口）（停用）",
+      "type": "3",
+      "typeName": null,
+      "hex": "482110",
+      "lat": "27.33553100",
+      "lng": "111.41817200",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030200"
+    },
+    {
+      "id": "G005543003004620010",
+      "name": "新邵西（出口）（停用）",
+      "type": "4",
+      "typeName": null,
+      "hex": "492110",
+      "lat": "27.33558300",
+      "lng": "111.41739500",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030200"
+    },
+    {
+      "id": "G005543003004710010",
+      "name": "邵阳西站-新邵西站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "482111",
+      "lat": "27.29942100",
+      "lng": "111.38527800",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030210"
+    },
+    {
+      "id": "G005543003004720010",
+      "name": "新邵西站-邵阳西站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "492111",
+      "lat": "27.29896800",
+      "lng": "111.38522100",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030210"
+    },
+    {
+      "id": "G005543003004810010",
+      "name": "邵阳西（入口）",
+      "type": "3",
+      "typeName": null,
+      "hex": "482112",
+      "lat": "27.28866300",
+      "lng": "111.38837800",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030210"
+    },
+    {
+      "id": "G005543003004820010",
+      "name": "邵阳西（出口）",
+      "type": "4",
+      "typeName": null,
+      "hex": "492112",
+      "lat": "27.28844000",
+      "lng": "111.38832600",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030210"
+    },
+    {
+      "id": "G005543003004910010",
+      "name": "梽木山互通立交-邵阳西站1",
+      "type": "0",
+      "typeName": null,
+      "hex": "482113",
+      "lat": "27.28306200",
+      "lng": "111.37104200",
+      "roadSectionName": null,
+      "gantryDirection": "1",
+      "gantryDirectionName": "上行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030210"
+    },
+    {
+      "id": "G005543003004920010",
+      "name": "邵阳西站-梽木山互通立交1",
+      "type": "0",
+      "typeName": null,
+      "hex": "492113",
+      "lat": "27.28224300",
+      "lng": "111.37078100",
+      "roadSectionName": null,
+      "gantryDirection": "2",
+      "gantryDirectionName": "下行",
+      "centerNo": "4303010",
+      "roadSectionNo": "G0055430030",
+      "stationNo": "G0055430030210"
+    }
+  ]
+}

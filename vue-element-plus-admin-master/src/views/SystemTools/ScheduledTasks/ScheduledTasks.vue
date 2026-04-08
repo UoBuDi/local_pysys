@@ -10,8 +10,10 @@ import {
   type DashboardStatistics,
   type TaskExecutionHistory
 } from '@/api/scheduled-tasks'
-import { ElMessage, ElSwitch, ElTag, ElCard, ElDescriptions, ElDescriptionsItem, ElButton, ElTable, ElTableColumn, ElDialog, ElForm, ElFormItem, ElInput, ElTabs, ElTabPane, ElTimeline, ElTimelineItem } from 'element-plus'
+import { syncCloudPortalDataApi, getCloudPortalDataStatusApi } from '@/api/cloud-portal-data'
+import { ElMessage, ElSwitch, ElTag, ElCard, ElDescriptions, ElDescriptionsItem, ElButton, ElTable, ElTableColumn, ElDialog, ElForm, ElFormItem, ElInput, ElTabs, ElTabPane } from 'element-plus'
 import { ContentWrap } from '@/components/ContentWrap'
+import { CloudPortalLoginDialog } from '@/components/CloudPortalLoginDialog'
 
 const tasks = ref<ScheduledTask[]>([])
 const statistics = ref<DashboardStatistics | null>(null)
@@ -26,6 +28,17 @@ const selectedTaskName = ref<string>('')
 const editForm = ref({
   cron_expression: ''
 })
+
+const loginDialogVisible = ref(false)
+const cloudPortalAccessToken = ref('')
+const pendingTask = ref<ScheduledTask | null>(null)
+const cloudPortalDataStatus = ref<{
+  has_data: boolean
+  last_update: string | null
+  total_centers: number
+  total_road_sections: number
+  total_gantries: number
+} | null>(null)
 
 const fetchTasks = async () => {
   loading.value = true
@@ -83,6 +96,12 @@ const handleToggleEnabled = async (task: ScheduledTask) => {
 }
 
 const handleRunTask = async (task: ScheduledTask) => {
+  if (task.task_name === 'cloud_portal_data_sync') {
+    pendingTask.value = task
+    await checkCloudPortalLoginAndRun()
+    return
+  }
+  
   runLoading.value = task.task_name
   try {
     ElMessage.info('正在执行任务...')
@@ -102,6 +121,57 @@ const handleRunTask = async (task: ScheduledTask) => {
     ElMessage.error('执行任务失败')
   } finally {
     runLoading.value = null
+  }
+}
+
+const checkCloudPortalLoginAndRun = () => {
+  loginDialogVisible.value = true
+}
+
+const handleLoginSuccess = async (data: { access_token: string; user_info: any }) => {
+  cloudPortalAccessToken.value = data.access_token
+  loginDialogVisible.value = false
+  await executeCloudPortalDataSync()
+}
+
+const executeCloudPortalDataSync = async () => {
+  if (!pendingTask.value) return
+  
+  runLoading.value = pendingTask.value.task_name
+  try {
+    ElMessage.info('正在同步云门户数据...')
+    
+    const res = await syncCloudPortalDataApi({
+      access_token: cloudPortalAccessToken.value
+    })
+    
+    if (res.code === 200) {
+      ElMessage.success(res.message || '数据同步成功')
+      await fetchTasks()
+      await fetchCloudPortalDataStatus()
+      if (historyDialogVisible.value) {
+        await fetchExecutionHistory(selectedTaskName.value)
+      }
+    } else {
+      ElMessage.error(res.message || '数据同步失败')
+    }
+  } catch (error) {
+    console.error('执行云门户数据同步失败:', error)
+    ElMessage.error('执行云门户数据同步失败')
+  } finally {
+    runLoading.value = null
+    pendingTask.value = null
+  }
+}
+
+const fetchCloudPortalDataStatus = async () => {
+  try {
+    const res = await getCloudPortalDataStatusApi()
+    if (res.code === 200) {
+      cloudPortalDataStatus.value = res.data
+    }
+  } catch (error) {
+    console.error('获取云门户数据状态失败:', error)
   }
 }
 
@@ -363,6 +433,13 @@ onMounted(() => {
         <ElButton type="primary" @click="fetchExecutionHistory(selectedTaskName)" :loading="historyLoading">刷新</ElButton>
       </template>
     </ElDialog>
+
+    <CloudPortalLoginDialog
+      v-model:visible="loginDialogVisible"
+      title="云门户登录 - 数据同步"
+      @success="handleLoginSuccess"
+      @cancel="pendingTask = null"
+    />
   </ContentWrap>
 </template>
 

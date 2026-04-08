@@ -1058,7 +1058,7 @@
             📋 查询参数
           </div>
           <el-descriptions :column="3" border size="small" class="query-params-desc">
-            <el-descriptions-item label="通行标识ID" class-name="pass-id-content">
+            <el-descriptions-item label="通行标识ID">
               <span style="font-weight: 500">{{ cloudPortalForm.passId || '-' }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="车牌号码">
@@ -1643,32 +1643,6 @@
         <el-button type="primary" @click="showGantryNamesDialog = false">关闭</el-button>
       </template>
     </el-dialog>
-
-    <!-- 导出进度对话框 -->
-    <el-dialog
-      v-model="exportProgressVisible"
-      title="导出进度"
-      width="500px"
-      :close-on-click-modal="false"
-      :close-on-press-escape="false"
-      :show-close="false"
-      draggable
-    >
-      <div style="padding: 20px 0">
-        <el-progress
-          :percentage="exportProgress"
-          :stroke-width="20"
-          :text-inside="true"
-          style="margin-bottom: 20px"
-        />
-        <div style="text-align: center; color: #606266; font-size: 14px">
-          {{ exportProgressText }}
-        </div>
-        <div v-if="exportTotalCount > 0" style="text-align: center; color: #909399; font-size: 12px; margin-top: 10px">
-          共 {{ exportTotalCount }} 条数据
-        </div>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -1678,13 +1652,6 @@ import * as XLSX from 'xlsx'
 import JSZip from 'jszip'
 import { XMLParser } from 'fast-xml-parser'
 import html2canvas from 'html2canvas'
-import ExcelJS from 'exceljs'
-import { saveAs } from 'file-saver'
-import {
-  processImageForExcel,
-  createPlaceholderImage,
-  isImageData
-} from '@/utils/excelImageHelper'
 import {
   ElMessage,
   ElNotification,
@@ -1708,8 +1675,7 @@ import {
   ElTag,
   ElDivider,
   ElTabs,
-  ElTabPane,
-  ElProgress
+  ElTabPane
 } from 'element-plus'
 import { CopyDocument, Picture, Search, Loading } from '@element-plus/icons-vue'
 import {
@@ -1787,11 +1753,6 @@ const displayColumns = ref<string[]>([])
 const tableLoading = ref(false)
 const matchLoading = ref(false)
 const exportLoading = ref(false)
-const exportProgress = ref(0)
-const exportProgressText = ref('')
-const exportProgressVisible = ref(false)
-const exportTotalCount = ref(0)
-const exportProcessedCount = ref(0)
 const matchResult = ref<MatchResult | null>(null)
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -2323,7 +2284,7 @@ const captchaLoading = ref(false)
 const loginLoading = ref(false)
 const cloudPortalUserInfo = ref<any>(null)
 const cloudPortalQueryResult = ref<any[]>([])
-//查询参数 查询时长
+
 const cloudPortalForm = ref({
   passId: '',
   plateNumber: '',
@@ -2334,7 +2295,7 @@ const cloudPortalForm = ref({
   username: '',
   password: '',
   captcha: '',
-  hours: 24,
+  hours: 5,
   rows: 40
 })
 
@@ -3267,13 +3228,8 @@ const handleExport = async () => {
   }
 
   exportLoading.value = true
-  exportProgress.value = 0
-  exportProgressText.value = '正在获取数据...'
-  exportProgressVisible.value = true
-  exportTotalCount.value = 0
-  exportProcessedCount.value = 0
-
   try {
+    // 调用后端API获取完整数据
     const response = await getExportSplitMatchData({
       table_name: selectedTable.value,
       filters: JSON.stringify(filters.value)
@@ -3299,205 +3255,68 @@ const handleExport = async () => {
 
     if (exportData.length === 0) {
       ElMessage.warning('没有数据可导出')
-      exportProgressVisible.value = false
       return
     }
 
+    // 如果没有获取到列名，从数据中获取
     if (headers.length === 0 && exportData.length > 0) {
       headers = Object.keys(exportData[0] || {})
     }
 
-    exportTotalCount.value = exportData.length
-    exportProgressText.value = '正在创建工作簿...'
-    exportProgress.value = 5
+    // 创建工作簿和工作表
+    const workbook = XLSX.utils.book_new()
 
-    const workbook = new ExcelJS.Workbook()
-    workbook.creator = '拆分匹配系统'
-    workbook.created = new Date()
+    // 准备数据
+    const worksheetData = [headers]
 
-    const worksheet = workbook.addWorksheet('数据', {
-      views: [{ state: 'frozen', ySplit: 1 }]
-    })
-
-    const IMAGE_COLUMNS = ['查核资料1', '查核资料2']
-    const IMAGE_WIDTH_PX = 93
-    const IMAGE_HEIGHT_PX = 50
-    const IMAGE_COL_WIDTH = 13.23
-    const IMAGE_ROW_HEIGHT = 37.42
-    const NORMAL_COL_WIDTH = 15
-
-    worksheet.columns = headers.map((header) => ({
-      header: header,
-      key: header,
-      width: IMAGE_COLUMNS.includes(header) ? IMAGE_COL_WIDTH : NORMAL_COL_WIDTH
-    }))
-
-    const headerRow = worksheet.getRow(1)
-    headerRow.height = 25
-    headerRow.eachCell((cell) => {
-      cell.font = { bold: true, size: 11 }
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFE0E0E0' }
-      }
-      cell.alignment = { horizontal: 'center', vertical: 'middle' }
-      cell.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' }
-      }
-    })
-
-    exportProgressText.value = '正在写入数据...'
-    exportProgress.value = 10
-
-    for (let rowIndex = 0; rowIndex < exportData.length; rowIndex++) {
-      const row = exportData[rowIndex]
-      const dataRow = worksheet.addRow(
-        headers.map((header) => {
-          const value = row[header]
-          if (IMAGE_COLUMNS.includes(header)) {
-            return ''
-          }
-          return value ?? ''
-        })
-      )
-
-      const hasImage = IMAGE_COLUMNS.some(
-        (col) => row[col] && typeof row[col] === 'string' && isImageData(row[col])
-      )
-      dataRow.height = hasImage ? IMAGE_ROW_HEIGHT : 20
-
-      dataRow.eachCell((cell, colNumber) => {
-        const header = headers[colNumber - 1]
-
-        const columnType = columnTypes[header]
-        if (columnType && columnType.toLowerCase() === 'varchar') {
-          cell.numFmt = '@'
+    // 添加数据行
+    exportData.forEach((row) => {
+      const rowData = headers.map((header) => {
+        const value = row[header]
+        // 处理null和undefined
+        if (value === null || value === undefined) {
+          return ''
         }
-
-        cell.alignment = {
-          horizontal: IMAGE_COLUMNS.includes(header) ? 'center' : 'left',
-          vertical: 'middle',
-          wrapText: true
-        }
-
-        cell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' }
-        }
+        return value
       })
-
-      if ((rowIndex + 1) % 50 === 0 || rowIndex === exportData.length - 1) {
-        const progress = 10 + Math.round((rowIndex / exportData.length) * 40)
-        exportProgress.value = progress
-        exportProgressText.value = `正在写入数据 ${rowIndex + 1}/${exportData.length}`
-        await new Promise((resolve) => setTimeout(resolve, 0))
-      }
-    }
-
-    exportProgressText.value = '正在处理图片...'
-    exportProgress.value = 50
-
-    let processedImages = 0
-    const totalImages = exportData.reduce((count, row) => {
-      return (
-        count +
-        IMAGE_COLUMNS.filter(
-          (col) => row[col] && typeof row[col] === 'string' && isImageData(row[col])
-        ).length
-      )
-    }, 0)
-
-    for (let rowIndex = 0; rowIndex < exportData.length; rowIndex++) {
-      const row = exportData[rowIndex]
-
-      for (const imageCol of IMAGE_COLUMNS) {
-        const colIndex = headers.indexOf(imageCol)
-        if (colIndex === -1) continue
-
-        const imageData = row[imageCol]
-        if (!imageData) continue
-
-        try {
-          const result = processImageForExcel(imageData)
-
-          if (result.success && result.data && result.extension) {
-            if (result.isWPS) {
-              const placeholderBase64 = createPlaceholderImage(
-                'WPS图片',
-                IMAGE_WIDTH_PX,
-                IMAGE_HEIGHT_PX
-              )
-              if (placeholderBase64) {
-                const imageId = workbook.addImage({
-                  base64: placeholderBase64,
-                  extension: 'png'
-                })
-
-                worksheet.addImage(imageId, {
-                  tl: { col: colIndex, row: rowIndex + 1 },
-                  br: { col: colIndex + 1, row: rowIndex + 2 },
-                  editAs: 'oneCell'
-                })
-              }
-            } else {
-              const imageId = workbook.addImage({
-                base64: result.data,
-                extension: result.extension
-              })
-
-              worksheet.addImage(imageId, {
-                tl: { col: colIndex, row: rowIndex + 1 },
-                br: { col: colIndex + 1, row: rowIndex + 2 },
-                editAs: 'oneCell'
-              })
-            }
-          }
-
-          processedImages++
-          if (processedImages % 10 === 0 || processedImages === totalImages) {
-            const progress = 50 + Math.round((processedImages / Math.max(totalImages, 1)) * 45)
-            exportProgress.value = progress
-            exportProgressText.value = `正在处理图片 ${processedImages}/${totalImages || 1}`
-            await new Promise((resolve) => setTimeout(resolve, 0))
-          }
-        } catch (error) {
-          console.error(`处理图片失败 [行${rowIndex + 2}, 列${imageCol}]:`, error)
-        }
-      }
-    }
-
-    exportProgressText.value = '正在生成Excel文件...'
-    exportProgress.value = 95
-
-    const buffer = await workbook.xlsx.writeBuffer()
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      worksheetData.push(rowData)
     })
 
-    const fileName = `${selectedTable.value}_${new Date()
-      .toISOString()
-      .slice(0, 19)
-      .replace(/[:T]/g, '-')}.xlsx`
-    saveAs(blob, fileName)
+    // 创建工作表
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData)
 
-    exportProgress.value = 100
-    exportProgressText.value = '导出完成'
+    // 为varchar类型的列设置文本格式
+    // 在Excel中，文本格式的格式代码是"@"
+    headers.forEach((header, colIndex) => {
+      const columnType = columnTypes[header]
+      if (columnType && columnType.toLowerCase() === 'varchar') {
+        // 为该列所有单元格设置文本格式
+        for (let rowIndex = 0; rowIndex <= exportData.length; rowIndex++) {
+          const cellAddress = XLSX.utils.encode_cell({ r: rowIndex, c: colIndex })
+          if (worksheet[cellAddress]) {
+            // 设置单元格格式为文本
+            worksheet[cellAddress].z = '@'
+            // 确保值被存储为字符串
+            worksheet[cellAddress].v = String(worksheet[cellAddress].v)
+          }
+        }
+      }
+    })
 
-    setTimeout(() => {
-      exportProgressVisible.value = false
-    }, 1000)
+    // 设置列宽
+    worksheet['!cols'] = headers.map(() => ({ wch: 15 }))
+
+    // 将工作表添加到工作簿
+    XLSX.utils.book_append_sheet(workbook, worksheet, '数据')
+
+    // 生成Excel文件
+    const fileName = `${selectedTable.value}_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.xlsx`
+    XLSX.writeFile(workbook, fileName)
 
     ElMessage.success(`数据导出成功，共${exportData.length}条记录`)
   } catch (error) {
     console.error('导出失败:', error)
     ElMessage.error('数据导出失败')
-    exportProgressVisible.value = false
   } finally {
     exportLoading.value = false
   }
@@ -5109,11 +4928,6 @@ onMounted(() => {
 .query-params-desc :deep(.el-descriptions__body tr td:nth-child(6)) {
   max-width: 170px;
   width: 170px;
-}
-
-.query-params-desc :deep(.pass-id-content) {
-  max-width: 280px;
-  width: 280px;
 }
 
 .card-header {

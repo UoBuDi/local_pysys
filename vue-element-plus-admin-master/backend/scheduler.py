@@ -62,6 +62,18 @@ def run_dashboard_statistics():
     
     logger.info(f"任务 {task_name} 执行完成: {result['message']}")
 
+def run_cloud_portal_data_sync_task():
+    task_name = 'cloud_portal_data_sync'
+    
+    task_config = get_task_config(task_name)
+    
+    if not task_config or task_config.get('is_enabled') != 1:
+        logger.info(f"任务 {task_name} 未启用，跳过执行")
+        return
+    
+    logger.info(f"定时任务 {task_name} 需要云门户登录Token，请通过前端手动执行")
+    update_task_status(task_name, 'skipped', '定时执行需要云门户登录Token，请手动执行')
+
 def parse_cron_expression(cron_expr: str) -> dict:
     parts = cron_expr.split()
     if len(parts) != 5:
@@ -80,13 +92,14 @@ def setup_scheduled_tasks():
     try:
         with conn.cursor() as cursor:
             cursor.execute(
-                "SELECT task_name, cron_expression, is_enabled FROM scheduled_tasks WHERE is_enabled = 1"
+                "SELECT task_name, cron_expression, is_enabled, task_type FROM scheduled_tasks WHERE is_enabled = 1"
             )
             tasks = cursor.fetchall()
             
             for task in tasks:
                 task_name = task['task_name']
                 cron_expr = task['cron_expression']
+                task_type = task.get('task_type', '')
                 
                 if not cron_expr:
                     continue
@@ -106,6 +119,17 @@ def setup_scheduled_tasks():
                         schedule.every().day.at(time_str).do(run_dashboard_statistics)
                     
                     logger.info(f"已注册定时任务: {task_name}, 执行时间: {cron_expr}")
+                elif task_name == 'cloud_portal_data_sync':
+                    minute = cron_parts['minute']
+                    hour = cron_parts['hour']
+                    
+                    if minute == '*' or hour == '*':
+                        schedule.every().day.at("03:00").do(run_cloud_portal_data_sync_task)
+                    else:
+                        time_str = f"{hour.zfill(2)}:{minute.zfill(2)}"
+                        schedule.every().day.at(time_str).do(run_cloud_portal_data_sync_task)
+                    
+                    logger.info(f"已注册定时任务: {task_name}, 执行时间: {cron_expr} (需手动执行)")
     finally:
         conn.close()
 

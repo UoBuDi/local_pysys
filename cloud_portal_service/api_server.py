@@ -300,16 +300,66 @@ def status():
                 'logged_in': True,
                 'user_info': status_data['user_info'],
                 'login_time': status_data['login_time'],
-                'expires_at': status_data['expires_at']
+                'expires_at': status_data['expires_at'],
+                'needs_relogin': status_data.get('needs_relogin', False),
+                'relogin_reason': status_data.get('relogin_reason')
             }
         }
         log_request_to_file('GET', '/api/portal/status', {'session_id': session_id}, response_data)
         return jsonify(response_data)
     else:
         add_request_log('GET', '/api/portal/status', {'session_id': session_id}, 200)
-        response_data = {'code': 200, 'message': '未登录', 'data': {'logged_in': False}}
+        response_data = {
+            'code': 200,
+            'message': '未登录',
+            'data': {
+                'logged_in': False,
+                'needs_relogin': True,
+                'relogin_reason': '会话不存在或已过期'
+            }
+        }
         log_request_to_file('GET', '/api/portal/status', {'session_id': session_id}, response_data)
         return jsonify(response_data)
+
+@app.route('/api/portal/session/check', methods=['GET'])
+def check_session_status():
+    session_manager.update_activity()
+    session_id = request.args.get('session_id')
+    
+    if not session_id:
+        add_request_log('GET', '/api/portal/session/check', None, 400)
+        response_data = {'code': 400, 'message': '缺少session_id'}
+        log_request_to_file('GET', '/api/portal/session/check', {'session_id': session_id}, response_data)
+        return jsonify(response_data), 400
+    
+    client = session_manager.get_session(session_id)
+    
+    if not client:
+        add_request_log('GET', '/api/portal/session/check', {'session_id': session_id}, 200)
+        response_data = {
+            'code': 200,
+            'data': {
+                'logged_in': False,
+                'needs_relogin': True,
+                'reason': '会话不存在或已过期'
+            }
+        }
+        log_request_to_file('GET', '/api/portal/session/check', {'session_id': session_id}, response_data)
+        return jsonify(response_data)
+    
+    status = client.get_status()
+    add_request_log('GET', '/api/portal/session/check', {'session_id': session_id}, 200)
+    response_data = {
+        'code': 200,
+        'data': {
+            'logged_in': status['logged_in'],
+            'needs_relogin': status.get('needs_relogin', False),
+            'reason': status.get('relogin_reason'),
+            'user_info': status['user_info']
+        }
+    }
+    log_request_to_file('GET', '/api/portal/session/check', {'session_id': session_id}, response_data)
+    return jsonify(response_data)
 
 @app.route('/api/portal/logout', methods=['POST'])
 def logout():
@@ -1241,6 +1291,152 @@ def ai_audit_select_images():
         add_request_log('POST', '/api/portal/ai-audit/select-images', None, 500)
         response_data = {'code': 500, 'message': str(e)}
         log_request_to_file('POST', '/api/portal/ai-audit/select-images', data, response_data)
+        return jsonify(response_data), 500
+
+@app.route('/api/portal/ai-audit/branch-centers', methods=['POST'])
+def ai_audit_branch_centers():
+    session_manager.update_activity()
+    data = request.json or {}
+    
+    session_id = data.get('session_id')
+    
+    client = session_manager.get_session(session_id) if session_id else None
+    
+    if not client or not client.is_logged_in():
+        add_request_log('POST', '/api/portal/ai-audit/branch-centers', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '未登录或会话已过期'}
+        log_request_to_file('POST', '/api/portal/ai-audit/branch-centers', data, response_data)
+        return jsonify(response_data), 401
+    
+    try:
+        ai_client = AIAuditClient(client.access_token)
+        result = ai_client.get_branch_centers()
+        
+        if result['success']:
+            add_request_log('POST', '/api/portal/ai-audit/branch-centers', {'session_id': session_id}, 200)
+            response_data = {
+                'code': 200,
+                'message': 'success',
+                'data': result['data']
+            }
+            log_request_to_file('POST', '/api/portal/ai-audit/branch-centers', data, response_data)
+            return jsonify(response_data)
+        else:
+            add_request_log('POST', '/api/portal/ai-audit/branch-centers', {'session_id': session_id}, 500)
+            response_data = {'code': 500, 'message': result['error']}
+            log_request_to_file('POST', '/api/portal/ai-audit/branch-centers', data, response_data)
+            return jsonify(response_data), 500
+    except Exception as e:
+        logger.error(f"获取分中心列表失败: {e}")
+        add_request_log('POST', '/api/portal/ai-audit/branch-centers', {'session_id': session_id}, 500)
+        response_data = {'code': 500, 'message': str(e)}
+        log_request_to_file('POST', '/api/portal/ai-audit/branch-centers', data, response_data)
+        return jsonify(response_data), 500
+
+@app.route('/api/portal/ai-audit/road-sections', methods=['POST'])
+def ai_audit_road_sections():
+    session_manager.update_activity()
+    data = request.json
+    
+    if not data:
+        add_request_log('POST', '/api/portal/ai-audit/road-sections', None, 400)
+        response_data = {'code': 400, 'message': '请求体不能为空'}
+        log_request_to_file('POST', '/api/portal/ai-audit/road-sections', data, response_data)
+        return jsonify(response_data), 400
+    
+    session_id = data.get('session_id')
+    center_no = data.get('center_no')
+    
+    if not center_no:
+        add_request_log('POST', '/api/portal/ai-audit/road-sections', {'session_id': session_id}, 400)
+        response_data = {'code': 400, 'message': '缺少分中心编号'}
+        log_request_to_file('POST', '/api/portal/ai-audit/road-sections', data, response_data)
+        return jsonify(response_data), 400
+    
+    client = session_manager.get_session(session_id) if session_id else None
+    
+    if not client or not client.is_logged_in():
+        add_request_log('POST', '/api/portal/ai-audit/road-sections', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '未登录或会话已过期'}
+        log_request_to_file('POST', '/api/portal/ai-audit/road-sections', data, response_data)
+        return jsonify(response_data), 401
+    
+    try:
+        ai_client = AIAuditClient(client.access_token)
+        result = ai_client.get_road_sections(center_no)
+        
+        if result['success']:
+            add_request_log('POST', '/api/portal/ai-audit/road-sections', {'session_id': session_id, 'center_no': center_no}, 200)
+            response_data = {
+                'code': 200,
+                'message': 'success',
+                'data': result['data']
+            }
+            log_request_to_file('POST', '/api/portal/ai-audit/road-sections', data, response_data)
+            return jsonify(response_data)
+        else:
+            add_request_log('POST', '/api/portal/ai-audit/road-sections', {'session_id': session_id, 'center_no': center_no}, 500)
+            response_data = {'code': 500, 'message': result['error']}
+            log_request_to_file('POST', '/api/portal/ai-audit/road-sections', data, response_data)
+            return jsonify(response_data), 500
+    except Exception as e:
+        logger.error(f"获取路段列表失败: {e}")
+        add_request_log('POST', '/api/portal/ai-audit/road-sections', {'session_id': session_id, 'center_no': center_no}, 500)
+        response_data = {'code': 500, 'message': str(e)}
+        log_request_to_file('POST', '/api/portal/ai-audit/road-sections', data, response_data)
+        return jsonify(response_data), 500
+
+@app.route('/api/portal/ai-audit/gantry-list', methods=['POST'])
+def ai_audit_gantry_list():
+    session_manager.update_activity()
+    data = request.json
+    
+    if not data:
+        add_request_log('POST', '/api/portal/ai-audit/gantry-list', None, 400)
+        response_data = {'code': 400, 'message': '请求体不能为空'}
+        log_request_to_file('POST', '/api/portal/ai-audit/gantry-list', data, response_data)
+        return jsonify(response_data), 400
+    
+    session_id = data.get('session_id')
+    road_section_no = data.get('road_section_no')
+    
+    if not road_section_no:
+        add_request_log('POST', '/api/portal/ai-audit/gantry-list', {'session_id': session_id}, 400)
+        response_data = {'code': 400, 'message': '缺少路段编号'}
+        log_request_to_file('POST', '/api/portal/ai-audit/gantry-list', data, response_data)
+        return jsonify(response_data), 400
+    
+    client = session_manager.get_session(session_id) if session_id else None
+    
+    if not client or not client.is_logged_in():
+        add_request_log('POST', '/api/portal/ai-audit/gantry-list', {'session_id': session_id}, 401)
+        response_data = {'code': 401, 'message': '未登录或会话已过期'}
+        log_request_to_file('POST', '/api/portal/ai-audit/gantry-list', data, response_data)
+        return jsonify(response_data), 401
+    
+    try:
+        ai_client = AIAuditClient(client.access_token)
+        result = ai_client.get_gantry_list(road_section_no)
+        
+        if result['success']:
+            add_request_log('POST', '/api/portal/ai-audit/gantry-list', {'session_id': session_id, 'road_section_no': road_section_no}, 200)
+            response_data = {
+                'code': 200,
+                'message': 'success',
+                'data': result['data']
+            }
+            log_request_to_file('POST', '/api/portal/ai-audit/gantry-list', data, response_data)
+            return jsonify(response_data)
+        else:
+            add_request_log('POST', '/api/portal/ai-audit/gantry-list', {'session_id': session_id, 'road_section_no': road_section_no}, 500)
+            response_data = {'code': 500, 'message': result['error']}
+            log_request_to_file('POST', '/api/portal/ai-audit/gantry-list', data, response_data)
+            return jsonify(response_data), 500
+    except Exception as e:
+        logger.error(f"获取门架列表失败: {e}")
+        add_request_log('POST', '/api/portal/ai-audit/gantry-list', {'session_id': session_id, 'road_section_no': road_section_no}, 500)
+        response_data = {'code': 500, 'message': str(e)}
+        log_request_to_file('POST', '/api/portal/ai-audit/gantry-list', data, response_data)
         return jsonify(response_data), 500
 
 @app.errorhandler(404)
