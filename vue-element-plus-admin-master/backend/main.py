@@ -53,14 +53,7 @@ def decrypt_password(encrypted_password: str) -> str:
         logger.debug(f"密码解密失败: {e}")
         return ''
 
-# 从models导入所有数据模型
-from models import (
-    DepartmentCreateRequest, DepartmentUpdateRequest,
-    UserCreateRequest, UserUpdateRequest,
-    RoleCreateRequest, RoleUpdateRequest,
-    MenuCreateRequest, MenuUpdateRequest,
-    AssignRoleRequest, AssignMenuRequest
-)
+
 
 # 配置日志
 from logging.handlers import RotatingFileHandler
