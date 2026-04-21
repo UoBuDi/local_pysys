@@ -93,11 +93,7 @@ onMounted(() => {
 
 <template>
   <div class="cloud-portal-account">
-    <ElAlert
-      type="info"
-      :closable="false"
-      style="margin-bottom: 20px"
-    >
+    <ElAlert type="info" :closable="false" style="margin-bottom: 20px">
       绑定云门户账号后，在进行云门户人工核查时可自动填充账号密码，无需手动输入
     </ElAlert>
 
@@ -134,12 +130,7 @@ onMounted(() => {
         <ElButton type="primary" :loading="loading" @click="handleSubmit">
           {{ accountInfo ? '更新绑定' : '绑定账号' }}
         </ElButton>
-        <ElButton
-          v-if="accountInfo"
-          type="danger"
-          :loading="deleteLoading"
-          @click="handleDelete"
-        >
+        <ElButton v-if="accountInfo" type="danger" :loading="deleteLoading" @click="handleDelete">
           解除绑定
         </ElButton>
       </ElFormItem>

@@ -1,11 +1,10 @@
 import requests
 import json
 import logging
-import base64
 from typing import Dict, Optional, Any, List
 from datetime import datetime, timedelta
 from network_utils import create_portal_session
-from config import config
+from config import config, Timeouts
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +71,7 @@ class AIAuditClient:
                 url,
                 headers=self._get_headers(),
                 json=payload,
-                timeout=30
+                timeout=Timeouts.QUERY
             )
             response.raise_for_status()
             
@@ -100,6 +99,62 @@ class AIAuditClient:
             return {'success': False, 'error': '无法连接到AI稽核服务器', 'data': None}
         except Exception as e:
             logger.error(f"车辆图库查询失败: {e}")
+            return {'success': False, 'error': str(e), 'data': None}
+    
+    def query_gantry_images(
+        self,
+        station_id: str,
+        start_time: str,
+        end_time: str,
+        rows: int = 20,
+        start: int = 0,
+        sort: str = "picTime DESC"
+    ) -> Dict[str, Any]:
+        url = f"{self.AI_AUDIT_BASE_URL}/gateway/ai-audit-server/ExternalAudit/travelTrack.json"
+        
+        payload = {
+            "vehPlateColor": "",
+            "rows": rows,
+            "start": start,
+            "sort": sort,
+            "stationId": station_id,
+            "startTime": start_time,
+            "endTime": end_time
+        }
+        
+        try:
+            response = self.session.post(
+                url,
+                headers=self._get_headers(),
+                json=payload,
+                timeout=Timeouts.QUERY
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            if result.get('code', {}).get('ok'):
+                return {
+                    'success': True,
+                    'data': result.get('result', {}),
+                    'total': result.get('result', {}).get('total', 0),
+                    'images': result.get('result', {}).get('picBeanList', []),
+                    'page': start,
+                    'page_size': rows
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': result.get('code', {}).get('msg', '查询失败'),
+                    'data': None
+                }
+        except requests.exceptions.Timeout:
+            logger.error("门架图库查询超时")
+            return {'success': False, 'error': '查询超时', 'data': None}
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"门架图库查询连接失败: {e}")
+            return {'success': False, 'error': '无法连接到AI稽核服务器', 'data': None}
+        except Exception as e:
+            logger.error(f"门架图库查询失败: {e}")
             return {'success': False, 'error': str(e), 'data': None}
     
     def query_gantry_trade(
@@ -130,7 +185,7 @@ class AIAuditClient:
                 url,
                 headers=self._get_headers(),
                 json=payload,
-                timeout=30
+                timeout=Timeouts.QUERY
             )
             response.raise_for_status()
             
@@ -186,7 +241,7 @@ class AIAuditClient:
                 url,
                 headers=self._get_headers(),
                 json=payload,
-                timeout=30
+                timeout=Timeouts.QUERY
             )
             response.raise_for_status()
             
@@ -248,7 +303,7 @@ class AIAuditClient:
                 url,
                 headers=self._get_headers(),
                 json=payload,
-                timeout=30
+                timeout=Timeouts.QUERY
             )
             response.raise_for_status()
             
@@ -299,7 +354,7 @@ class AIAuditClient:
                 url,
                 headers=self._get_headers(),
                 json=payload,
-                timeout=30
+                timeout=Timeouts.QUERY
             )
             response.raise_for_status()
             
@@ -369,7 +424,7 @@ class AIAuditClient:
                 url,
                 headers=self._get_headers(),
                 json=payload,
-                timeout=30
+                timeout=Timeouts.QUERY
             )
             response.raise_for_status()
             
@@ -511,126 +566,3 @@ class AIAuditClient:
                 selected['last_gantry'] = image
         
         return selected
-    
-    @staticmethod
-    def extract_image_base64(image_data: Dict) -> Optional[str]:
-        big_positive_pic = image_data.get('bigPositivePic', '')
-        if big_positive_pic and big_positive_pic.startswith('data:image'):
-            parts = big_positive_pic.split(',', 1)
-            if len(parts) > 1:
-                return parts[1]
-        elif big_positive_pic:
-            return big_positive_pic
-        return None
-    
-    def get_branch_centers(self) -> Dict[str, Any]:
-        url = f"{self.AI_AUDIT_BASE_URL}/gateway/ai-audit-server/basicData/orobranchcenterList.json"
-        
-        try:
-            response = self.session.get(
-                url,
-                headers=self._get_headers(),
-                timeout=30
-            )
-            response.raise_for_status()
-            
-            result = response.json()
-            if result.get('code', {}).get('ok'):
-                centers = result.get('result', [])
-                logger.info(f"成功获取分中心列表，共 {len(centers)} 个分中心")
-                return {
-                    'success': True,
-                    'data': centers
-                }
-            else:
-                error_msg = result.get('code', {}).get('msg', '未知错误')
-                logger.error(f"获取分中心列表失败: {error_msg}")
-                return {
-                    'success': False,
-                    'error': error_msg
-                }
-        except requests.exceptions.Timeout:
-            logger.error("获取分中心列表超时")
-            return {'success': False, 'error': '请求超时'}
-        except requests.exceptions.ConnectionError as e:
-            logger.error(f"获取分中心列表连接失败: {e}")
-            return {'success': False, 'error': '无法连接到AI稽核服务器'}
-        except Exception as e:
-            logger.error(f"获取分中心列表失败: {e}")
-            return {'success': False, 'error': str(e)}
-    
-    def get_road_sections(self, center_no: str) -> Dict[str, Any]:
-        url = f"{self.AI_AUDIT_BASE_URL}/gateway/ai-audit-server/basicData/roadSectionList.json"
-        params = {'centerNo': center_no}
-        
-        try:
-            response = self.session.get(
-                url,
-                headers=self._get_headers(),
-                params=params,
-                timeout=30
-            )
-            response.raise_for_status()
-            
-            result = response.json()
-            if result.get('code', {}).get('ok'):
-                sections = result.get('result', [])
-                logger.info(f"成功获取分中心 {center_no} 的路段列表，共 {len(sections)} 个路段")
-                return {
-                    'success': True,
-                    'data': sections
-                }
-            else:
-                error_msg = result.get('code', {}).get('msg', '未知错误')
-                logger.error(f"获取路段列表失败: {error_msg}")
-                return {
-                    'success': False,
-                    'error': error_msg
-                }
-        except requests.exceptions.Timeout:
-            logger.error(f"获取分中心 {center_no} 路段列表超时")
-            return {'success': False, 'error': '请求超时'}
-        except requests.exceptions.ConnectionError as e:
-            logger.error(f"获取路段列表连接失败: {e}")
-            return {'success': False, 'error': '无法连接到AI稽核服务器'}
-        except Exception as e:
-            logger.error(f"获取路段列表失败: {e}")
-            return {'success': False, 'error': str(e)}
-    
-    def get_gantry_list(self, road_section_no: str) -> Dict[str, Any]:
-        url = f"{self.AI_AUDIT_BASE_URL}/gateway/ai-audit-server/basicData/gantryInfoList.json"
-        params = {'roadSectionNo': road_section_no}
-        
-        try:
-            response = self.session.get(
-                url,
-                headers=self._get_headers(),
-                params=params,
-                timeout=30
-            )
-            response.raise_for_status()
-            
-            result = response.json()
-            if result.get('code', {}).get('ok'):
-                gantries = result.get('result', [])
-                logger.info(f"成功获取路段 {road_section_no} 的门架列表，共 {len(gantries)} 个门架")
-                return {
-                    'success': True,
-                    'data': gantries
-                }
-            else:
-                error_msg = result.get('code', {}).get('msg', '未知错误')
-                logger.error(f"获取门架列表失败: {error_msg}")
-                return {
-                    'success': False,
-                    'error': error_msg
-                }
-        except requests.exceptions.Timeout:
-            logger.error(f"获取路段 {road_section_no} 门架列表超时")
-            return {'success': False, 'error': '请求超时'}
-        except requests.exceptions.ConnectionError as e:
-            logger.error(f"获取门架列表连接失败: {e}")
-            return {'success': False, 'error': '无法连接到AI稽核服务器'}
-        except Exception as e:
-            logger.error(f"获取门架列表失败: {e}")
-            return {'success': False, 'error': str(e)}

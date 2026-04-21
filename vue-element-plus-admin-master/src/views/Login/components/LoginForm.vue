@@ -70,7 +70,7 @@ const schema = reactive<FormSchema[]>([
       style: {
         width: '100%'
       },
-      placeholder: '请输入密码', 
+      placeholder: '请输入密码',
       // 按下enter键触发登录
       onKeydown: (_e: any) => {
         if (_e.key === 'Enter') {
@@ -312,9 +312,12 @@ const signIn = async () => {
               }
             }
           }
-          
+
           console.log('登录成功，跳转到首页:', firstMenuPath)
-          console.log('可用的路由:', permissionStore.getAddRouters?.map(r => r.path))
+          console.log(
+            '可用的路由:',
+            permissionStore.getAddRouters?.map((r) => r.path)
+          )
 
           // 跳转到指定页面或智能找到的首页
           await nextTick()

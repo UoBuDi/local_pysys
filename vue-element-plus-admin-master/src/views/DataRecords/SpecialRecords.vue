@@ -50,7 +50,7 @@
                 </div>
               </div>
             </template>
-            
+
             <div class="filter-section">
               <el-form :inline="true" :model="noTruckFilter" class="filter-form">
                 <el-form-item label="日期">
@@ -63,7 +63,7 @@
                     style="width: 150px"
                   />
                 </el-form-item>
-                
+
                 <el-form-item label="收费出口">
                   <el-select
                     v-model="noTruckFilter.exitStation"
@@ -79,7 +79,7 @@
                     />
                   </el-select>
                 </el-form-item>
-                
+
                 <el-form-item label="收费入口">
                   <el-select
                     v-model="noTruckFilter.entryStation"
@@ -101,7 +101,7 @@
                     />
                   </el-select>
                 </el-form-item>
-                
+
                 <el-form-item label="车道号">
                   <el-select
                     v-model="noTruckFilter.laneNumber"
@@ -120,7 +120,7 @@
                     />
                   </el-select>
                 </el-form-item>
-                
+
                 <el-form-item label="交易时间">
                   <el-time-picker
                     v-model="noTruckFilter.transactionTime"
@@ -130,7 +130,7 @@
                     style="width: 150px"
                   />
                 </el-form-item>
-                
+
                 <el-form-item label="车牌">
                   <el-input
                     v-model="noTruckFilter.licensePlate"
@@ -139,7 +139,7 @@
                     style="width: 180px"
                   />
                 </el-form-item>
-                
+
                 <el-form-item label="无卡操作原因">
                   <el-input
                     v-model="noTruckFilter.noCardReason"
@@ -148,7 +148,7 @@
                     style="width: 400px"
                   />
                 </el-form-item>
-                
+
                 <el-form-item label="备注">
                   <el-input
                     v-model="noTruckFilter.remark"
@@ -157,7 +157,7 @@
                     style="width: 280px"
                   />
                 </el-form-item>
-                
+
                 <el-form-item>
                   <el-button type="primary" @click="handleAddNoTruck">
                     <el-icon><Plus /></el-icon>
@@ -170,7 +170,7 @@
                 </el-form-item>
               </el-form>
             </div>
-            
+
             <el-table
               ref="tableRef"
               :data="noTruckTableData"
@@ -181,23 +181,9 @@
               v-loading="tableLoading"
               @selection-change="handleSelectionChange"
             >
-              <el-table-column
-                type="selection"
-                width="55"
-                align="center"
-              />
-              <el-table-column
-                type="index"
-                label="序号"
-                width="60"
-                align="center"
-              />
-              <el-table-column
-                prop="date"
-                label="日期"
-                width="120"
-                align="center"
-              />
+              <el-table-column type="selection" width="55" align="center" />
+              <el-table-column type="index" label="序号" width="60" align="center" />
+              <el-table-column prop="date" label="日期" width="120" align="center" />
               <el-table-column
                 prop="exit_station_display"
                 label="收费出口"
@@ -210,42 +196,17 @@
                 width="120"
                 align="center"
               />
-              <el-table-column
-                prop="lane_number"
-                label="车道号"
-                width="100"
-                align="center"
-              />
+              <el-table-column prop="lane_number" label="车道号" width="100" align="center" />
               <el-table-column
                 prop="transaction_time"
                 label="交易时间"
                 width="120"
                 align="center"
               />
-              <el-table-column
-                prop="license_plate"
-                label="车牌"
-                width="120"
-                align="center"
-              />
-              <el-table-column
-                prop="reason"
-                label="无卡操作原因"
-                min-width="150"
-                align="center"
-              />
-              <el-table-column
-                prop="remark"
-                label="备注"
-                min-width="150"
-                align="center"
-              />
-              <el-table-column
-                label="操作"
-                width="150"
-                align="center"
-                fixed="right"
-              >
+              <el-table-column prop="license_plate" label="车牌" width="120" align="center" />
+              <el-table-column prop="reason" label="无卡操作原因" min-width="150" align="center" />
+              <el-table-column prop="remark" label="备注" min-width="150" align="center" />
+              <el-table-column label="操作" width="150" align="center" fixed="right">
                 <template #default="{ row }">
                   <el-button type="primary" link @click="handleEdit(row)">
                     <el-icon><Edit /></el-icon>
@@ -258,7 +219,7 @@
                 </template>
               </el-table-column>
             </el-table>
-            
+
             <div class="batch-actions" v-if="selectedRows.length > 0">
               <el-button type="danger" @click="handleBatchDelete">
                 批量删除 ({{ selectedRows.length }})
@@ -267,7 +228,7 @@
                 批量导出 ({{ selectedRows.length }})
               </el-button>
             </div>
-            
+
             <el-pagination
               v-model:current-page="noTruckPagination.currentPage"
               v-model:page-size="noTruckPagination.pageSize"
@@ -282,7 +243,7 @@
         </div>
       </el-tab-pane>
     </el-tabs>
-    
+
     <el-dialog
       v-model="editDialogVisible"
       :title="editForm.id ? '编辑记录' : '新增记录'"
@@ -457,9 +418,9 @@ const editForm = reactive({
 const loadStations = async (keyword: string = '') => {
   try {
     stationLoading.value = true
-    const res = await request.get({ 
-      url: '/api/stations/', 
-      params: { keyword, limit: 50 } 
+    const res = await request.get({
+      url: '/api/stations/',
+      params: { keyword, limit: 50 }
     })
     if (res.code === 200 && res.data) {
       entryStationOptions.value = res.data
@@ -510,7 +471,7 @@ const handleAddNoTruck = async () => {
     ElMessage.warning('请输入车牌')
     return
   }
-  
+
   try {
     const res = await request.post({
       url: '/api/special-records/',
@@ -526,7 +487,7 @@ const handleAddNoTruck = async () => {
         remark: noTruckFilter.remark
       }
     })
-    
+
     if (res.code === 200) {
       ElMessage.success('添加成功')
       handleResetFilter()
@@ -565,9 +526,9 @@ const handleEdit = async (row: NoTruckRecord) => {
   editForm.license_plate = row.license_plate
   editForm.reason = row.reason
   editForm.remark = row.remark
-  
+
   if (row.entry_station && row.entry_station_name) {
-    const exists = entryStationOptions.value.find(item => item.value === row.entry_station)
+    const exists = entryStationOptions.value.find((item) => item.value === row.entry_station)
     if (!exists) {
       entryStationOptions.value.push({
         value: row.entry_station,
@@ -575,7 +536,7 @@ const handleEdit = async (row: NoTruckRecord) => {
       })
     }
   }
-  
+
   editDialogVisible.value = true
 }
 
@@ -588,7 +549,7 @@ const handleSaveEdit = async () => {
     ElMessage.warning('请输入车牌')
     return
   }
-  
+
   try {
     const res = await request.put({
       url: `/api/special-records/${editForm.id}`,
@@ -604,7 +565,7 @@ const handleSaveEdit = async () => {
         remark: editForm.remark
       }
     })
-    
+
     if (res.code === 200) {
       ElMessage.success('保存成功')
       editDialogVisible.value = false
@@ -625,9 +586,9 @@ const handleDelete = async (row: NoTruckRecord) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     const res = await request.delete({ url: `/api/special-records/${row.id}` })
-    
+
     if (res.code === 200) {
       ElMessage.success('删除成功')
       loadNoTruckRecords()
@@ -649,13 +610,13 @@ const handleBatchDelete = async () => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
-    const ids = selectedRows.value.map(row => row.id)
+
+    const ids = selectedRows.value.map((row) => row.id)
     const res = await request.post({
       url: '/api/special-records/batch-delete',
       data: { ids }
     })
-    
+
     if (res.code === 200) {
       ElMessage.success('批量删除成功')
       loadNoTruckRecords()
@@ -677,16 +638,18 @@ const handleExport = async () => {
       params: { record_type: 'no-truck' },
       responseType: 'blob'
     })
-    
+
     const blobData = res.data || res
-    const blob = new Blob([blobData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const blob = new Blob([blobData], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     link.download = `无卡车记录_${new Date().toISOString().slice(0, 10)}.xlsx`
     link.click()
     window.URL.revokeObjectURL(url)
-    
+
     ElMessage.success('导出成功')
   } catch (error) {
     console.error('导出失败:', error)
@@ -696,22 +659,24 @@ const handleExport = async () => {
 
 const handleBatchExport = async () => {
   try {
-    const ids = selectedRows.value.map(row => row.id)
+    const ids = selectedRows.value.map((row) => row.id)
     const res = await request.post({
       url: '/api/special-records/export/',
       data: { ids, record_type: 'no-truck' },
       responseType: 'blob'
     })
-    
+
     const blobData = res.data || res
-    const blob = new Blob([blobData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const blob = new Blob([blobData], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     link.download = `无卡车记录_选中${selectedRows.value.length}条_${new Date().toISOString().slice(0, 10)}.xlsx`
     link.click()
     window.URL.revokeObjectURL(url)
-    
+
     ElMessage.success('导出成功')
   } catch (error) {
     console.error('导出失败:', error)
@@ -723,7 +688,7 @@ const handleImport = async (file: File) => {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('record_type', 'no-truck')
-  
+
   try {
     tableLoading.value = true
     const res = await request.post({
@@ -731,7 +696,7 @@ const handleImport = async (file: File) => {
       data: formData,
       headers: { 'Content-Type': 'multipart/form-data' }
     })
-    
+
     if (res.code === 200) {
       ElMessage.success(`导入成功，共导入 ${res.data.count} 条记录`)
       loadNoTruckRecords()
@@ -744,7 +709,7 @@ const handleImport = async (file: File) => {
   } finally {
     tableLoading.value = false
   }
-  
+
   return false
 }
 
@@ -781,27 +746,27 @@ onMounted(() => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      
+
       .header-actions {
         display: flex;
         align-items: center;
       }
     }
-    
+
     .filter-section {
       margin-bottom: 20px;
-      
+
       .filter-form {
         display: flex;
         flex-wrap: wrap;
-        
+
         .el-form-item {
           margin-bottom: 10px;
           margin-right: 10px;
         }
       }
     }
-    
+
     .batch-actions {
       margin-top: 10px;
       padding: 10px;

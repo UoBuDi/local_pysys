@@ -109,9 +109,7 @@ export const createPlaceholderImage = (
   return matches ? matches[1] : ''
 }
 
-export const extractWPSImagesFromXlsx = async (
-  file: File
-): Promise<Map<string, string>> => {
+export const extractWPSImagesFromXlsx = async (file: File): Promise<Map<string, string>> => {
   const imageMap = new Map<string, string>()
 
   try {

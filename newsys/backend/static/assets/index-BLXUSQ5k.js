@@ -1,1 +1,0 @@
-import{r as s}from"./index-CGdH4FM6.js";const t=()=>s.get({url:"/api/roles/"}),i=e=>e.id?s.put({url:`/api/roles/${e.id}`,data:e}):s.post({url:"/api/roles/",data:e}),p=e=>{const r=e.map(o=>s.delete({url:`/api/roles/${o}`}));return Promise.all(r)},u=e=>s.post({url:"/api/role-menus/",data:e}),n=e=>s.get({url:`/api/roles/${e}/menus`});export{t as a,u as b,p as d,n as g,i as s};

@@ -209,7 +209,38 @@ export const cloudPortalLogin = (data: {
   })
 }
 
-export const cloudPortalQuery = (data: { session_id: string; query_params: Record<string, unknown> }) => {
+export interface AutoLoginResult {
+  user_info?: {
+    id?: number
+    username?: string
+    real_name?: string
+    [key: string]: unknown
+  }
+}
+
+export interface AutoLoginResponse {
+  session_id?: string
+  img?: string
+  uuid?: string
+  need_captcha?: boolean
+}
+
+export const cloudPortalAutoLogin = (data: {
+  username: string
+  password: string
+  session_id?: string
+}) => {
+  return request.post<ApiResponse<AutoLoginResult | AutoLoginResponse>>({
+    url: '/api/cloud-portal/auto-login',
+    data,
+    timeout: 60000
+  })
+}
+
+export const cloudPortalQuery = (data: {
+  session_id: string
+  query_params: Record<string, unknown>
+}) => {
   return request.post<ApiResponse<Record<string, unknown>[]>>({
     url: '/api/cloud-portal/query',
     data,
@@ -259,6 +290,17 @@ export interface AIAuditVehicleImage {
   vehPlate: string
   vehPlateColor: string
   stationType: string
+  picId: string
+}
+
+export interface AIAuditGantryImage {
+  picTime: string
+  vehPlate: string
+  stationName: string
+  stationId: string
+  picturePath: string
+  bigPositivePic: string
+  vehPlateColor: string
   picId: string
 }
 
@@ -446,6 +488,22 @@ export const aiAuditVehicleImages = (data: {
   })
 }
 
+export const aiAuditGantryImages = (data: {
+  session_id: string
+  station_id: string
+  start_time: string
+  end_time: string
+  rows?: number
+  start?: number
+  sort?: string
+}) => {
+  return request.post<ApiResponse<{ total: number; images: AIAuditGantryImage[] }>>({
+    url: '/api/cloud-portal/ai-audit/gantry-images',
+    data,
+    timeout: 60000
+  })
+}
+
 export const aiAuditGantryTrade = (data: {
   session_id: string
   query_value: string
@@ -533,30 +591,26 @@ export const aiAuditSaveImages = (data: {
   })
 }
 
-export const aiAuditOriginalImage = (data: {
-  session_id: string
-  picture_path: string
-}) => {
+export const aiAuditOriginalImage = (data: { session_id: string; picture_path: string }) => {
   return request.post<ApiResponse<{ image: string }>>({
     url: '/api/cloud-portal/ai-audit/original-image',
     data
   })
 }
 
-export const fetchPicture = (data: {
-  session_id: string
-  picture_url: string
-}) => {
-  return request.post<ApiResponse<{
-    image?: string
-    data_url?: string
-    referer?: string
-    response_status?: number
-    response_content_type?: string
-    response_content_length?: number
-    response_headers?: Record<string, string>
-    response_body?: string
-  }>>({
+export const fetchPicture = (data: { session_id: string; picture_url: string }) => {
+  return request.post<
+    ApiResponse<{
+      image?: string
+      data_url?: string
+      referer?: string
+      response_status?: number
+      response_content_type?: string
+      response_content_length?: number
+      response_headers?: Record<string, string>
+      response_body?: string
+    }>
+  >({
     url: '/api/cloud-portal/fetch-picture',
     data
   })
@@ -577,7 +631,10 @@ export const getCloudPortalAccount = () => {
   })
 }
 
-export const saveCloudPortalAccount = (data: { portal_username: string; portal_password: string }) => {
+export const saveCloudPortalAccount = (data: {
+  portal_username: string
+  portal_password: string
+}) => {
   return request.post<ApiResponse<null>>({
     url: '/api/cloud-portal-account/',
     data
@@ -591,7 +648,13 @@ export const deleteCloudPortalAccount = () => {
 }
 
 export const getCloudPortalCredentials = () => {
-  return request.get<ApiResponse<{ portal_username: string; portal_password: string; portal_session_id: string } | null>>({
+  return request.get<
+    ApiResponse<{
+      portal_username: string
+      portal_password: string
+      portal_session_id: string
+    } | null>
+  >({
     url: '/api/cloud-portal-account/credentials'
   })
 }

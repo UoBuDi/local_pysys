@@ -2,46 +2,51 @@ import socket
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-import urllib3.util.connection
 import logging
+from typing import Optional, List
 
 logger = logging.getLogger(__name__)
 
-_original_create_connection = None
-_current_source_ip = None
 
-def _patched_create_connection(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, source_address=None, socket_options=None):
-    global _current_source_ip
+class SourceAddressAdapter(HTTPAdapter):
+    """
+    源地址适配器 - 为每个Session独立绑定源IP地址
+    解决全局状态污染问题，支持多会话并发
+    """
     
-    if _current_source_ip:
-        source_address = (_current_source_ip, 0)
+    def __init__(self, source_address: Optional[str] = None, *args, **kwargs):
+        self.source_address = (source_address, 0) if source_address else None
+        super().__init__(*args, **kwargs)
     
-    return _original_create_connection(
-        address,
-        timeout=timeout,
-        source_address=source_address,
-        socket_options=socket_options
-    )
+    def init_poolmanager(self, *args, **kwargs):
+        if self.source_address:
+            kwargs['source_address'] = self.source_address
+        return super().init_poolmanager(*args, **kwargs)
+    
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        if self.source_address:
+            proxy_kwargs['source_address'] = self.source_address
+        return super().proxy_manager_for(proxy, **proxy_kwargs)
 
-def patch_create_connection(source_ip):
-    global _original_create_connection, _current_source_ip
-    
-    if _original_create_connection is None:
-        _original_create_connection = urllib3.util.connection.create_connection
-    
-    _current_source_ip = source_ip
-    urllib3.util.connection.create_connection = _patched_create_connection
-    logger.info(f"已绑定网络请求源地址: {source_ip}")
 
-def restore_create_connection():
-    global _original_create_connection, _current_source_ip
-    
-    if _original_create_connection is not None:
-        urllib3.util.connection.create_connection = _original_create_connection
-        _current_source_ip = None
-        logger.info("已恢复默认网络配置")
+class DefaultAdapter(HTTPAdapter):
+    """
+    默认适配器 - 不绑定源IP，使用系统默认路由
+    """
+    pass
 
-def create_portal_session(source_ip=None, retries=3):
+
+def create_portal_session(source_ip: Optional[str] = None, retries: int = 3) -> requests.Session:
+    """
+    创建Portal会话
+    
+    Args:
+        source_ip: 可选的源IP地址，用于绑定网络请求
+        retries: 重试次数
+        
+    Returns:
+        配置好的requests.Session对象
+    """
     session = requests.Session()
     
     retry_strategy = Retry(
@@ -51,7 +56,13 @@ def create_portal_session(source_ip=None, retries=3):
         allowed_methods=["HEAD", "GET", "OPTIONS", "POST"]
     )
     
-    adapter = HTTPAdapter(max_retries=retry_strategy)
+    if source_ip:
+        adapter = SourceAddressAdapter(source_ip, max_retries=retry_strategy)
+        logger.info(f"创建会话并绑定源IP: {source_ip}")
+    else:
+        adapter = DefaultAdapter(max_retries=retry_strategy)
+        logger.info("创建会话使用默认路由")
+    
     session.mount("http://", adapter)
     session.mount("https://", adapter)
     
@@ -63,12 +74,16 @@ def create_portal_session(source_ip=None, retries=3):
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
     })
     
-    if source_ip:
-        patch_create_connection(source_ip)
-    
     return session
 
-def get_local_ips():
+
+def get_local_ips() -> List[str]:
+    """
+    获取本机所有非回环IP地址
+    
+    Returns:
+        IP地址列表
+    """
     local_ips = []
     try:
         hostname = socket.gethostname()
@@ -78,11 +93,44 @@ def get_local_ips():
         logger.error(f"获取本地IP失败: {e}")
     return local_ips
 
-def check_network_connectivity(target_url, source_ip=None, timeout=5):
+
+def validate_source_ip(source_ip: Optional[str]) -> bool:
+    """
+    验证源IP地址是否可用
+    
+    Args:
+        source_ip: 要验证的IP地址
+        
+    Returns:
+        IP地址是否在本机可用IP列表中
+    """
+    if not source_ip:
+        return False
+    local_ips = get_local_ips()
+    is_valid = source_ip in local_ips
+    if not is_valid:
+        logger.warning(f"源IP {source_ip} 不在可用IP列表中: {local_ips}")
+    return is_valid
+
+
+def check_network_connectivity(target_url: str, source_ip: Optional[str] = None, timeout: int = 5) -> bool:
+    """
+    检查网络连通性
+    
+    Args:
+        target_url: 目标URL
+        source_ip: 可选的源IP地址
+        timeout: 超时时间（秒）
+        
+    Returns:
+        网络是否连通
+    """
     try:
         session = create_portal_session(source_ip)
         response = session.get(target_url, timeout=timeout)
-        return response.status_code == 200 or response.status_code < 500
+        is_connected = response.status_code == 200 or response.status_code < 500
+        logger.info(f"网络连通性检查 - URL: {target_url}, 源IP: {source_ip or '默认'}, 状态: {'成功' if is_connected else '失败'}")
+        return is_connected
     except Exception as e:
         logger.error(f"网络连通性检查失败: {e}")
         return False

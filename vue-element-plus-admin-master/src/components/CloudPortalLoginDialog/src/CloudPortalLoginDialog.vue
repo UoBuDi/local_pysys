@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ElDialog, ElForm, ElFormItem, ElInput, ElButton, ElImage, ElMessage } from 'element-plus'
-import { 
-  getCloudPortalCaptcha, 
-  cloudPortalLogin, 
+import {
+  getCloudPortalCaptcha,
+  cloudPortalLogin,
+  cloudPortalAutoLogin,
   getCloudPortalCredentials,
   getCloudPortalStatus,
   updateCloudPortalSession
@@ -40,12 +41,18 @@ const loginForm = ref({
   captcha: ''
 })
 
-watch(() => props.visible, (val) => {
-  dialogVisible.value = val
-  if (val) {
-    loadAccountInfo()
+const needManualCaptcha = ref(false)
+
+watch(
+  () => props.visible,
+  (val) => {
+    dialogVisible.value = val
+    if (val) {
+      needManualCaptcha.value = false
+      loadAccountInfo()
+    }
   }
-})
+)
 
 watch(dialogVisible, (val) => {
   emit('update:visible', val)
@@ -60,7 +67,7 @@ const loadAccountInfo = async () => {
       loginForm.value.username = credentials.portal_username || ''
       loginForm.value.password = credentials.portal_password || ''
       sessionId.value = credentials.portal_session_id || ''
-      
+
       if (sessionId.value) {
         const statusRes = await getCloudPortalStatus(sessionId.value)
         if (statusRes && statusRes.code === 200 && (statusRes.data as any)?.logged_in) {
@@ -73,11 +80,8 @@ const loadAccountInfo = async () => {
         }
       }
     }
-    
-    await refreshCaptcha()
   } catch (e) {
     console.error('获取账号信息失败:', e)
-    await refreshCaptcha()
   } finally {
     checkingSession.value = false
   }
@@ -86,26 +90,26 @@ const loadAccountInfo = async () => {
 const refreshCaptcha = async (retryCount = 0) => {
   const MAX_RETRIES = 3
   const RETRY_DELAY = 1000
-  
+
   if (retryCount === 0) {
     captchaLoading.value = true
   }
-  
+
   try {
     const response = await getCloudPortalCaptcha(sessionId.value || undefined)
-    
+
     if (response && response.code === 200) {
       captchaImage.value = (response.data as any).img
       captchaUuid.value = (response.data as any).uuid
       sessionId.value = (response.data as any).session_id
-      
+
       if (retryCount > 0) {
         ElMessage.success('连接已恢复，验证码获取成功')
       }
     } else {
       if (retryCount < MAX_RETRIES) {
         ElMessage.warning(`验证码获取失败，正在重试 (${retryCount + 1}/${MAX_RETRIES})...`)
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
         return refreshCaptcha(retryCount + 1)
       } else {
         ElMessage.error({
@@ -118,7 +122,7 @@ const refreshCaptcha = async (retryCount = 0) => {
   } catch (error: any) {
     if (retryCount < MAX_RETRIES) {
       ElMessage.warning(`网络异常，正在重试 (${retryCount + 1}/${MAX_RETRIES})...`)
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
       return refreshCaptcha(retryCount + 1)
     } else {
       ElMessage.error({
@@ -135,13 +139,61 @@ const refreshCaptcha = async (retryCount = 0) => {
 }
 
 const handleLogin = async () => {
-  if (!loginForm.value.username || !loginForm.value.password || !loginForm.value.captcha) {
-    ElMessage.warning('请填写完整的登录信息')
+  if (!loginForm.value.username || !loginForm.value.password) {
+    ElMessage.warning('请填写用户名和密码')
+    return
+  }
+
+  if (needManualCaptcha.value && !loginForm.value.captcha) {
+    ElMessage.warning('请填写验证码')
     return
   }
 
   loading.value = true
   try {
+    if (!needManualCaptcha.value) {
+      const autoResponse = await cloudPortalAutoLogin({
+        username: loginForm.value.username,
+        password: loginForm.value.password,
+        session_id: sessionId.value || undefined
+      })
+
+      if (autoResponse && autoResponse.code === 200) {
+        ElMessage.success('登录成功')
+
+        const data = autoResponse.data as any
+        if (data.session_id) {
+          sessionId.value = data.session_id
+        }
+
+        try {
+          await updateCloudPortalSession(sessionId.value)
+        } catch (e) {
+          console.error('保存会话ID失败:', e)
+        }
+
+        emit('success', {
+          access_token: data.access_token || '',
+          user_info: data.user_info
+        })
+        dialogVisible.value = false
+        return
+      } else if (autoResponse && autoResponse.code === 201) {
+        needManualCaptcha.value = true
+        const data = autoResponse.data as any
+        captchaImage.value = data.img
+        captchaUuid.value = data.uuid
+        sessionId.value = data.session_id
+        ElMessage.warning(autoResponse.message || '验证码识别失败，请手动输入')
+        return
+      } else {
+        needManualCaptcha.value = true
+        await refreshCaptcha()
+        ElMessage.error(autoResponse?.message || '自动登录失败，请手动输入验证码')
+        return
+      }
+    }
+
     const response = await cloudPortalLogin({
       session_id: sessionId.value,
       username: loginForm.value.username,
@@ -152,13 +204,13 @@ const handleLogin = async () => {
 
     if (response && response.code === 200) {
       ElMessage.success('登录成功')
-      
+
       try {
         await updateCloudPortalSession(sessionId.value)
       } catch (e) {
         console.error('保存会话ID失败:', e)
       }
-      
+
       emit('success', {
         access_token: (response.data as any)?.access_token || '',
         user_info: (response.data as any)?.user_info
@@ -199,16 +251,12 @@ const handleKeydown = (e: KeyboardEvent) => {
     destroy-on-close
     @keydown="handleKeydown"
   >
-    <div v-if="checkingSession" style="text-align: center; padding: 20px; color: #909399;">
+    <div v-if="checkingSession" style="text-align: center; padding: 20px; color: #909399">
       正在检查登录状态...
     </div>
     <ElForm v-else :model="loginForm" label-width="80px" @submit.prevent>
       <ElFormItem label="用户名">
-        <ElInput
-          v-model="loginForm.username"
-          placeholder="请输入云门户用户名"
-          clearable
-        />
+        <ElInput v-model="loginForm.username" placeholder="请输入云门户用户名" clearable />
       </ElFormItem>
       <ElFormItem label="密码">
         <ElInput
@@ -219,31 +267,57 @@ const handleKeydown = (e: KeyboardEvent) => {
           clearable
         />
       </ElFormItem>
-      <ElFormItem label="验证码">
-        <div style="display: flex; gap: 8px; align-items: center;">
+      <ElFormItem label="验证码" v-if="needManualCaptcha">
+        <div style="display: flex; gap: 8px; align-items: center">
           <ElInput
             v-model="loginForm.captcha"
             placeholder="请输入验证码"
-            style="flex: 1;"
+            style="flex: 1"
             clearable
           />
           <div
-            style="width: 120px; height: 32px; cursor: pointer; border: 1px solid #dcdfe6; border-radius: 4px; overflow: hidden;"
+            style="
+              width: 120px;
+              height: 32px;
+              cursor: pointer;
+              border: 1px solid #dcdfe6;
+              border-radius: 4px;
+              overflow: hidden;
+            "
             @click="() => refreshCaptcha()"
           >
             <ElImage
               v-if="captchaImage"
               :src="'data:image/jpeg;base64,' + captchaImage"
               fit="fill"
-              style="width: 100%; height: 100%;"
+              style="width: 100%; height: 100%"
             >
               <template #error>
-                <div style="display: flex; justify-content: center; align-items: center; height: 100%; color: #909399; font-size: 12px;">
+                <div
+                  style="
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100%;
+                    color: #909399;
+                    font-size: 12px;
+                  "
+                >
                   加载失败
                 </div>
               </template>
             </ElImage>
-            <div v-else style="display: flex; justify-content: center; align-items: center; height: 100%; color: #909399; font-size: 12px;">
+            <div
+              v-else
+              style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100%;
+                color: #909399;
+                font-size: 12px;
+              "
+            >
               {{ captchaLoading ? '加载中...' : '点击获取' }}
             </div>
           </div>
@@ -251,10 +325,15 @@ const handleKeydown = (e: KeyboardEvent) => {
       </ElFormItem>
     </ElForm>
     <template #footer>
-      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <div style="display: flex; justify-content: flex-end; gap: 8px">
         <ElButton @click="handleCancel">取消</ElButton>
-        <ElButton type="primary" :loading="loading" @click="handleLogin" :disabled="checkingSession">
-          登录
+        <ElButton
+          type="primary"
+          :loading="loading"
+          @click="handleLogin"
+          :disabled="checkingSession"
+        >
+          {{ needManualCaptcha ? '手动登录' : '登录' }}
         </ElButton>
       </div>
     </template>

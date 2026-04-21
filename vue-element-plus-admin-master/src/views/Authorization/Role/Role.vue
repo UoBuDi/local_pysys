@@ -1,6 +1,15 @@
 <script setup lang="tsx">
 import { reactive, ref, unref, watch, computed } from 'vue'
-import { getRoleListApi, saveRoleApi, deleteRoleApi, assignRoleMenusApi, getRoleMenusApi, getPermissionListApi, assignRolePermissionsApi, getRolePermissionsApi } from '@/api/role'
+import {
+  getRoleListApi,
+  saveRoleApi,
+  deleteRoleApi,
+  assignRoleMenusApi,
+  getRoleMenusApi,
+  getPermissionListApi,
+  assignRolePermissionsApi,
+  getRolePermissionsApi
+} from '@/api/role'
 import { useTable } from '@/hooks/web/useTable'
 import { useI18n } from '@/hooks/web/useI18n'
 import { Table, TableColumn } from '@/components/Table'
@@ -531,7 +540,11 @@ const savePermissions = async () => {
     <div v-loading="permissionLoading">
       <!-- 全选复选框 -->
       <div class="permission-select-all mb-20px">
-        <el-checkbox v-model="permissionSelectAll" :indeterminate="permissionIsIndeterminate" @change="handlePermissionSelectAll">
+        <el-checkbox
+          v-model="permissionSelectAll"
+          :indeterminate="permissionIsIndeterminate"
+          @change="handlePermissionSelectAll"
+        >
           全选
         </el-checkbox>
       </div>
@@ -584,7 +597,7 @@ const savePermissions = async () => {
 
 .permission-module {
   margin-bottom: 20px;
-  
+
   &:last-child {
     margin-bottom: 0;
   }
@@ -612,16 +625,16 @@ const savePermissions = async () => {
   padding: 4px 8px;
   border-radius: 4px;
   transition: background-color 0.2s;
-  
+
   &:hover {
     background-color: #f5f7fa;
   }
-  
+
   .permission-name {
     font-size: 14px;
     color: #606266;
   }
-  
+
   .permission-code {
     font-size: 12px;
     color: #909399;

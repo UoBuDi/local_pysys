@@ -34,7 +34,9 @@ hiddenimports = [
     'portal_client',
     'session_manager',
     'network_utils',
-    'config'
+    'config',
+    'result_types',
+    'ai_audit_client'
 ]
 
 hiddenimports.extend(collect_submodules('urllib3'))

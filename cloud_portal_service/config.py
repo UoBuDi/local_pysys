@@ -2,7 +2,7 @@ import json
 import os
 import sys
 
-VERSION = "1.75"
+VERSION = "1.78"
 
 def get_base_path():
     if getattr(sys, 'frozen', False) or '__compiled__' in globals():
@@ -36,6 +36,31 @@ DEFAULT_CONFIG = {
         "port": 8000
     }
 }
+
+class Timeouts:
+    CAPTCHA = 30
+    LOGIN = 60
+    USER_INFO = 30
+    QUERY = 30
+    REFRESH_TOKEN = 30
+    HEARTBEAT = 10
+
+class Limits:
+    REQUEST_LOG_SIZE = 100
+    REQUEST_INFO_SIZE = 50
+    IDLE_THRESHOLD = 300
+    ALERT_THRESHOLD = 3
+    MAX_RETRY_COUNT = 3
+    RETRY_INTERVAL = 5
+    RETRY_BACKOFF = 2
+    CAPTCHA_TTL = 300
+    CAPTCHA_RATE_LIMIT = 10
+    CAPTCHA_RATE_PERIOD = 60
+
+class Intervals:
+    HEARTBEAT_MIN = 50
+    HEARTBEAT_MAX = 70
+    CLEANUP = 60
 
 class Config:
     _instance = None

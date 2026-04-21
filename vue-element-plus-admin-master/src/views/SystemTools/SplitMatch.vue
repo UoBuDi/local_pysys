@@ -164,7 +164,10 @@
           <el-table-column prop="复核情况" label="复核情况" min-width="100" />
           <el-table-column prop="备注" label="备注" min-width="160">
             <template #default="{ row }">
-              <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis" :title="row['备注'] || ''">
+              <div
+                style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+                :title="row['备注'] || ''"
+              >
                 {{ row['备注'] || '-' }}
               </div>
             </template>
@@ -1054,7 +1057,16 @@
       <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch">
         <!-- 查询参数 -->
         <div style="flex: 1; min-height: 140px; overflow: hidden">
-          <div style="font-size: 12px; font-weight: 500; color: #303133; margin-bottom: 6px; padding-bottom: 3px; border-bottom: 1px solid #e4e7ed">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              color: #303133;
+              margin-bottom: 6px;
+              padding-bottom: 3px;
+              border-bottom: 1px solid #e4e7ed;
+            "
+          >
             📋 查询参数
           </div>
           <el-descriptions :column="3" border size="small" class="query-params-desc">
@@ -1062,7 +1074,9 @@
               <span style="font-weight: 500">{{ cloudPortalForm.passId || '-' }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="车牌号码">
-              <span style="font-weight: 500; color: #409EFF">{{ cloudPortalForm.plateNumber || '-' }}</span>
+              <span style="font-weight: 500; color: #409eff">{{
+                cloudPortalForm.plateNumber || '-'
+              }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="门架通行时间">
               <span style="font-weight: 500">{{ cloudPortalForm.gateTime || '-' }}</span>
@@ -1071,24 +1085,45 @@
               <span style="font-weight: 500">{{ cloudPortalForm.entryTime || '-' }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="收费入口名称">
-              <span style="font-weight: 500; color: #67C23A">{{ cloudPortalForm.entryStationName || '-' }}</span>
+              <span style="font-weight: 500; color: #67c23a">{{
+                cloudPortalForm.entryStationName || '-'
+              }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="查询时长">
               <div style="display: flex; align-items: center; gap: 8px">
-                <el-input-number v-model="cloudPortalForm.hours" :min="1" :max="72" size="small" style="width: 90px" />
+                <el-input-number
+                  v-model="cloudPortalForm.hours"
+                  :min="1"
+                  :max="72"
+                  size="small"
+                  style="width: 90px"
+                />
                 <span>小时</span>
               </div>
             </el-descriptions-item>
             <el-descriptions-item label="图库条数">
               <div style="display: flex; align-items: center; gap: 8px">
-                <el-input-number v-model="cloudPortalForm.rows" :min="10" :max="100" :step="10" size="small" style="width: 90px" />
+                <el-input-number
+                  v-model="cloudPortalForm.rows"
+                  :min="10"
+                  :max="100"
+                  :step="10"
+                  size="small"
+                  style="width: 90px"
+                />
                 <span>条</span>
               </div>
             </el-descriptions-item>
             <el-descriptions-item label="通行门架名称" :span="3">
-              <div 
+              <div
                 v-if="cloudPortalForm.gantryNamesCombined"
-                style="cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
+                style="
+                  cursor: pointer;
+                  max-width: 100%;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
+                "
                 @click="showGantryNamesDialog = true"
                 title="点击查看完整内容"
               >
@@ -1099,10 +1134,19 @@
             </el-descriptions-item>
           </el-descriptions>
         </div>
-        
+
         <!-- 信息填写 -->
         <div style="flex: 1; min-height: 140px; overflow: hidden">
-          <div style="font-size: 12px; font-weight: 500; color: #303133; margin-bottom: 6px; padding-bottom: 3px; border-bottom: 1px solid #e4e7ed">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              color: #303133;
+              margin-bottom: 6px;
+              padding-bottom: 3px;
+              border-bottom: 1px solid #e4e7ed;
+            "
+          >
             📝 信息填写
           </div>
           <div class="info-fill-card-compact">
@@ -1110,7 +1154,13 @@
               <el-col :span="12">
                 <div class="form-item-card-compact">
                   <div class="form-item-label-compact">复核情况</div>
-                  <el-select v-model="aiAuditReviewStatus" placeholder="请选择" style="width: 100%" clearable size="small">
+                  <el-select
+                    v-model="aiAuditReviewStatus"
+                    placeholder="请选择"
+                    style="width: 100%"
+                    clearable
+                    size="small"
+                  >
                     <el-option label="拆分正常" value="拆分正常" />
                     <el-option label="拆分异常" value="拆分异常" />
                     <el-option label="待删除" value="待删除" />
@@ -1120,7 +1170,15 @@
               <el-col :span="12">
                 <div class="form-item-card-compact">
                   <div class="form-item-label-compact">核查拆分</div>
-                  <el-select v-model="aiAuditCheckSplit" placeholder="请选择" style="width: 100%" filterable allow-create clearable size="small">
+                  <el-select
+                    v-model="aiAuditCheckSplit"
+                    placeholder="请选择"
+                    style="width: 100%"
+                    filterable
+                    allow-create
+                    clearable
+                    size="small"
+                  >
                     <el-option label="已拆" value="已拆" />
                     <el-option label="未拆" value="未拆" />
                   </el-select>
@@ -1130,10 +1188,26 @@
             <el-row :gutter="8" style="margin-top: 6px">
               <el-col :span="12">
                 <div class="form-item-card-compact">
-                  <div class="form-item-label-compact">核查通行标识 <el-tag size="small" type="info">可核查</el-tag></div>
+                  <div class="form-item-label-compact"
+                    >核查通行标识 <el-tag size="small" type="info">可核查</el-tag></div
+                  >
                   <div style="display: flex; gap: 6px">
-                    <el-input v-model="aiAuditCheckPassId" placeholder="请输入" style="flex: 1" clearable size="small" />
-                    <el-button type="success" :icon="Search" @click="handleVerifyPassId(aiAuditCheckPassId, '核查通行标识')" :loading="verifyLoading" :disabled="!aiAuditCheckPassId" size="small">核查</el-button>
+                    <el-input
+                      v-model="aiAuditCheckPassId"
+                      placeholder="请输入"
+                      style="flex: 1"
+                      clearable
+                      size="small"
+                    />
+                    <el-button
+                      type="success"
+                      :icon="Search"
+                      @click="handleVerifyPassId(aiAuditCheckPassId, '核查通行标识')"
+                      :loading="verifyLoading"
+                      :disabled="!aiAuditCheckPassId"
+                      size="small"
+                      >核查</el-button
+                    >
                   </div>
                 </div>
               </el-col>
@@ -1170,22 +1244,47 @@
             </el-row>
           </div>
         </div>
-        
+
         <!-- 云门户登录 -->
         <div style="width: 280px; flex-shrink: 0">
-          <div style="font-size: 12px; font-weight: 500; color: #303133; margin-bottom: 6px; padding-bottom: 3px; border-bottom: 1px solid #e4e7ed">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              color: #303133;
+              margin-bottom: 6px;
+              padding-bottom: 3px;
+              border-bottom: 1px solid #e4e7ed;
+            "
+          >
             🔐 云门户登录
           </div>
-          <div style="border: 1px solid #e4e7ed; border-radius: 4px; padding: 6px; background: #fafafa">
+          <div
+            style="border: 1px solid #e4e7ed; border-radius: 4px; padding: 6px; background: #fafafa"
+          >
             <!-- 未登录状态 -->
             <div v-if="!cloudPortalLoggedIn">
-              <div style="margin-bottom: 6px">
+              <div v-if="needManualCaptcha" style="margin-bottom: 6px">
                 <div style="font-size: 12px; color: #606266; margin-bottom: 4px">验证码</div>
                 <div style="display: flex; align-items: center; gap: 6px">
-                  <el-input v-model="cloudPortalForm.captcha" placeholder="请输入验证码" size="small" style="width: 90px" maxlength="4" />
-                  <div 
+                  <el-input
+                    v-model="cloudPortalForm.captcha"
+                    placeholder="请输入验证码"
+                    size="small"
+                    style="width: 90px"
+                    maxlength="4"
+                  />
+                  <div
                     v-if="captchaImage"
-                    style="width: 95px; height: 30px; border-radius: 4px; overflow: hidden; border: 1px solid #dcdfe6; cursor: pointer; transition: all 0.2s ease"
+                    style="
+                      width: 95px;
+                      height: 30px;
+                      border-radius: 4px;
+                      overflow: hidden;
+                      border: 1px solid #dcdfe6;
+                      cursor: pointer;
+                      transition: all 0.2s ease;
+                    "
                     @click="refreshCaptcha"
                     title="点击刷新验证码"
                   >
@@ -1194,21 +1293,34 @@
                       style="width: 100%; height: 100%; object-fit: cover; display: block"
                     />
                   </div>
-                  <div v-else style="width: 95px; height: 30px; border: 1px dashed #dcdfe6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #909399">
+                  <div
+                    v-else
+                    style="
+                      width: 95px;
+                      height: 30px;
+                      border: 1px dashed #dcdfe6;
+                      border-radius: 4px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 11px;
+                      color: #909399;
+                    "
+                  >
                     加载中...
                   </div>
                 </div>
               </div>
 
-              <el-button 
-                type="primary" 
-                @click="handleCloudPortalLogin" 
+              <el-button
+                type="primary"
+                @click="handleCloudPortalLogin"
                 :loading="loginLoading"
                 :disabled="!cloudPortalForm.username"
                 size="small"
                 style="width: 100%"
               >
-                登录
+                {{ needManualCaptcha ? '手动登录' : '登录' }}
               </el-button>
             </div>
 
@@ -1218,15 +1330,28 @@
                 {{ cloudPortalUserInfo?.real_name || cloudPortalForm.username }}
               </el-alert>
               <div style="display: flex; justify-content: center; margin-bottom: 6px">
-                <el-button @click="handleCloudPortalLogout" size="small" style="width: 172px; height: 35px">退出登录</el-button>
+                <el-button
+                  @click="handleCloudPortalLogout"
+                  size="small"
+                  style="width: 172px; height: 35px"
+                  >退出登录</el-button
+                >
               </div>
               <div style="display: flex; justify-content: center">
-                <el-button 
-                  type="primary" 
-                  @click="executeAIAuditBatchQuery" 
+                <el-button
+                  type="primary"
+                  @click="executeAIAuditBatchQuery"
                   :loading="aiAuditLoading"
                   size="small"
-                  style="width: 172px; height: 35px; background: linear-gradient(135deg, #409EFF 0%, #67C23A 100%); border: none; font-weight: 500; box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3); transition: all 0.3s ease"
+                  style="
+                    width: 172px;
+                    height: 35px;
+                    background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
+                    border: none;
+                    font-weight: 500;
+                    box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
+                    transition: all 0.3s ease;
+                  "
                 >
                   🔍 AI稽核批量查询
                 </el-button>
@@ -1235,7 +1360,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 主内容区域 -->
       <div style="display: flex; gap: 8px">
         <!-- 左侧：AI稽核查询结果 -->
@@ -1244,350 +1369,889 @@
             <!-- AI稽核查询结果 -->
             <div v-if="aiAuditResult" style="max-height: 55vh; overflow-y: auto">
               <el-tabs v-model="aiAuditActiveTab">
-            <el-tab-pane label="车辆图库" name="vehicle_images">
-              <div v-if="aiAuditResult.vehicle_images?.success">
-                <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center">
-                  <span>共 {{ filteredVehicleImagesTotal }} 张图片</span>
-                  <div style="display: flex; gap: 10px; align-items: center">
-                    <span style="font-size: 12px">排序：</span>
-                    <el-radio-group v-model="vehicleImagesSort" size="small" @change="handleVehicleImagesSortChange">
-                      <el-radio-button value="picTime DESC">时间降序</el-radio-button>
-                      <el-radio-button value="picTime ASC">时间升序</el-radio-button>
-                    </el-radio-group>
-                  </div>
-                </div>
-                <div v-if="previewLoading" style="margin-bottom: 10px; padding: 8px; background: #fdf6ec; border-radius: 4px; display: flex; align-items: center; gap: 10px">
-                  <el-icon class="is-loading" style="color: #e6a23c"><Loading /></el-icon>
-                  <span style="color: #e6a23c; font-size: 13px">{{ previewLoadingText }}</span>
-                </div>
-                <div v-loading="vehicleImagesLoading" style="display: flex; flex-wrap: wrap; gap: 10px; max-height: 300px; overflow-y: auto">
-                  <div
-                    v-for="(img, idx) in filteredVehicleImages"
-                    :key="idx"
-                    :style="isStationMatched(img.stationId) ? 'width: 200px; border: 2px solid #409EFF; border-radius: 4px; padding: 5px; background: #ecf5ff' : 'width: 200px; border: 1px solid #ddd; border-radius: 4px; padding: 5px'"
-                  >
-                    <el-image
-                      :src="getImageSrc(img.bigPositivePic)"
-                      style="width: 100%; height: 120px"
-                      fit="contain"
-                      :preview-src-list="previewImageList"
-                      @click="handleImagePreview(img)"
-                    />
-                    <div style="font-size: 12px; margin-top: 5px">
-                      <div :style="isStationMatched(img.stationId) ? 'font-weight: bold; color: #409EFF' : ''">{{ img.stationName }}</div>
-                      <div>{{ img.picTime }}</div>
-                      <div style="margin-top: 5px">
-                        <el-button size="small" :loading="originalImageLoading === `image1-${img.picturePath}`" @click="selectImageForCheck(img, 'image1')">选为资料1</el-button>
-                        <el-button size="small" :loading="originalImageLoading === `image2-${img.picturePath}`" @click="selectImageForCheck(img, 'image2')">选为资料2</el-button>
+                <el-tab-pane label="车辆图库" name="vehicle_images">
+                  <div v-if="aiAuditResult.vehicle_images?.success">
+                    <div
+                      style="
+                        margin-bottom: 10px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                      "
+                    >
+                      <span>共 {{ filteredVehicleImagesTotal }} 张图片</span>
+                      <div style="display: flex; gap: 10px; align-items: center">
+                        <span style="font-size: 12px">排序：</span>
+                        <el-radio-group
+                          v-model="vehicleImagesSort"
+                          size="small"
+                          @change="handleVehicleImagesSortChange"
+                        >
+                          <el-radio-button value="picTime DESC">时间降序</el-radio-button>
+                          <el-radio-button value="picTime ASC">时间升序</el-radio-button>
+                        </el-radio-group>
                       </div>
                     </div>
-                  </div>
-                </div>
-                <div style="margin-top: 15px; display: flex; justify-content: center; gap: 20px; align-items: center">
-                  <el-button :disabled="vehicleImagesPage === 0" size="small" @click="handlePrevPage">上一页</el-button>
-                  <span style="font-size: 12px">第 {{ vehicleImagesPage + 1 }} 页 / 共 {{ totalPages }} 页 ({{ filteredVehicleImagesTotal }} 张图片)</span>
-                  <el-button :disabled="vehicleImagesPage >= maxPage" size="small" @click="handleNextPage">下一页</el-button>
-                </div>
-              </div>
-              <el-alert v-else type="error" :closable="false">
-                {{ aiAuditResult.vehicle_images?.error || '查询失败' }}
-              </el-alert>
-            </el-tab-pane>
-
-            <el-tab-pane label="门架交易" name="gantry_trade">
-              <div v-if="aiAuditResult.gantry_trade?.success">
-                <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center">
-                  <div style="display: flex; align-items: center; gap: 15px">
-                    <span>共 {{ filteredGantryTradeRecords.length }} 条记录</span>
-                    <el-checkbox v-model="excludeSpecialType186" size="small">排除特情186</el-checkbox>
-                  </div>
-                  <div style="display: flex; gap: 10px">
-                    <el-button size="small" type="primary" @click="captureTable('gantry_trade', 'image1')">截图到资料1</el-button>
-                    <el-button size="small" type="success" @click="captureTable('gantry_trade', 'image2')">截图到资料2</el-button>
-                  </div>
-                </div>
-                <el-table ref="gantryTradeTableRef" :data="filteredGantryTradeRecords" border max-height="450" size="small" stripe :row-class-name="getGantryTradeRowClass">
-                  <el-table-column prop="vehiclePlate" label="车牌号" width="120" show-overflow-tooltip />
-                  <el-table-column prop="vehiclePlateColorName" label="颜色" width="85" show-overflow-tooltip />
-                  <el-table-column prop="passId" label="通行标识ID" width="330" show-overflow-tooltip />
-                  <el-table-column prop="gantryName" label="门架名称" width="260" show-overflow-tooltip>
-                    <template #default="{ row }">
-                      <span :style="isGantryMatched(row.gantryId) ? 'font-weight: bold; color: #409EFF' : ''">{{ row.gantryName }}</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="transTime" label="经过时间" width="160" show-overflow-tooltip>
-                    <template #default="{ row }">
-                      <span :style="isGateTimeMatched(row.transTime) ? 'font-weight: bold; color: #409EFF' : ''">{{ row.transTime }}</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="gantryOrderNumName" label="门架顺序号" show-overflow-tooltip />
-                  <el-table-column prop="enVehicleTypeName" label="入口车型" show-overflow-tooltip />
-                  <el-table-column prop="feeVehicleTypeName" label="计费车型" show-overflow-tooltip />
-                  <el-table-column prop="mediaTypeName" label="介质类型" show-overflow-tooltip />
-                  <el-table-column prop="tradeStatusName" label="交易状态" show-overflow-tooltip />
-                  <el-table-column prop="receivableFee" label="应收金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.receivableFee || row.fee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="actualFee" label="实收金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.actualFee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="specialTypeName" label="特情" show-overflow-tooltip />
-                </el-table>
-              </div>
-              <el-alert v-else type="error" :closable="false">
-                {{ aiAuditResult.gantry_trade?.error || '查询失败' }}
-              </el-alert>
-            </el-tab-pane>
-
-            <el-tab-pane label="门架牌识" name="gantry_plate">
-              <div v-if="aiAuditResult.gantry_plate?.success">
-                <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center">
-                  <span>共 {{ aiAuditResult.gantry_plate.total }} 条记录</span>
-                  <div style="display: flex; gap: 10px">
-                    <el-button size="small" type="primary" @click="captureTable('gantry_plate', 'image1')">截图到资料1</el-button>
-                    <el-button size="small" type="success" @click="captureTable('gantry_plate', 'image2')">截图到资料2</el-button>
-                  </div>
-                </div>
-                <el-table ref="gantryPlateTableRef" :data="aiAuditResult.gantry_plate.records" border max-height="450" size="small" stripe :row-class-name="getGantryPlateRowClass">
-                  <el-table-column prop="vehiclePlate" label="车牌号" width="120" show-overflow-tooltip />
-                  <el-table-column prop="picId" label="牌识流水" width="300" show-overflow-tooltip />
-                  <el-table-column prop="gantryName" label="门架名称" show-overflow-tooltip>
-                    <template #default="{ row }">
-                      <span :style="isGantryMatched(row.gantryId) ? 'font-weight: bold; color: #409EFF' : ''">{{ row.gantryName }}</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="gantryOrderNumName" label="门架顺序号" show-overflow-tooltip />
-                  <el-table-column prop="picTime" label="经过时间" show-overflow-tooltip />
-                  <el-table-column prop="vehicleTypeName" label="车型" show-overflow-tooltip />
-                  <el-table-column prop="cameraId" label="相机编号" show-overflow-tooltip />
-                </el-table>
-              </div>
-              <el-alert v-else type="error" :closable="false">
-                {{ aiAuditResult.gantry_plate?.error || '查询失败' }}
-              </el-alert>
-            </el-tab-pane>
-
-            <el-tab-pane label="出口交易(ETC)" name="exit_trade_etc">
-              <div v-if="aiAuditResult.exit_trade_etc?.success">
-                <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center">
-                  <span>共 {{ aiAuditResult.exit_trade_etc.total }} 条记录</span>
-                  <div style="display: flex; gap: 10px">
-                    <el-button size="small" type="primary" @click="captureTable('exit_trade_etc', 'image1')">截图到资料1</el-button>
-                    <el-button size="small" type="success" @click="captureTable('exit_trade_etc', 'image2')">截图到资料2</el-button>
-                  </div>
-                </div>
-                <el-table ref="exitTradeEtcTableRef" :data="aiAuditResult.exit_trade_etc.records" border max-height="300" size="small" stripe :row-class-name="getExitTradeRowClass">
-                  <el-table-column prop="passid" label="流水编号" width="400" show-overflow-tooltip>
-                    <template #default="{ row }">
-                      <div style="display: flex; align-items: center; gap: 6px">
-                        <span :style="row.passid === cloudPortalForm.passId ? 'font-weight: bold; color: #409EFF' : ''">{{ row.passid }}</span>
-                        <el-button size="small" type="primary" link @click="aiAuditCheckPassId = row.passid">填</el-button>
+                    <div
+                      v-if="previewLoading"
+                      style="
+                        margin-bottom: 10px;
+                        padding: 8px;
+                        background: #fdf6ec;
+                        border-radius: 4px;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                      "
+                    >
+                      <el-icon class="is-loading" style="color: #e6a23c"><Loading /></el-icon>
+                      <span style="color: #e6a23c; font-size: 13px">{{ previewLoadingText }}</span>
+                    </div>
+                    <div
+                      v-loading="vehicleImagesLoading"
+                      style="
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 10px;
+                        max-height: 300px;
+                        overflow-y: auto;
+                      "
+                    >
+                      <div
+                        v-for="(img, idx) in filteredVehicleImages"
+                        :key="idx"
+                        :style="
+                          isStationMatched(img.stationId)
+                            ? 'width: 200px; border: 2px solid #409EFF; border-radius: 4px; padding: 5px; background: #ecf5ff'
+                            : 'width: 200px; border: 1px solid #ddd; border-radius: 4px; padding: 5px'
+                        "
+                      >
+                        <el-image
+                          :src="getImageSrc(img.bigPositivePic)"
+                          style="width: 100%; height: 120px"
+                          fit="contain"
+                          :preview-src-list="previewImageList"
+                          @click="handleImagePreview(img)"
+                        />
+                        <div style="font-size: 12px; margin-top: 5px">
+                          <div
+                            :style="
+                              isStationMatched(img.stationId)
+                                ? 'font-weight: bold; color: #409EFF'
+                                : ''
+                            "
+                            >{{ img.stationName }}</div
+                          >
+                          <div>{{ img.picTime }}</div>
+                          <div style="margin-top: 5px">
+                            <el-button
+                              size="small"
+                              :loading="originalImageLoading === `image1-${img.picturePath}`"
+                              @click="selectImageForCheck(img, 'image1')"
+                              >选为资料1</el-button
+                            >
+                            <el-button
+                              size="small"
+                              :loading="originalImageLoading === `image2-${img.picturePath}`"
+                              @click="selectImageForCheck(img, 'image2')"
+                              >选为资料2</el-button
+                            >
+                          </div>
+                        </div>
                       </div>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="plateNumber" label="出口车牌" show-overflow-tooltip />
-                  <el-table-column prop="enVehicleIdName" label="入口车牌" show-overflow-tooltip />
-                  <el-table-column prop="identifyVehicleIdName" label="识别车牌" show-overflow-tooltip />
-                  <el-table-column prop="entollstationname" label="进站名" show-overflow-tooltip />
-                  <el-table-column prop="entime" label="进站时间" show-overflow-tooltip />
-                  <el-table-column prop="enVehicleTypeName" label="入口车型" show-overflow-tooltip />
-                  <el-table-column prop="exVehicleTypeName" label="出口车型" show-overflow-tooltip />
-                  <el-table-column prop="extollstationname" label="出站名" show-overflow-tooltip />
-                  <el-table-column prop="extime" label="出站时间" show-overflow-tooltip />
-                  <el-table-column prop="mediaTypeName" label="介质类型" show-overflow-tooltip />
-                  <el-table-column prop="payfee" label="总应收金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.payfee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="fee" label="总交易金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.fee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="discountfee" label="总优惠金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.discountfee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="shortfee" label="最小费额交易金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.shortfee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="FEEMILEAGE" label="计费总里程数(公里)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ row.FEEMILEAGE ? (row.FEEMILEAGE / 1000).toFixed(2) : '-' }}</template>
-                  </el-table-column>
-                  <el-table-column prop="SHORTFEEMILEAGE" label="最小费额里程数(公里)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ row.SHORTFEEMILEAGE ? (row.SHORTFEEMILEAGE / 1000).toFixed(2) : '-' }}</template>
-                  </el-table-column>
-                  <el-table-column prop="exitFeeTypeName" label="计费方式" show-overflow-tooltip />
-                  <el-table-column prop="specialtype" label="特情" show-overflow-tooltip />
-                </el-table>
-              </div>
-              <el-alert v-else type="error" :closable="false">
-                {{ aiAuditResult.exit_trade_etc?.error || '查询失败' }}
-              </el-alert>
-            </el-tab-pane>
-
-            <el-tab-pane label="出口交易(其它)" name="exit_trade_other">
-              <div v-if="aiAuditResult.exit_trade_other?.success">
-                <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center">
-                  <span>共 {{ aiAuditResult.exit_trade_other.total }} 条记录</span>
-                  <div style="display: flex; gap: 10px">
-                    <el-button size="small" type="primary" @click="captureTable('exit_trade_other', 'image1')">截图到资料1</el-button>
-                    <el-button size="small" type="success" @click="captureTable('exit_trade_other', 'image2')">截图到资料2</el-button>
+                    </div>
+                    <div
+                      style="
+                        margin-top: 15px;
+                        display: flex;
+                        justify-content: center;
+                        gap: 20px;
+                        align-items: center;
+                      "
+                    >
+                      <el-button
+                        :disabled="vehicleImagesPage === 0"
+                        size="small"
+                        @click="handlePrevPage"
+                        >上一页</el-button
+                      >
+                      <span style="font-size: 12px"
+                        >第 {{ vehicleImagesPage + 1 }} 页 / 共 {{ totalPages }} 页 ({{
+                          filteredVehicleImagesTotal
+                        }}
+                        张图片)</span
+                      >
+                      <el-button
+                        :disabled="vehicleImagesPage >= maxPage"
+                        size="small"
+                        @click="handleNextPage"
+                        >下一页</el-button
+                      >
+                    </div>
                   </div>
-                </div>
-                <el-table ref="exitTradeOtherTableRef" :data="aiAuditResult.exit_trade_other.records" border max-height="300" size="small" stripe :row-class-name="getExitTradeRowClass">
-                  <el-table-column prop="passid" label="流水编号" width="400" show-overflow-tooltip>
-                    <template #default="{ row }">
-                      <div style="display: flex; align-items: center; gap: 6px">
-                        <span :style="row.passid === cloudPortalForm.passId ? 'font-weight: bold; color: #409EFF' : ''">{{ row.passid }}</span>
-                        <el-button size="small" type="primary" link @click="aiAuditCheckPassId = row.passid">填</el-button>
-                      </div>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="plateNumber" label="出口车牌" show-overflow-tooltip />
-                  <el-table-column prop="enVehicleIdName" label="入口车牌" show-overflow-tooltip />
-                  <el-table-column prop="identifyVehicleIdName" label="识别车牌" show-overflow-tooltip />
-                  <el-table-column prop="entollstationname" label="进站名" show-overflow-tooltip />
-                  <el-table-column prop="entime" label="进站时间" show-overflow-tooltip />
-                  <el-table-column prop="enVehicleTypeName" label="入口车型" show-overflow-tooltip />
-                  <el-table-column prop="exVehicleTypeName" label="出口车型" show-overflow-tooltip />
-                  <el-table-column prop="extollstationname" label="出站名" show-overflow-tooltip />
-                  <el-table-column prop="extime" label="出站时间" show-overflow-tooltip />
-                  <el-table-column prop="mediaTypeName" label="介质类型" show-overflow-tooltip />
-                  <el-table-column prop="payfee" label="总应收金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.payfee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="fee" label="总交易金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.fee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="discountfee" label="总优惠金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.discountfee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="shortfee" label="最小费额交易金额(元)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ formatFee(row.shortfee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="FEEMILEAGE" label="计费总里程数(公里)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ row.FEEMILEAGE ? (row.FEEMILEAGE / 1000).toFixed(2) : '-' }}</template>
-                  </el-table-column>
-                  <el-table-column prop="SHORTFEEMILEAGE" label="最小费额里程数(公里)" show-overflow-tooltip>
-                    <template #default="{ row }">{{ row.SHORTFEEMILEAGE ? (row.SHORTFEEMILEAGE / 1000).toFixed(2) : '-' }}</template>
-                  </el-table-column>
-                  <el-table-column prop="exitFeeTypeName" label="计费方式" show-overflow-tooltip />
-                  <el-table-column prop="specialtype" label="特情" show-overflow-tooltip />
-                </el-table>
-              </div>
-              <el-alert v-else type="error" :closable="false">
-                {{ aiAuditResult.exit_trade_other?.error || '查询失败' }}
-              </el-alert>
-            </el-tab-pane>
+                  <el-alert v-else type="error" :closable="false">
+                    {{ aiAuditResult.vehicle_images?.error || '查询失败' }}
+                  </el-alert>
+                </el-tab-pane>
 
-            <el-tab-pane label="稽核工单" name="audit_order">
-              <div v-if="aiAuditResult.audit_order?.success">
-                <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center">
-                  <span>共 {{ aiAuditResult.audit_order.total }} 条记录</span>
-                  <div style="display: flex; gap: 10px">
-                    <el-button size="small" type="primary" @click="captureTable('audit_order', 'image1')">截图到资料1</el-button>
-                    <el-button size="small" type="success" @click="captureTable('audit_order', 'image2')">截图到资料2</el-button>
+                <el-tab-pane label="门架交易" name="gantry_trade">
+                  <div v-if="aiAuditResult.gantry_trade?.success">
+                    <div
+                      style="
+                        margin-bottom: 10px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                      "
+                    >
+                      <div style="display: flex; align-items: center; gap: 15px">
+                        <span>共 {{ filteredGantryTradeRecords.length }} 条记录</span>
+                        <el-checkbox v-model="excludeSpecialType186" size="small"
+                          >排除特情186</el-checkbox
+                        >
+                      </div>
+                      <div style="display: flex; gap: 10px">
+                        <el-button
+                          size="small"
+                          type="primary"
+                          @click="captureTable('gantry_trade', 'image1')"
+                          >截图到资料1</el-button
+                        >
+                        <el-button
+                          size="small"
+                          type="success"
+                          @click="captureTable('gantry_trade', 'image2')"
+                          >截图到资料2</el-button
+                        >
+                      </div>
+                    </div>
+                    <el-table
+                      ref="gantryTradeTableRef"
+                      :data="filteredGantryTradeRecords"
+                      border
+                      max-height="450"
+                      size="small"
+                      stripe
+                      :row-class-name="getGantryTradeRowClass"
+                    >
+                      <el-table-column
+                        prop="vehiclePlate"
+                        label="车牌号"
+                        width="120"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="vehiclePlateColorName"
+                        label="颜色"
+                        width="85"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="passId"
+                        label="通行标识ID"
+                        width="330"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="gantryName"
+                        label="门架名称"
+                        width="260"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">
+                          <span
+                            :style="
+                              isGantryMatched(row.gantryId)
+                                ? 'font-weight: bold; color: #409EFF'
+                                : ''
+                            "
+                            >{{ row.gantryName }}</span
+                          >
+                        </template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="transTime"
+                        label="经过时间"
+                        width="180"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">
+                          <div style="display: flex; align-items: center; gap: 5px;">
+                            <span
+                              :style="
+                                isGateTimeMatched(row.transTime)
+                                  ? 'font-weight: bold; color: #409EFF'
+                                  : ''
+                              "
+                            >{{ row.transTime }}</span>
+                            <el-button
+                              size="small"
+                              type="primary"
+                              link
+                              @click="queryGantryImagesForRow(row)"
+                              :loading="gantryImageLoading === row.gantryId"
+                              :disabled="!row.gantryId"
+                            >查</el-button>
+                          </div>
+                        </template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="gantryOrderNumName"
+                        label="门架顺序号"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="enVehicleTypeName"
+                        label="入口车型"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="feeVehicleTypeName"
+                        label="计费车型"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="mediaTypeName"
+                        label="介质类型"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="tradeStatusName"
+                        label="交易状态"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="receivableFee"
+                        label="应收金额(元)"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">{{
+                          formatFee(row.receivableFee || row.fee)
+                        }}</template>
+                      </el-table-column>
+                      <el-table-column prop="actualFee" label="实收金额(元)" show-overflow-tooltip>
+                        <template #default="{ row }">{{ formatFee(row.actualFee) }}</template>
+                      </el-table-column>
+                      <el-table-column prop="specialTypeName" label="特情" show-overflow-tooltip />
+                    </el-table>
                   </div>
-                </div>
-                <el-table ref="auditOrderTableRef" :data="aiAuditResult.audit_order.records" border max-height="300" size="small" stripe>
-                  <el-table-column prop="pass_id" label="通行标识ID" width="305" show-overflow-tooltip>
-                    <template #default="{ row }">
-                      <div style="display: flex; align-items: center; gap: 6px">
-                        <span :style="row.pass_id === cloudPortalForm.passId ? 'font-weight: bold; color: #409EFF' : ''">{{ row.pass_id }}</span>
-                        <el-button size="small" type="primary" link @click="aiAuditCheckPassId = row.pass_id">填</el-button>
-                      </div>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="vehicle_no" label="车牌号码" width="98" show-overflow-tooltip />
-                  <el-table-column prop="plate_color_name" label="车牌颜色" width="80" />
-                  <el-table-column prop="en_station_name" label="入口站名" width="110" show-overflow-tooltip />
-                  <el-table-column prop="ex_station_name" label="出口站名" width="110" show-overflow-tooltip />
-                  <el-table-column prop="en_time" label="入口时间" width="160" show-overflow-tooltip />
-                  <el-table-column prop="ex_time" label="出口时间" width="160" show-overflow-tooltip />
-                  <el-table-column prop="en_vehicle_type_name" label="入口车型" width="100" />
-                  <el-table-column prop="ex_vehicle_type_name" label="出口车型" width="100" />
-                  <el-table-column prop="fee" label="通行费(分)" width="100">
-                    <template #default="{ row }">{{ formatFee(row.fee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="label_code_name" label="标签名称" width="130">
-                    <template #default="{ row }">
-                      <div style="display: flex; align-items: center; gap: 4px">
-                        <span>{{ row.label_code_name || '-' }}</span>
-                        <el-button v-if="row.label_code_name" size="small" type="primary" link @click="aiAuditSpecialSituation = row.label_code_name">填</el-button>
-                      </div>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="order_status_name" label="工单状态" width="130">
-                    <template #default="{ row }">
-                      <div style="display: flex; align-items: center; gap: 4px">
-                        <el-tag :type="getOrderStatusType(row.order_status)" size="small">{{ row.order_status_name }}</el-tag>
-                        <el-button v-if="row.order_status_name" size="small" type="primary" link @click="aiAuditRemark = row.order_status_name">填</el-button>
-                      </div>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="toll_fee" label="通行费(分)" width="100">
-                    <template #default="{ row }">{{ formatFee(row.toll_fee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="penalty_fee" label="补缴金额(分)" width="110">
-                    <template #default="{ row }">{{ formatFee(row.penalty_fee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="total_fee" label="总金额(分)" width="100">
-                    <template #default="{ row }">{{ formatFee(row.total_fee) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="review_name" label="审核人" width="80" />
-                  <el-table-column prop="review_time" label="审核时间" width="160" show-overflow-tooltip />
-                  <el-table-column prop="operator_name" label="操作人" width="80" />
-                  <el-table-column prop="operate_time" label="操作时间" width="160" show-overflow-tooltip />
-                </el-table>
-              </div>
-              <el-alert v-else type="error" :closable="false">
-                {{ aiAuditResult.audit_order?.error || '查询失败' }}
-              </el-alert>
-            </el-tab-pane>
+                  <el-alert v-else type="error" :closable="false">
+                    {{ aiAuditResult.gantry_trade?.error || '查询失败' }}
+                  </el-alert>
+                </el-tab-pane>
 
-            <el-tab-pane label="疑难车牌追查" name="suspected_car">
-              <div v-if="aiAuditResult.suspected_car?.success" style="max-height: 300px; overflow-y: auto">
-                <div v-for="(item, idx) in aiAuditResult.suspected_car.trade_list" :key="idx" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ebeef5; border-radius: 4px">
-                  <el-descriptions :column="3" border size="small">
-                    <el-descriptions-item label="车牌">{{ item.vehiclePlate }}</el-descriptions-item>
-                    <el-descriptions-item label="匹配率">
-                      <el-tag :type="getRateType(item.rate)">
-                        {{ formatMatchRate(item.rate) }}
-                      </el-tag>
-                    </el-descriptions-item>
-                    <el-descriptions-item label="行程ID">{{ item.passId }}</el-descriptions-item>
-                  </el-descriptions>
-                  <el-table v-if="item.list && item.list.length > 0" :data="item.list" border size="small" style="margin-top: 10px" max-height="150">
-                    <el-table-column prop="matchingVehiclePlate" label="匹配车牌" width="100" />
-                    <el-table-column prop="matchingGantryName" label="门架名称" show-overflow-tooltip />
-                    <el-table-column prop="matchingTransTime" label="匹配时间" width="160" show-overflow-tooltip />
-                  </el-table>
-                </div>
-              </div>
-              <el-alert v-else type="error" :closable="false">
-                {{ aiAuditResult.suspected_car?.error || '查询失败' }}
-              </el-alert>
-            </el-tab-pane>
-          </el-tabs>
+                <el-tab-pane label="门架牌识" name="gantry_plate">
+                  <div v-if="aiAuditResult.gantry_plate?.success">
+                    <div
+                      style="
+                        margin-bottom: 10px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                      "
+                    >
+                      <span>共 {{ aiAuditResult.gantry_plate.total }} 条记录</span>
+                      <div style="display: flex; gap: 10px">
+                        <el-button
+                          size="small"
+                          type="primary"
+                          @click="captureTable('gantry_plate', 'image1')"
+                          >截图到资料1</el-button
+                        >
+                        <el-button
+                          size="small"
+                          type="success"
+                          @click="captureTable('gantry_plate', 'image2')"
+                          >截图到资料2</el-button
+                        >
+                      </div>
+                    </div>
+                    <el-table
+                      ref="gantryPlateTableRef"
+                      :data="aiAuditResult.gantry_plate.records"
+                      border
+                      max-height="450"
+                      size="small"
+                      stripe
+                      :row-class-name="getGantryPlateRowClass"
+                    >
+                      <el-table-column
+                        prop="vehiclePlate"
+                        label="车牌号"
+                        width="120"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="picId"
+                        label="牌识流水"
+                        width="300"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column prop="gantryName" label="门架名称" show-overflow-tooltip>
+                        <template #default="{ row }">
+                          <span
+                            :style="
+                              isGantryMatched(row.gantryId)
+                                ? 'font-weight: bold; color: #409EFF'
+                                : ''
+                            "
+                            >{{ row.gantryName }}</span
+                          >
+                        </template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="gantryOrderNumName"
+                        label="门架顺序号"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column prop="picTime" label="经过时间" show-overflow-tooltip />
+                      <el-table-column prop="vehicleTypeName" label="车型" show-overflow-tooltip />
+                      <el-table-column prop="cameraId" label="相机编号" show-overflow-tooltip />
+                    </el-table>
+                  </div>
+                  <el-alert v-else type="error" :closable="false">
+                    {{ aiAuditResult.gantry_plate?.error || '查询失败' }}
+                  </el-alert>
+                </el-tab-pane>
 
-          <!-- 图片保存区域 -->
+                <el-tab-pane label="出口交易(ETC)" name="exit_trade_etc">
+                  <div v-if="aiAuditResult.exit_trade_etc?.success">
+                    <div
+                      style="
+                        margin-bottom: 10px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                      "
+                    >
+                      <span>共 {{ aiAuditResult.exit_trade_etc.total }} 条记录</span>
+                      <div style="display: flex; gap: 10px">
+                        <el-button
+                          size="small"
+                          type="primary"
+                          @click="captureTable('exit_trade_etc', 'image1')"
+                          >截图到资料1</el-button
+                        >
+                        <el-button
+                          size="small"
+                          type="success"
+                          @click="captureTable('exit_trade_etc', 'image2')"
+                          >截图到资料2</el-button
+                        >
+                      </div>
+                    </div>
+                    <el-table
+                      ref="exitTradeEtcTableRef"
+                      :data="aiAuditResult.exit_trade_etc.records"
+                      border
+                      max-height="300"
+                      size="small"
+                      stripe
+                      :row-class-name="getExitTradeRowClass"
+                    >
+                      <el-table-column
+                        prop="passid"
+                        label="流水编号"
+                        width="400"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">
+                          <div style="display: flex; align-items: center; gap: 6px">
+                            <span
+                              :style="
+                                row.passid === cloudPortalForm.passId
+                                  ? 'font-weight: bold; color: #409EFF'
+                                  : ''
+                              "
+                              >{{ row.passid }}</span
+                            >
+                            <el-button
+                              size="small"
+                              type="primary"
+                              link
+                              @click="aiAuditCheckPassId = row.passid"
+                              >填</el-button
+                            >
+                          </div>
+                        </template>
+                      </el-table-column>
+                      <el-table-column prop="plateNumber" label="出口车牌" show-overflow-tooltip />
+                      <el-table-column
+                        prop="enVehicleIdName"
+                        label="入口车牌"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="identifyVehicleIdName"
+                        label="识别车牌"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="entollstationname"
+                        label="进站名"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column prop="entime" label="进站时间" show-overflow-tooltip />
+                      <el-table-column
+                        prop="enVehicleTypeName"
+                        label="入口车型"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="exVehicleTypeName"
+                        label="出口车型"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="extollstationname"
+                        label="出站名"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column prop="extime" label="出站时间" show-overflow-tooltip />
+                      <el-table-column
+                        prop="mediaTypeName"
+                        label="介质类型"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column prop="payfee" label="总应收金额(元)" show-overflow-tooltip>
+                        <template #default="{ row }">{{ formatFee(row.payfee) }}</template>
+                      </el-table-column>
+                      <el-table-column prop="fee" label="总交易金额(元)" show-overflow-tooltip>
+                        <template #default="{ row }">{{ formatFee(row.fee) }}</template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="discountfee"
+                        label="总优惠金额(元)"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">{{ formatFee(row.discountfee) }}</template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="shortfee"
+                        label="最小费额交易金额(元)"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">{{ formatFee(row.shortfee) }}</template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="FEEMILEAGE"
+                        label="计费总里程数(公里)"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">{{
+                          row.FEEMILEAGE ? (row.FEEMILEAGE / 1000).toFixed(2) : '-'
+                        }}</template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="SHORTFEEMILEAGE"
+                        label="最小费额里程数(公里)"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">{{
+                          row.SHORTFEEMILEAGE ? (row.SHORTFEEMILEAGE / 1000).toFixed(2) : '-'
+                        }}</template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="exitFeeTypeName"
+                        label="计费方式"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column prop="specialtype" label="特情" show-overflow-tooltip />
+                    </el-table>
+                  </div>
+                  <el-alert v-else type="error" :closable="false">
+                    {{ aiAuditResult.exit_trade_etc?.error || '查询失败' }}
+                  </el-alert>
+                </el-tab-pane>
+
+                <el-tab-pane label="出口交易(其它)" name="exit_trade_other">
+                  <div v-if="aiAuditResult.exit_trade_other?.success">
+                    <div
+                      style="
+                        margin-bottom: 10px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                      "
+                    >
+                      <span>共 {{ aiAuditResult.exit_trade_other.total }} 条记录</span>
+                      <div style="display: flex; gap: 10px">
+                        <el-button
+                          size="small"
+                          type="primary"
+                          @click="captureTable('exit_trade_other', 'image1')"
+                          >截图到资料1</el-button
+                        >
+                        <el-button
+                          size="small"
+                          type="success"
+                          @click="captureTable('exit_trade_other', 'image2')"
+                          >截图到资料2</el-button
+                        >
+                      </div>
+                    </div>
+                    <el-table
+                      ref="exitTradeOtherTableRef"
+                      :data="aiAuditResult.exit_trade_other.records"
+                      border
+                      max-height="300"
+                      size="small"
+                      stripe
+                      :row-class-name="getExitTradeRowClass"
+                    >
+                      <el-table-column
+                        prop="passid"
+                        label="流水编号"
+                        width="400"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">
+                          <div style="display: flex; align-items: center; gap: 6px">
+                            <span
+                              :style="
+                                row.passid === cloudPortalForm.passId
+                                  ? 'font-weight: bold; color: #409EFF'
+                                  : ''
+                              "
+                              >{{ row.passid }}</span
+                            >
+                            <el-button
+                              size="small"
+                              type="primary"
+                              link
+                              @click="aiAuditCheckPassId = row.passid"
+                              >填</el-button
+                            >
+                          </div>
+                        </template>
+                      </el-table-column>
+                      <el-table-column prop="plateNumber" label="出口车牌" show-overflow-tooltip />
+                      <el-table-column
+                        prop="enVehicleIdName"
+                        label="入口车牌"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="identifyVehicleIdName"
+                        label="识别车牌"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="entollstationname"
+                        label="进站名"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column prop="entime" label="进站时间" show-overflow-tooltip />
+                      <el-table-column
+                        prop="enVehicleTypeName"
+                        label="入口车型"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="exVehicleTypeName"
+                        label="出口车型"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="extollstationname"
+                        label="出站名"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column prop="extime" label="出站时间" show-overflow-tooltip />
+                      <el-table-column
+                        prop="mediaTypeName"
+                        label="介质类型"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column prop="payfee" label="总应收金额(元)" show-overflow-tooltip>
+                        <template #default="{ row }">{{ formatFee(row.payfee) }}</template>
+                      </el-table-column>
+                      <el-table-column prop="fee" label="总交易金额(元)" show-overflow-tooltip>
+                        <template #default="{ row }">{{ formatFee(row.fee) }}</template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="discountfee"
+                        label="总优惠金额(元)"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">{{ formatFee(row.discountfee) }}</template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="shortfee"
+                        label="最小费额交易金额(元)"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">{{ formatFee(row.shortfee) }}</template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="FEEMILEAGE"
+                        label="计费总里程数(公里)"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">{{
+                          row.FEEMILEAGE ? (row.FEEMILEAGE / 1000).toFixed(2) : '-'
+                        }}</template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="SHORTFEEMILEAGE"
+                        label="最小费额里程数(公里)"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">{{
+                          row.SHORTFEEMILEAGE ? (row.SHORTFEEMILEAGE / 1000).toFixed(2) : '-'
+                        }}</template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="exitFeeTypeName"
+                        label="计费方式"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column prop="specialtype" label="特情" show-overflow-tooltip />
+                    </el-table>
+                  </div>
+                  <el-alert v-else type="error" :closable="false">
+                    {{ aiAuditResult.exit_trade_other?.error || '查询失败' }}
+                  </el-alert>
+                </el-tab-pane>
+
+                <el-tab-pane label="稽核工单" name="audit_order">
+                  <div v-if="aiAuditResult.audit_order?.success">
+                    <div
+                      style="
+                        margin-bottom: 10px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                      "
+                    >
+                      <span>共 {{ aiAuditResult.audit_order.total }} 条记录</span>
+                      <div style="display: flex; gap: 10px">
+                        <el-button
+                          size="small"
+                          type="primary"
+                          @click="captureTable('audit_order', 'image1')"
+                          >截图到资料1</el-button
+                        >
+                        <el-button
+                          size="small"
+                          type="success"
+                          @click="captureTable('audit_order', 'image2')"
+                          >截图到资料2</el-button
+                        >
+                      </div>
+                    </div>
+                    <el-table
+                      ref="auditOrderTableRef"
+                      :data="aiAuditResult.audit_order.records"
+                      border
+                      max-height="300"
+                      size="small"
+                      stripe
+                    >
+                      <el-table-column
+                        prop="pass_id"
+                        label="通行标识ID"
+                        width="305"
+                        show-overflow-tooltip
+                      >
+                        <template #default="{ row }">
+                          <div style="display: flex; align-items: center; gap: 6px">
+                            <span
+                              :style="
+                                row.pass_id === cloudPortalForm.passId
+                                  ? 'font-weight: bold; color: #409EFF'
+                                  : ''
+                              "
+                              >{{ row.pass_id }}</span
+                            >
+                            <el-button
+                              size="small"
+                              type="primary"
+                              link
+                              @click="aiAuditCheckPassId = row.pass_id"
+                              >填</el-button
+                            >
+                          </div>
+                        </template>
+                      </el-table-column>
+                      <el-table-column
+                        prop="vehicle_no"
+                        label="车牌号码"
+                        width="98"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column prop="plate_color_name" label="车牌颜色" width="80" />
+                      <el-table-column
+                        prop="en_station_name"
+                        label="入口站名"
+                        width="110"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="ex_station_name"
+                        label="出口站名"
+                        width="110"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="en_time"
+                        label="入口时间"
+                        width="160"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column
+                        prop="ex_time"
+                        label="出口时间"
+                        width="160"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column prop="en_vehicle_type_name" label="入口车型" width="100" />
+                      <el-table-column prop="ex_vehicle_type_name" label="出口车型" width="100" />
+                      <el-table-column prop="fee" label="通行费(分)" width="100">
+                        <template #default="{ row }">{{ formatFee(row.fee) }}</template>
+                      </el-table-column>
+                      <el-table-column prop="label_code_name" label="标签名称" width="130">
+                        <template #default="{ row }">
+                          <div style="display: flex; align-items: center; gap: 4px">
+                            <span>{{ row.label_code_name || '-' }}</span>
+                            <el-button
+                              v-if="row.label_code_name"
+                              size="small"
+                              type="primary"
+                              link
+                              @click="aiAuditSpecialSituation = row.label_code_name"
+                              >填</el-button
+                            >
+                          </div>
+                        </template>
+                      </el-table-column>
+                      <el-table-column prop="order_status_name" label="工单状态" width="130">
+                        <template #default="{ row }">
+                          <div style="display: flex; align-items: center; gap: 4px">
+                            <el-tag :type="getOrderStatusType(row.order_status)" size="small">{{
+                              row.order_status_name
+                            }}</el-tag>
+                            <el-button
+                              v-if="row.order_status_name"
+                              size="small"
+                              type="primary"
+                              link
+                              @click="aiAuditRemark = row.order_status_name"
+                              >填</el-button
+                            >
+                          </div>
+                        </template>
+                      </el-table-column>
+                      <el-table-column prop="toll_fee" label="通行费(分)" width="100">
+                        <template #default="{ row }">{{ formatFee(row.toll_fee) }}</template>
+                      </el-table-column>
+                      <el-table-column prop="penalty_fee" label="补缴金额(分)" width="110">
+                        <template #default="{ row }">{{ formatFee(row.penalty_fee) }}</template>
+                      </el-table-column>
+                      <el-table-column prop="total_fee" label="总金额(分)" width="100">
+                        <template #default="{ row }">{{ formatFee(row.total_fee) }}</template>
+                      </el-table-column>
+                      <el-table-column prop="review_name" label="审核人" width="80" />
+                      <el-table-column
+                        prop="review_time"
+                        label="审核时间"
+                        width="160"
+                        show-overflow-tooltip
+                      />
+                      <el-table-column prop="operator_name" label="操作人" width="80" />
+                      <el-table-column
+                        prop="operate_time"
+                        label="操作时间"
+                        width="160"
+                        show-overflow-tooltip
+                      />
+                    </el-table>
+                  </div>
+                  <el-alert v-else type="error" :closable="false">
+                    {{ aiAuditResult.audit_order?.error || '查询失败' }}
+                  </el-alert>
+                </el-tab-pane>
+
+                <el-tab-pane label="疑难车牌追查" name="suspected_car">
+                  <div
+                    v-if="aiAuditResult.suspected_car?.success"
+                    style="max-height: 300px; overflow-y: auto"
+                  >
+                    <div
+                      v-for="(item, idx) in aiAuditResult.suspected_car.trade_list"
+                      :key="idx"
+                      style="
+                        margin-bottom: 15px;
+                        padding: 10px;
+                        border: 1px solid #ebeef5;
+                        border-radius: 4px;
+                      "
+                    >
+                      <el-descriptions :column="3" border size="small">
+                        <el-descriptions-item label="车牌">{{
+                          item.vehiclePlate
+                        }}</el-descriptions-item>
+                        <el-descriptions-item label="匹配率">
+                          <el-tag :type="getRateType(item.rate)">
+                            {{ formatMatchRate(item.rate) }}
+                          </el-tag>
+                        </el-descriptions-item>
+                        <el-descriptions-item label="行程ID">{{
+                          item.passId
+                        }}</el-descriptions-item>
+                      </el-descriptions>
+                      <el-table
+                        v-if="item.list && item.list.length > 0"
+                        :data="item.list"
+                        border
+                        size="small"
+                        style="margin-top: 10px"
+                        max-height="150"
+                      >
+                        <el-table-column prop="matchingVehiclePlate" label="匹配车牌" width="100" />
+                        <el-table-column
+                          prop="matchingGantryName"
+                          label="门架名称"
+                          show-overflow-tooltip
+                        />
+                        <el-table-column
+                          prop="matchingTransTime"
+                          label="匹配时间"
+                          width="160"
+                          show-overflow-tooltip
+                        />
+                      </el-table>
+                    </div>
+                  </div>
+                  <el-alert v-else type="error" :closable="false">
+                    {{ aiAuditResult.suspected_car?.error || '查询失败' }}
+                  </el-alert>
+                </el-tab-pane>
+              </el-tabs>
+
+              <!-- 图片保存区域 -->
+            </div>
+
+            <!-- 查询结果 -->
+            <div v-if="cloudPortalQueryResult && cloudPortalQueryResult.length > 0">
+              <el-divider content-position="left">查询结果</el-divider>
+              <el-table :data="cloudPortalQueryResult" border max-height="300">
+                <el-table-column prop="field" label="字段" width="150" />
+                <el-table-column prop="value" label="值" />
+              </el-table>
+            </div>
+          </el-form>
         </div>
 
-        <!-- 查询结果 -->
-        <div v-if="cloudPortalQueryResult && cloudPortalQueryResult.length > 0">
-          <el-divider content-position="left">查询结果</el-divider>
-          <el-table :data="cloudPortalQueryResult" border max-height="300">
-            <el-table-column prop="field" label="字段" width="150" />
-            <el-table-column prop="value" label="值" />
-          </el-table>
-        </div>
-      </el-form>
-        </div>
-        
         <!-- 右侧：查核资料 -->
         <div style="width: 280px; flex-shrink: 0">
-          <div style="border: 1px solid #e4e7ed; border-radius: 4px; padding: 8px; background: #fafafa">
+          <div
+            style="border: 1px solid #e4e7ed; border-radius: 4px; padding: 8px; background: #fafafa"
+          >
             <div style="font-weight: bold; margin-bottom: 8px; font-size: 12px; color: #303133">
               📷 查核资料
             </div>
-            
+
             <!-- 查核资料1 -->
             <div style="margin-bottom: 8px">
               <div style="font-size: 11px; color: #606266; margin-bottom: 3px">查核资料1</div>
@@ -1597,11 +2261,20 @@
                 style="max-width: 100%; max-height: 120px"
                 fit="contain"
               />
-              <div v-else style="color: #999; border: 1px dashed #ddd; padding: 12px; text-align: center; font-size: 11px">
+              <div
+                v-else
+                style="
+                  color: #999;
+                  border: 1px dashed #ddd;
+                  padding: 12px;
+                  text-align: center;
+                  font-size: 11px;
+                "
+              >
                 未选择图片
               </div>
             </div>
-            
+
             <!-- 查核资料2 -->
             <div>
               <div style="font-size: 11px; color: #606266; margin-bottom: 3px">查核资料2</div>
@@ -1611,37 +2284,214 @@
                 style="max-width: 100%; max-height: 120px"
                 fit="contain"
               />
-              <div v-else style="color: #999; border: 1px dashed #ddd; padding: 12px; text-align: center; font-size: 11px">
+              <div
+                v-else
+                style="
+                  color: #999;
+                  border: 1px dashed #ddd;
+                  padding: 12px;
+                  text-align: center;
+                  font-size: 11px;
+                "
+              >
                 未选择图片
               </div>
             </div>
           </div>
         </div>
       </div>
-      
+
       <template #footer>
         <div style="display: flex; justify-content: flex-end; gap: 10px">
           <el-button @click="cloudPortalDialogVisible = false">关闭</el-button>
-          <el-button type="primary" @click="saveImagesToDatabase" :loading="aiAuditSavingImages" :disabled="!aiAuditSelectedImage1 && !aiAuditSelectedImage2">
+          <el-button
+            type="primary"
+            @click="saveImagesToDatabase"
+            :loading="aiAuditSavingImages"
+            :disabled="!(
+              aiAuditSelectedImage1 ||
+              aiAuditSelectedImage2 ||
+              aiAuditReviewStatus ||
+              aiAuditCheckPassId ||
+              aiAuditSpecialSituation ||
+              aiAuditCheckSplit ||
+              aiAuditRemark
+            )"
+          >
             保存
           </el-button>
         </div>
       </template>
     </el-dialog>
-    
+
     <!-- 通行门架名称组合详情对话框 -->
-    <el-dialog
-      v-model="showGantryNamesDialog"
-      title="通行门架名称组合"
-      width="600px"
-      draggable
-    >
-      <div style="max-height: 400px; overflow-y: auto; padding: 10px; background: #f5f7fa; border-radius: 4px; word-break: break-all; line-height: 1.8">
+    <el-dialog v-model="showGantryNamesDialog" title="通行门架名称组合" width="600px" draggable>
+      <div
+        style="
+          max-height: 400px;
+          overflow-y: auto;
+          padding: 10px;
+          background: #f5f7fa;
+          border-radius: 4px;
+          word-break: break-all;
+          line-height: 1.8;
+        "
+      >
         {{ cloudPortalForm.gantryNamesCombined || '-' }}
       </div>
       <template #footer>
         <el-button type="primary" @click="showGantryNamesDialog = false">关闭</el-button>
       </template>
+    </el-dialog>
+
+    <!-- 门架图库查询结果对话框 -->
+    <el-dialog
+      v-model="gantryImagesDialogVisible"
+      title="门架图库查询结果"
+      width="900px"
+      destroy-on-close
+      draggable
+    >
+      <div v-if="gantryImagesResult">
+        <div style="margin-bottom: 15px; padding: 10px; background: #f5f7fa; border-radius: 4px;">
+          <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+            <span><strong>门架名称:</strong> {{ gantryImagesResult.gantryName }}</span>
+            <span><strong>经过时间:</strong> {{ gantryImagesResult.transTime }}</span>
+            <span><strong>查询范围:</strong> {{ gantryImagesResult.timeRange.startTime }} ~ {{ gantryImagesResult.timeRange.endTime }}</span>
+            <span><strong>共找到:</strong> {{ gantryImagesResult.total }} 张图片</span>
+          </div>
+        </div>
+        
+        <div v-if="gantryImagesResult.images.length > 0" style="display: flex; flex-wrap: wrap; gap: 15px;">
+          <div
+            v-for="(img, idx) in gantryImagesResult.images"
+            :key="idx"
+            style="width: 260px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;"
+          >
+            <el-image
+              :src="getImageSrc(img.bigPositivePic)"
+              style="width: 100%; height: 150px; cursor: pointer;"
+              fit="contain"
+              :preview-src-list="gantryImagesPreviewList"
+              :initial-index="idx"
+            />
+            <div style="padding: 8px; font-size: 12px; background: #fafafa;">
+              <div style="margin-bottom: 4px;">
+                <strong>时间:</strong> {{ formatPicTime(img.picTime) }}
+              </div>
+              <div style="margin-bottom: 4px;">
+                <strong>车牌:</strong>
+                <el-link
+                  type="primary"
+                  @click="queryVehicleDetail(img.vehPlate, img.picTime)"
+                  style="cursor: pointer;"
+                >{{ img.vehPlate }}</el-link>
+              </div>
+              <div style="margin-bottom: 8px;">
+                <strong>门架:</strong> {{ img.stationName }}
+              </div>
+              <div style="display: flex; gap: 5px;">
+                <el-button size="small" @click="selectGantryImageAsCheck(img, 'image1')">选为资料1</el-button>
+                <el-button size="small" @click="selectGantryImageAsCheck(img, 'image2')">选为资料2</el-button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <el-empty v-else description="未找到符合条件的图片" />
+      </div>
+    </el-dialog>
+
+    <!-- 车辆详细信息对话框 -->
+    <el-dialog
+      v-model="vehicleDetailDialogVisible"
+      :title="`车辆详细信息 - ${vehicleDetailPlate}`"
+      width="95%"
+      top="5vh"
+      destroy-on-close
+      draggable
+    >
+      <div v-if="vehicleDetailLoading" style="text-align: center; padding: 50px;">
+        <el-icon class="is-loading" style="font-size: 30px;"><Loading /></el-icon>
+        <div style="margin-top: 10px;">正在查询车辆信息...</div>
+      </div>
+      
+      <div v-else-if="vehicleDetailResult">
+        <el-tabs v-model="vehicleDetailActiveTab">
+          <el-tab-pane label="门架交易" name="gantry_trade">
+            <el-table :data="vehicleDetailResult.gantry_trade?.records || []" border size="small" max-height="400">
+              <el-table-column prop="transTime" label="经过时间" width="160" />
+              <el-table-column prop="gantryName" label="门架名称" show-overflow-tooltip />
+              <el-table-column prop="fee" label="金额" width="100">
+                <template #default="{ row }">{{ formatFee(row.fee) }}</template>
+              </el-table-column>
+              <el-table-column prop="vehiclePlateColorName" label="车牌颜色" width="100" />
+              <el-table-column prop="feeVehicleTypeName" label="计费车型" width="120" />
+            </el-table>
+            <div style="margin-top: 10px; color: #909399;">
+              共 {{ vehicleDetailResult.gantry_trade?.total || 0 }} 条记录
+            </div>
+          </el-tab-pane>
+          
+          <el-tab-pane label="门架牌识" name="gantry_plate">
+            <el-table :data="vehicleDetailResult.gantry_plate?.records || []" border size="small" max-height="400">
+              <el-table-column prop="picTime" label="拍摄时间" width="160" />
+              <el-table-column prop="gantryName" label="门架名称" show-overflow-tooltip />
+              <el-table-column prop="vehicleTypeName" label="车型" width="120" />
+              <el-table-column prop="vehicleSpeed" label="车速" width="80" />
+            </el-table>
+            <div style="margin-top: 10px; color: #909399;">
+              共 {{ vehicleDetailResult.gantry_plate?.total || 0 }} 条记录
+            </div>
+          </el-tab-pane>
+          
+          <el-tab-pane label="出口交易(ETC)" name="exit_trade_etc">
+            <el-table :data="vehicleDetailResult.exit_trade_etc?.records || []" border size="small" max-height="400">
+              <el-table-column prop="enTime" label="入口时间" width="160" />
+              <el-table-column prop="exTime" label="出口时间" width="160" />
+              <el-table-column prop="enStationName" label="入口站" show-overflow-tooltip />
+              <el-table-column prop="exStationName" label="出口站" show-overflow-tooltip />
+              <el-table-column prop="fee" label="金额" width="100">
+                <template #default="{ row }">{{ formatFee(row.fee) }}</template>
+              </el-table-column>
+            </el-table>
+            <div style="margin-top: 10px; color: #909399;">
+              共 {{ vehicleDetailResult.exit_trade_etc?.total || 0 }} 条记录
+            </div>
+          </el-tab-pane>
+          
+          <el-tab-pane label="出口交易(其它)" name="exit_trade_other">
+            <el-table :data="vehicleDetailResult.exit_trade_other?.records || []" border size="small" max-height="400">
+              <el-table-column prop="enTime" label="入口时间" width="160" />
+              <el-table-column prop="exTime" label="出口时间" width="160" />
+              <el-table-column prop="enStationName" label="入口站" show-overflow-tooltip />
+              <el-table-column prop="exStationName" label="出口站" show-overflow-tooltip />
+              <el-table-column prop="fee" label="金额" width="100">
+                <template #default="{ row }">{{ formatFee(row.fee) }}</template>
+              </el-table-column>
+            </el-table>
+            <div style="margin-top: 10px; color: #909399;">
+              共 {{ vehicleDetailResult.exit_trade_other?.total || 0 }} 条记录
+            </div>
+          </el-tab-pane>
+          
+          <el-tab-pane label="稽核工单" name="audit_order">
+            <el-table :data="vehicleDetailResult.audit_order?.records || []" border size="small" max-height="400">
+              <el-table-column prop="orderId" label="工单编号" show-overflow-tooltip />
+              <el-table-column prop="orderTypeName" label="工单类型" width="120" />
+              <el-table-column prop="createTime" label="创建时间" width="160" />
+              <el-table-column prop="orderStatusName" label="状态" width="100" />
+            </el-table>
+            <div style="margin-top: 10px; color: #909399;">
+              共 {{ vehicleDetailResult.audit_order?.total || 0 }} 条记录
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+        
+        <div v-if="vehicleDetailResult.errors?.length > 0" style="margin-top: 10px; color: #E6A23C;">
+          部分查询失败: {{ vehicleDetailResult.errors.join('; ') }}
+        </div>
+      </div>
     </el-dialog>
 
     <!-- 导出进度对话框 -->
@@ -1664,7 +2514,10 @@
         <div style="text-align: center; color: #606266; font-size: 14px">
           {{ exportProgressText }}
         </div>
-        <div v-if="exportTotalCount > 0" style="text-align: center; color: #909399; font-size: 12px; margin-top: 10px">
+        <div
+          v-if="exportTotalCount > 0"
+          style="text-align: center; color: #909399; font-size: 12px; margin-top: 10px"
+        >
           共 {{ exportTotalCount }} 条数据
         </div>
       </div>
@@ -1680,11 +2533,7 @@ import { XMLParser } from 'fast-xml-parser'
 import html2canvas from 'html2canvas'
 import ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
-import {
-  processImageForExcel,
-  createPlaceholderImage,
-  isImageData
-} from '@/utils/excelImageHelper'
+import { processImageForExcel, createPlaceholderImage, isImageData } from '@/utils/excelImageHelper'
 import {
   ElMessage,
   ElNotification,
@@ -1721,15 +2570,19 @@ import {
   verifyPassId,
   getCloudPortalCaptcha,
   cloudPortalLogin,
+  cloudPortalAutoLogin,
   getCloudPortalStatus,
   cloudPortalLogout,
   aiAuditBatchQuery,
   aiAuditSaveImages,
   aiAuditOriginalImage,
   aiAuditVehicleImages,
+  aiAuditGantryImages,
   fetchPicture,
   type AIAuditVehicleImage,
+  type AIAuditGantryImage,
   type AIAuditBatchQueryResult,
+  type AIAuditGantryTrade,
   getCloudPortalCredentials,
   updateCloudPortalSession
 } from '@/api/split-match'
@@ -2321,6 +3174,7 @@ const showGantryNamesDialog = ref(false)
 const captchaUuid = ref('')
 const captchaLoading = ref(false)
 const loginLoading = ref(false)
+const needManualCaptcha = ref(false)
 const cloudPortalUserInfo = ref<any>(null)
 const cloudPortalQueryResult = ref<any[]>([])
 //查询参数 查询时长
@@ -2360,6 +3214,24 @@ const aiAuditCheckPassId = ref<string>('')
 const aiAuditSpecialSituation = ref<string>('')
 const aiAuditCheckSplit = ref<string>('')
 const aiAuditRemark = ref<string>('')
+
+const gantryImageLoading = ref<string>('')
+const gantryImagesDialogVisible = ref(false)
+const gantryImagesResult = ref<{
+  gantryName: string
+  gantryId: string
+  transTime: string
+  timeRange: { startTime: string; endTime: string }
+  images: AIAuditGantryImage[]
+  total: number
+} | null>(null)
+const gantryImagesPreviewList = ref<string[]>([])
+
+const vehicleDetailDialogVisible = ref(false)
+const vehicleDetailPlate = ref('')
+const vehicleDetailLoading = ref(false)
+const vehicleDetailResult = ref<AIAuditBatchQueryResult | null>(null)
+const vehicleDetailActiveTab = ref('gantry_trade')
 
 const STORAGE_KEY_SPECIAL_SITUATION = 'split_match_special_situation_history'
 const STORAGE_KEY_REMARK = 'split_match_remark_history'
@@ -2404,7 +3276,9 @@ const addToHistory = (value: string, history: string[], storageKey: string) => {
 
 const querySpecialSituationHistory = (queryString: string, cb: (arg: any) => void) => {
   const results = queryString
-    ? specialSituationHistory.value.filter((item) => item.toLowerCase().includes(queryString.toLowerCase()))
+    ? specialSituationHistory.value.filter((item) =>
+        item.toLowerCase().includes(queryString.toLowerCase())
+      )
     : specialSituationHistory.value
   cb(results.map((item) => ({ value: item })))
 }
@@ -2417,7 +3291,11 @@ const queryRemarkHistory = (queryString: string, cb: (arg: any) => void) => {
 }
 
 const saveSpecialSituationHistory = () => {
-  addToHistory(aiAuditSpecialSituation.value, specialSituationHistory.value, STORAGE_KEY_SPECIAL_SITUATION)
+  addToHistory(
+    aiAuditSpecialSituation.value,
+    specialSituationHistory.value,
+    STORAGE_KEY_SPECIAL_SITUATION
+  )
 }
 
 const saveRemarkHistory = () => {
@@ -2444,7 +3322,9 @@ const filteredVehicleImagesTotal = computed(() => {
 const filteredGantryTradeRecords = computed(() => {
   if (!aiAuditResult.value?.gantry_trade?.records) return []
   if (excludeSpecialType186.value) {
-    return aiAuditResult.value.gantry_trade.records.filter((record: any) => record.specialType !== 186 && record.specialType !== '186')
+    return aiAuditResult.value.gantry_trade.records.filter(
+      (record: any) => record.specialType !== 186 && record.specialType !== '186'
+    )
   }
   return aiAuditResult.value.gantry_trade.records
 })
@@ -2459,35 +3339,41 @@ const maxPage = computed(() => {
 
 const isStationMatched = (stationId: string): boolean => {
   if (!editedRow.value || !stationId) return false
-  
+
   const gantryCombination = String(editedRow.value['通行门架组合'] || '')
   if (!gantryCombination) return false
-  
-  const gantryIds = gantryCombination.split('|').map(id => id.trim()).filter(id => id)
-  
+
+  const gantryIds = gantryCombination
+    .split('|')
+    .map((id) => id.trim())
+    .filter((id) => id)
+
   for (const gantryId of gantryIds) {
     if (stationId.startsWith(gantryId.substring(0, 16))) {
       return true
     }
   }
-  
+
   return false
 }
 
 const isGantryMatched = (gantryId: string): boolean => {
   if (!editedRow.value || !gantryId) return false
-  
+
   const gantryCombination = String(editedRow.value['通行门架组合'] || '')
   if (!gantryCombination) return false
-  
-  const gantryIds = gantryCombination.split('|').map(id => id.trim()).filter(id => id)
-  
+
+  const gantryIds = gantryCombination
+    .split('|')
+    .map((id) => id.trim())
+    .filter((id) => id)
+
   for (const id of gantryIds) {
     if (gantryId.startsWith(id.substring(0, 16))) {
       return true
     }
   }
-  
+
   return false
 }
 
@@ -2526,7 +3412,9 @@ const handleOpenCloudPortal = async () => {
   if (!editedRow.value) return
 
   cloudPortalForm.value.passId = String(editedRow.value['通行标识ID'] || '')
-  cloudPortalForm.value.plateNumber = String(editedRow.value['车牌号码'] || editedRow.value['车牌'] || '')
+  cloudPortalForm.value.plateNumber = String(
+    editedRow.value['车牌号码'] || editedRow.value['车牌'] || ''
+  )
   cloudPortalForm.value.gateTime = formatDateTime(String(editedRow.value['门架通行时间'] || ''))
   cloudPortalForm.value.entryTime = formatDateTime(String(editedRow.value['入口时间'] || ''))
   cloudPortalForm.value.entryStationName = String(editedRow.value['收费入口名称'] || '')
@@ -2537,13 +3425,13 @@ const handleOpenCloudPortal = async () => {
   aiAuditCheckPassId.value = String(editedRow.value['核查通行标识'] || '')
   aiAuditSpecialSituation.value = String(editedRow.value['特情'] || '')
   aiAuditRemark.value = String(editedRow.value['备注'] || '')
-  
+
   if (editedRow.value['查核资料1']) {
     aiAuditSelectedImage1.value = String(editedRow.value['查核资料1'])
   } else {
     aiAuditSelectedImage1.value = ''
   }
-  
+
   if (editedRow.value['查核资料2']) {
     aiAuditSelectedImage2.value = String(editedRow.value['查核资料2'])
   } else {
@@ -2551,10 +3439,11 @@ const handleOpenCloudPortal = async () => {
   }
 
   cloudPortalDialogVisible.value = true
+  needManualCaptcha.value = false
 
   await loadCloudPortalCredentials()
   await checkCloudPortalLoginStatus()
-  
+
   if (!cloudPortalLoggedIn.value) {
     await refreshCaptcha()
   }
@@ -2596,26 +3485,26 @@ const checkCloudPortalLoginStatus = async () => {
 const refreshCaptcha = async (retryCount = 0) => {
   const MAX_RETRIES = 2
   const RETRY_DELAY = 1000
-  
+
   if (retryCount === 0) {
     captchaLoading.value = true
   }
-  
+
   try {
     const response = await getCloudPortalCaptcha(cloudPortalSessionId.value || undefined)
-    
+
     if (response && response.code === 200) {
       captchaImage.value = (response.data as any).img
       captchaUuid.value = (response.data as any).uuid
       cloudPortalSessionId.value = (response.data as any).session_id
-      
+
       if (retryCount > 0) {
         ElMessage.success('连接已恢复，验证码获取成功')
       }
     } else {
       if (retryCount < MAX_RETRIES) {
         ElMessage.warning(`验证码获取失败，正在重试 (${retryCount + 1}/${MAX_RETRIES})...`)
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
         return refreshCaptcha(retryCount + 1)
       } else {
         ElMessage.error({
@@ -2628,7 +3517,7 @@ const refreshCaptcha = async (retryCount = 0) => {
   } catch (error: any) {
     if (retryCount < MAX_RETRIES) {
       ElMessage.warning(`网络异常，正在重试 (${retryCount + 1}/${MAX_RETRIES})...`)
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
       return refreshCaptcha(retryCount + 1)
     } else {
       ElMessage.error({
@@ -2645,13 +3534,61 @@ const refreshCaptcha = async (retryCount = 0) => {
 }
 
 const handleCloudPortalLogin = async () => {
-  if (!cloudPortalForm.value.username || !cloudPortalForm.value.password || !cloudPortalForm.value.captcha) {
-    ElMessage.warning('请填写完整的登录信息')
+  if (!cloudPortalForm.value.username || !cloudPortalForm.value.password) {
+    ElMessage.warning('请填写用户名和密码')
+    return
+  }
+  
+  if (needManualCaptcha.value && !cloudPortalForm.value.captcha) {
+    ElMessage.warning('请填写验证码')
     return
   }
 
   loginLoading.value = true
   try {
+    if (!needManualCaptcha.value) {
+      const autoResponse = await cloudPortalAutoLogin({
+        username: cloudPortalForm.value.username,
+        password: cloudPortalForm.value.password,
+        session_id: cloudPortalSessionId.value || undefined
+      })
+      
+      if (autoResponse && autoResponse.code === 200) {
+        ElMessage.success('登录成功')
+        cloudPortalLoggedIn.value = true
+        cloudPortalUserInfo.value = (autoResponse.data as any)?.user_info
+        
+        if ((autoResponse.data as any)?.session_id) {
+          cloudPortalSessionId.value = (autoResponse.data as any).session_id
+        }
+        
+        try {
+          await updateCloudPortalSession(cloudPortalSessionId.value)
+        } catch (e) {
+          console.error('保存会话ID失败:', e)
+        }
+        
+        console.log('========== 云门户自动登录响应数据 ==========')
+        console.log('access_token:', (autoResponse.data as any)?.access_token)
+        console.log('user_info:', (autoResponse.data as any)?.user_info)
+        console.log('========================================')
+        return
+      } else if (autoResponse && autoResponse.code === 201) {
+        needManualCaptcha.value = true
+        const data = autoResponse.data as any
+        captchaImage.value = data.img
+        captchaUuid.value = data.uuid
+        cloudPortalSessionId.value = data.session_id
+        ElMessage.warning('验证码识别失败，请手动输入')
+        return
+      } else {
+        needManualCaptcha.value = true
+        await refreshCaptcha()
+        ElMessage.error(autoResponse?.message || '自动登录失败，请手动输入验证码')
+        return
+      }
+    }
+    
     const response = await cloudPortalLogin({
       session_id: cloudPortalSessionId.value,
       username: cloudPortalForm.value.username,
@@ -2664,13 +3601,13 @@ const handleCloudPortalLogin = async () => {
       ElMessage.success('登录成功')
       cloudPortalLoggedIn.value = true
       cloudPortalUserInfo.value = (response.data as any)?.user_info
-      
+
       try {
         await updateCloudPortalSession(cloudPortalSessionId.value)
       } catch (e) {
         console.error('保存会话ID失败:', e)
       }
-      
+
       console.log('========== 云门户登录响应数据 ==========')
       console.log('access_token:', (response.data as any)?.access_token)
       console.log('refresh_token:', (response.data as any)?.refresh_token)
@@ -2679,11 +3616,13 @@ const handleCloudPortalLogin = async () => {
       console.log('========================================')
     } else {
       ElMessage.error(response?.message || '登录失败')
-      refreshCaptcha()
+      await refreshCaptcha()
+      cloudPortalForm.value.captcha = ''
     }
   } catch (error: any) {
     ElMessage.error(error?.message || '登录失败')
-    refreshCaptcha()
+    await refreshCaptcha()
+    cloudPortalForm.value.captcha = ''
   } finally {
     loginLoading.value = false
   }
@@ -2697,13 +3636,13 @@ const handleCloudPortalLogout = async () => {
     cloudPortalUserInfo.value = null
     cloudPortalQueryResult.value = []
     aiAuditResult.value = null
-    
+
     try {
       await updateCloudPortalSession('')
     } catch (e) {
       console.error('清除会话ID失败:', e)
     }
-    
+
     ElMessage.success('已退出登录')
   } catch (error) {
     console.error('退出登录失败:', error)
@@ -2711,14 +3650,18 @@ const handleCloudPortalLogout = async () => {
 }
 
 const executeAIAuditBatchQuery = async () => {
-  if (!cloudPortalForm.value.plateNumber || !cloudPortalForm.value.entryTime || !cloudPortalForm.value.gateTime) {
+  if (
+    !cloudPortalForm.value.plateNumber ||
+    !cloudPortalForm.value.entryTime ||
+    !cloudPortalForm.value.gateTime
+  ) {
     ElMessage.warning('缺少必要的查询参数')
     return
   }
 
   aiAuditLoading.value = true
   aiAuditResult.value = null
-  
+
   try {
     const response = await aiAuditBatchQuery({
       session_id: cloudPortalSessionId.value,
@@ -2751,12 +3694,16 @@ const executeAIAuditBatchQuery = async () => {
 }
 
 const loadVehicleImagesPage = async () => {
-  if (!cloudPortalSessionId.value || !cloudPortalForm.value.plateNumber || !aiAuditResult.value?.time_range) {
+  if (
+    !cloudPortalSessionId.value ||
+    !cloudPortalForm.value.plateNumber ||
+    !aiAuditResult.value?.time_range
+  ) {
     return
   }
 
   vehicleImagesLoading.value = true
-  
+
   try {
     const response = await aiAuditVehicleImages({
       session_id: cloudPortalSessionId.value,
@@ -2767,7 +3714,7 @@ const loadVehicleImagesPage = async () => {
       page_size: vehicleImagesPageSize.value,
       sort: vehicleImagesSort.value
     })
-    
+
     if (response && response.code === 200 && response.data?.success) {
       if (aiAuditResult.value) {
         aiAuditResult.value.vehicle_images = response.data
@@ -2848,7 +3795,7 @@ const fetchOriginalImageWithRetry = async (
     }
 
     if (attempt < maxRetries) {
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 500))
     }
   }
 
@@ -2885,8 +3832,8 @@ const selectImageForCheck = async (image: AIAuditVehicleImage, target: 'image1' 
         return
       }
 
-      originalImage = await fetchOriginalImageWithRetry(image.picturePath, 2) || ''
-      
+      originalImage = (await fetchOriginalImageWithRetry(image.picturePath, 2)) || ''
+
       if (!originalImage) {
         ElMessage.warning('获取原图失败，使用压缩图片')
         if (target === 'image1') {
@@ -2896,7 +3843,7 @@ const selectImageForCheck = async (image: AIAuditVehicleImage, target: 'image1' 
         }
         return
       }
-      
+
       originalImageCache.set(image.picturePath, originalImage)
     }
 
@@ -2940,24 +3887,24 @@ const getPreviewImages = async (image: AIAuditVehicleImage): Promise<string[]> =
 const previewImageList = ref<string[]>([])
 const handleImagePreview = async (image: AIAuditVehicleImage) => {
   previewImageList.value = [getImageSrc(image.bigPositivePic)]
-  
+
   if (!image.picturePath) {
     return
   }
-  
+
   const cachedImage = originalImageCache.get(image.picturePath)
   if (cachedImage) {
     previewImageList.value = [getImageSrc(cachedImage)]
     return
   }
-  
+
   previewLoading.value = image.picturePath
   previewLoadingText.value = '正在加载高清原图...'
-  
+
   try {
     const images = await getPreviewImages(image)
     previewImageList.value = images
-    
+
     if (originalImageCache.has(image.picturePath)) {
       ElMessage.success('高清原图加载完成')
     }
@@ -2977,11 +3924,149 @@ const getImageSrc = (base64Data: string | undefined): string => {
   return 'data:image/jpeg;base64,' + base64Data
 }
 
+const formatDateTimeForQuery = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+const formatPicTime = (picTime: string): string => {
+  if (!picTime) return '-'
+  if (picTime.length >= 19) {
+    return picTime.substring(11, 19)
+  }
+  return picTime
+}
+
+const queryGantryImagesForRow = async (row: AIAuditGantryTrade) => {
+  if (!cloudPortalSessionId.value) {
+    ElMessage.warning('请先登录云门户')
+    return
+  }
+
+  if (!row.gantryId) {
+    ElMessage.warning('该记录缺少门架编号')
+    return
+  }
+
+  const transDate = new Date(row.transTime)
+  const startDate = new Date(transDate.getTime() - 5000)
+  const endDate = new Date(transDate.getTime() + 5000)
+
+  const startTime = formatDateTimeForQuery(startDate)
+  const endTime = formatDateTimeForQuery(endDate)
+
+  gantryImageLoading.value = row.gantryId
+
+  try {
+    const response = await aiAuditGantryImages({
+      session_id: cloudPortalSessionId.value,
+      station_id: row.gantryId,
+      start_time: startTime,
+      end_time: endTime,
+      rows: 50
+    })
+
+    if (response && response.code === 200 && response.data?.success) {
+      const images = response.data.images || []
+      gantryImagesResult.value = {
+        gantryName: row.gantryName,
+        gantryId: row.gantryId,
+        transTime: row.transTime,
+        timeRange: { startTime, endTime },
+        images: images,
+        total: response.data.total || 0
+      }
+      gantryImagesPreviewList.value = images.map((img: AIAuditGantryImage) => getImageSrc(img.bigPositivePic))
+      gantryImagesDialogVisible.value = true
+    } else {
+      ElMessage.error(response?.message || '查询门架图库失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '查询门架图库失败')
+  } finally {
+    gantryImageLoading.value = ''
+  }
+}
+
+const selectGantryImageAsCheck = async (img: AIAuditGantryImage, target: 'image1' | 'image2') => {
+  if (img.picturePath) {
+    const originalImage = await fetchOriginalImageWithRetry(img.picturePath, 2)
+    if (originalImage) {
+      if (target === 'image1') {
+        aiAuditSelectedImage1.value = originalImage
+      } else {
+        aiAuditSelectedImage2.value = originalImage
+      }
+      ElMessage.success(`已选择高清原图作为查核资料${target === 'image1' ? '1' : '2'}`)
+    } else {
+      if (target === 'image1') {
+        aiAuditSelectedImage1.value = img.bigPositivePic
+      } else {
+        aiAuditSelectedImage2.value = img.bigPositivePic
+      }
+      ElMessage.success(`已选择压缩图片作为查核资料${target === 'image1' ? '1' : '2'}`)
+    }
+  } else {
+    if (target === 'image1') {
+      aiAuditSelectedImage1.value = img.bigPositivePic
+    } else {
+      aiAuditSelectedImage2.value = img.bigPositivePic
+    }
+    ElMessage.success(`已选择图片作为查核资料${target === 'image1' ? '1' : '2'}`)
+  }
+  gantryImagesDialogVisible.value = false
+}
+
+const queryVehicleDetail = async (plateNumber: string, picTime: string) => {
+  if (!cloudPortalSessionId.value) {
+    ElMessage.warning('请先登录云门户')
+    return
+  }
+
+  vehicleDetailPlate.value = plateNumber
+  vehicleDetailLoading.value = true
+  vehicleDetailDialogVisible.value = true
+  vehicleDetailActiveTab.value = 'gantry_trade'
+
+  const picDate = new Date(picTime)
+  const startDate = new Date(picDate.getTime() - 24 * 60 * 60 * 1000)
+  const endDate = new Date(picDate.getTime() + 24 * 60 * 60 * 1000)
+
+  const startTime = formatDateTimeForQuery(startDate)
+  const endTime = formatDateTimeForQuery(endDate)
+
+  try {
+    const response = await aiAuditBatchQuery({
+      session_id: cloudPortalSessionId.value,
+      plate_number: plateNumber,
+      entry_time: startTime,
+      gate_time: endTime,
+      hours: 48,
+      rows: 100
+    })
+
+    if (response && response.code === 200) {
+      vehicleDetailResult.value = response.data
+    } else {
+      ElMessage.error(response?.message || '查询车辆信息失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '查询车辆信息失败')
+  } finally {
+    vehicleDetailLoading.value = false
+  }
+}
+
 const captureTable = async (tableName: string, targetImage: 'image1' | 'image2') => {
   try {
     let tableRef = null
     let tableLabel = ''
-    
+
     switch (tableName) {
       case 'gantry_trade':
         tableRef = gantryTradeTableRef.value
@@ -3004,31 +4089,31 @@ const captureTable = async (tableName: string, targetImage: 'image1' | 'image2')
         tableLabel = '稽核工单'
         break
     }
-    
+
     if (!tableRef) {
       ElMessage.warning('表格未加载完成，请稍后再试')
       return
     }
-    
+
     const tableEl = tableRef.$el
     if (!tableEl) {
       ElMessage.warning('无法获取表格元素')
       return
     }
-    
+
     ElMessage.info(`正在截取${tableLabel}表格...`)
-    
+
     await nextTick()
-    
+
     const canvas = await html2canvas(tableEl, {
       backgroundColor: '#ffffff',
       scale: 1.5,
       useCORS: true,
       logging: false
     })
-    
+
     const base64Image = canvas.toDataURL('image/jpeg', 0.9)
-    
+
     if (targetImage === 'image1') {
       aiAuditSelectedImage1.value = base64Image
       ElMessage.success(`${tableLabel}表格已截图到查核资料1`)
@@ -3043,10 +4128,15 @@ const captureTable = async (tableName: string, targetImage: 'image1' | 'image2')
 }
 
 const saveImagesToDatabase = async () => {
-  const hasData = aiAuditSelectedImage1.value || aiAuditSelectedImage2.value ||
-    aiAuditReviewStatus.value || aiAuditCheckPassId.value ||
-    aiAuditSpecialSituation.value || aiAuditCheckSplit.value || aiAuditRemark.value
-  
+  const hasData =
+    aiAuditSelectedImage1.value ||
+    aiAuditSelectedImage2.value ||
+    aiAuditReviewStatus.value ||
+    aiAuditCheckPassId.value ||
+    aiAuditSpecialSituation.value ||
+    aiAuditCheckSplit.value ||
+    aiAuditRemark.value
+
   if (!hasData) {
     ElMessage.warning('请先填写信息或选择图片')
     return
@@ -3062,8 +4152,12 @@ const saveImagesToDatabase = async () => {
     const image1Base64 = aiAuditSelectedImage1.value
     const image2Base64 = aiAuditSelectedImage2.value
 
-    const base64ToSave1 = image1Base64.startsWith('data:image') ? image1Base64.split(',')[1] : image1Base64
-    const base64ToSave2 = image2Base64.startsWith('data:image') ? image2Base64.split(',')[1] : image2Base64
+    const base64ToSave1 = image1Base64.startsWith('data:image')
+      ? image1Base64.split(',')[1]
+      : image1Base64
+    const base64ToSave2 = image2Base64.startsWith('data:image')
+      ? image2Base64.split(',')[1]
+      : image2Base64
 
     const response = await aiAuditSaveImages({
       table_name: selectedTable.value,
@@ -3080,9 +4174,9 @@ const saveImagesToDatabase = async () => {
 
     if (response && response.code === 200) {
       ElMessage.success(`成功保存 ${(response.data as any)?.affected_rows || 0} 条记录`)
-      
+
       await loadTableData()
-      
+
       if (editedRow.value) {
         const updatedRow = tableData.value.find(
           (row: any) => row['通行标识ID'] === cloudPortalForm.value.passId
@@ -3125,15 +4219,24 @@ const getRateType = (rate: number): string => {
 const getOrderStatusType = (status: number): string => {
   if (status === null || status === undefined) return 'info'
   switch (status) {
-    case 1: return 'warning'
-    case 2: return 'warning'
-    case 3: return 'primary'
-    case 4: return 'primary'
-    case 5: return 'info'
-    case 6: return 'info'
-    case 7: return 'success'
-    case 8: return 'success'
-    default: return 'info'
+    case 1:
+      return 'warning'
+    case 2:
+      return 'warning'
+    case 3:
+      return 'primary'
+    case 4:
+      return 'primary'
+    case 5:
+      return 'info'
+    case 6:
+      return 'info'
+    case 7:
+      return 'success'
+    case 8:
+      return 'success'
+    default:
+      return 'info'
   }
 }
 
@@ -5427,7 +6530,7 @@ onMounted(() => {
 
 .form-item-card:hover,
 .form-item-card-compact:hover {
-  border-color: #409EFF;
+  border-color: #409eff;
   box-shadow: 0 2px 12px rgba(64, 158, 255, 0.15);
 }
 
@@ -5465,7 +6568,7 @@ onMounted(() => {
   transform: translateY(-50%);
   width: 3px;
   height: 14px;
-  background: linear-gradient(180deg, #409EFF 0%, #66b1ff 100%);
+  background: linear-gradient(180deg, #409eff 0%, #66b1ff 100%);
   border-radius: 2px;
 }
 </style>

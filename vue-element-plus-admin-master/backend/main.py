@@ -23,7 +23,12 @@ from sync_service import generate_month_options, run_sync, stop_sync, sync_statu
 from split_match_service import SplitMatchService
 from statistics_service import get_dashboard_statistics, run_statistics_task, update_task_status, get_latest_month_data, start_task_execution, end_task_execution, get_task_execution_history, get_check_data_connection
 from cloud_portal_data_service import run_cloud_portal_data_sync, get_cloud_portal_data
+from captcha_ocr import recognize_captcha
 from models import *
+from health_check import get_health_status
+import websocket_models
+from websocket_logger import WebSocketLogger
+from websocket_stats import ws_stats
 
 PASSWORD_SECRET_KEY = "cloud_portal_secret_key_2024"
 
@@ -58,32 +63,42 @@ from models import (
 )
 
 # 配置日志
+from logging.handlers import RotatingFileHandler
+
 log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-# 创建日志记录器
 logger = logging.getLogger()
 logger.setLevel(logging.WARNING)
 
-# 清除默认处理器
 logger.handlers.clear()
 
-# 控制台处理器
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(log_formatter)
 logger.addHandler(console_handler)
 
-# 文件处理器 - 普通日志
 log_dir = os.path.join(os.path.dirname(__file__), 'logs')
 os.makedirs(log_dir, exist_ok=True)
-file_handler = logging.FileHandler(os.path.join(log_dir, 'app.log'), encoding='utf-8')
+
+file_handler = RotatingFileHandler(
+    os.path.join(log_dir, 'app.log'),
+    maxBytes=10 * 1024 * 1024,
+    backupCount=5,
+    encoding='utf-8'
+)
 file_handler.setFormatter(log_formatter)
 logger.addHandler(file_handler)
 
-# 文件处理器 - 错误日志
-error_handler = logging.FileHandler(os.path.join(log_dir, 'error.log'), encoding='utf-8')
+error_handler = RotatingFileHandler(
+    os.path.join(log_dir, 'error.log'),
+    maxBytes=10 * 1024 * 1024,
+    backupCount=5,
+    encoding='utf-8'
+)
 error_handler.setLevel(logging.ERROR)
 error_handler.setFormatter(log_formatter)
 logger.addHandler(error_handler)
+
+logging.getLogger('asyncio').setLevel(logging.CRITICAL)
 
 logger = logging.getLogger(__name__)
 
@@ -914,6 +929,8 @@ class StatusConnectionManager:
                 "client_id": client_id,
                 "last_heartbeat": datetime.now()
             })
+        WebSocketLogger.log_connection("frontend", client_id)
+        ws_stats.record_connection("frontend", client_id)
     
     async def connect_gui(self, websocket: WebSocket, client_id: str):
         await websocket.accept()
@@ -923,20 +940,38 @@ class StatusConnectionManager:
                 "client_id": client_id,
                 "last_heartbeat": datetime.now()
             })
+        WebSocketLogger.log_connection("gui", client_id)
+        ws_stats.record_connection("gui", client_id)
     
     async def disconnect_frontend(self, websocket: WebSocket):
         async with self._lock:
+            client_id = None
+            for conn in self.frontend_connections:
+                if conn["websocket"] == websocket:
+                    client_id = conn["client_id"]
+                    break
             self.frontend_connections = [
                 conn for conn in self.frontend_connections 
                 if conn["websocket"] != websocket
             ]
+            if client_id:
+                WebSocketLogger.log_disconnection("frontend", client_id)
+                ws_stats.record_disconnection("frontend", client_id)
     
     async def disconnect_gui(self, websocket: WebSocket):
         async with self._lock:
+            client_id = None
+            for conn in self.gui_connections:
+                if conn["websocket"] == websocket:
+                    client_id = conn["client_id"]
+                    break
             self.gui_connections = [
                 conn for conn in self.gui_connections 
                 if conn["websocket"] != websocket
             ]
+            if client_id:
+                WebSocketLogger.log_disconnection("gui", client_id)
+                ws_stats.record_disconnection("gui", client_id)
     
     async def update_heartbeat(self, websocket: WebSocket, client_type: str):
         async with self._lock:
@@ -944,15 +979,17 @@ class StatusConnectionManager:
                 for conn in self.frontend_connections:
                     if conn["websocket"] == websocket:
                         conn["last_heartbeat"] = datetime.now()
+                        WebSocketLogger.log_heartbeat("frontend", conn["client_id"])
                         break
             elif client_type == "gui":
                 for conn in self.gui_connections:
                     if conn["websocket"] == websocket:
                         conn["last_heartbeat"] = datetime.now()
+                        WebSocketLogger.log_heartbeat("gui", conn["client_id"])
                         break
     
-    async def broadcast_to_frontend(self, message: dict):
-        message_str = json.dumps(message)
+    async def broadcast_to_frontend(self, message):
+        message_str = message if isinstance(message, str) else json.dumps(message)
         async with self._lock:
             for conn in self.frontend_connections:
                 try:
@@ -961,8 +998,8 @@ class StatusConnectionManager:
                     logger.debug(f"WebSocket发送到前端失败: {e}")
                     continue
     
-    async def broadcast_to_gui(self, message: dict):
-        message_str = json.dumps(message)
+    async def broadcast_to_gui(self, message):
+        message_str = message if isinstance(message, str) else json.dumps(message)
         async with self._lock:
             for conn in self.gui_connections:
                 try:
@@ -1001,16 +1038,9 @@ async def broadcast_status_periodically():
     while True:
         try:
             status = status_manager.get_status()
-            await status_manager.broadcast_to_frontend({
-                "type": "status_update",
-                "data": status,
-                "timestamp": datetime.now().isoformat()
-            })
-            await status_manager.broadcast_to_gui({
-                "type": "status_update",
-                "data": status,
-                "timestamp": datetime.now().isoformat()
-            })
+            message = websocket_models.create_status_update_message(status)
+            await status_manager.broadcast_to_frontend(message)
+            await status_manager.broadcast_to_gui(message)
         except Exception as e:
             logger.error(f"广播状态失败: {e}")
         await asyncio.sleep(5)
@@ -1027,22 +1057,10 @@ async def websocket_status(websocket: WebSocket, client_type: str, client_id: st
         await status_manager.connect_gui(websocket, client_id)
     
     try:
-        await websocket.send_text(json.dumps({
-            "type": "connected",
-            "client_type": client_type,
-            "client_id": client_id,
-            "message": f"{client_type}客户端已连接",
-            "timestamp": datetime.now().isoformat()
-        }))
+        await websocket.send_text(websocket_models.create_connected_message(client_type, client_id))
         
         status = status_manager.get_status()
-        await status_manager.broadcast_all({
-            "type": "client_joined",
-            "client_type": client_type,
-            "client_id": client_id,
-            "status": status,
-            "timestamp": datetime.now().isoformat()
-        })
+        await status_manager.broadcast_all(websocket_models.create_client_joined_message(client_type, client_id, status))
         
         while True:
             data = await websocket.receive_text()
@@ -1051,35 +1069,16 @@ async def websocket_status(websocket: WebSocket, client_type: str, client_id: st
                 
                 if message.get("type") == "heartbeat":
                     await status_manager.update_heartbeat(websocket, client_type)
-                    await websocket.send_text(json.dumps({
-                        "type": "heartbeat_ack",
-                        "timestamp": datetime.now().isoformat()
-                    }))
+                    await websocket.send_text(websocket_models.create_heartbeat_ack_message())
                 elif message.get("type") == "ping":
-                    await websocket.send_text(json.dumps({
-                        "type": "pong",
-                        "timestamp": datetime.now().isoformat()
-                    }))
+                    await websocket.send_text(websocket_models.create_pong_message())
                 elif message.get("type") == "get_status":
                     status = status_manager.get_status()
-                    await websocket.send_text(json.dumps({
-                        "type": "status_response",
-                        "data": status,
-                        "timestamp": datetime.now().isoformat()
-                    }))
+                    await websocket.send_text(websocket_models.create_status_response_message(status))
                 else:
-                    await status_manager.broadcast_all({
-                        "type": "message",
-                        "from_type": client_type,
-                        "from_id": client_id,
-                        "data": message,
-                        "timestamp": datetime.now().isoformat()
-                    })
+                    await status_manager.broadcast_all(websocket_models.create_message_message(client_type, client_id, message))
             except json.JSONDecodeError:
-                await websocket.send_text(json.dumps({
-                    "type": "error",
-                    "message": "Invalid JSON format"
-                }))
+                await websocket.send_text(websocket_models.create_error_message("Invalid JSON format"))
     except WebSocketDisconnect:
         if client_type == "frontend":
             await status_manager.disconnect_frontend(websocket)
@@ -1087,13 +1086,7 @@ async def websocket_status(websocket: WebSocket, client_type: str, client_id: st
             await status_manager.disconnect_gui(websocket)
         
         status = status_manager.get_status()
-        await status_manager.broadcast_all({
-            "type": "client_left",
-            "client_type": client_type,
-            "client_id": client_id,
-            "status": status,
-            "timestamp": datetime.now().isoformat()
-        })
+        await status_manager.broadcast_all(websocket_models.create_client_left_message(client_type, client_id, status))
 
 @app.get("/api/ws/status")
 async def get_ws_status():
@@ -1101,6 +1094,50 @@ async def get_ws_status():
         "code": 200,
         "message": "success",
         "data": status_manager.get_status()
+    }
+
+@app.get("/api/health")
+async def health_check():
+    active_connections = (
+        len(manager.active_connections) + 
+        len(status_manager.frontend_connections) + 
+        len(status_manager.gui_connections)
+    )
+    health_status = await get_health_status(active_connections)
+    
+    if health_status["status"] == "degraded":
+        return JSONResponse(status_code=200, content=health_status)
+    
+    return health_status
+
+@app.get("/api/ws/stats")
+async def get_ws_stats():
+    current_frontend = len(status_manager.frontend_connections)
+    current_gui = len(status_manager.gui_connections)
+    
+    return {
+        "code": 200,
+        "message": "success",
+        "data": {
+            "current": {
+                "frontend_count": current_frontend,
+                "gui_count": current_gui,
+                "total": current_frontend + current_gui
+            },
+            "clients": {
+                "frontend": status_manager.get_status().get("frontend_clients", []),
+                "gui": status_manager.get_status().get("gui_clients", [])
+            },
+            "history": ws_stats.get_stats()
+        }
+    }
+
+@app.get("/api/ws/stats/history")
+async def get_ws_stats_history(hours: int = Query(default=24, ge=1, le=168)):
+    return {
+        "code": 200,
+        "message": "success",
+        "data": ws_stats.get_history(hours)
     }
 
 # WebSocket日志处理器
@@ -1567,7 +1604,7 @@ async def get_users(
 async def create_user(user: UserCreateRequest, db = Depends(get_db)):
     """创建用户"""
     try:
-        logger.info(f"开始创建用户，接收数据: {user.dict()}")
+        logger.info(f"开始创建用户，接收数据: {user.model_dump()}")
         with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查用户名是否已存在
             cursor.execute("SELECT id FROM users WHERE username = %s", (user.username,))
@@ -1595,7 +1632,7 @@ async def create_user(user: UserCreateRequest, db = Depends(get_db)):
 async def update_user(user_id: int, user: UserUpdateRequest, db = Depends(get_db)):
     """更新用户"""
     try:
-        logger.info(f"开始更新用户，用户ID: {user_id}, 接收数据: {user.dict()}")
+        logger.info(f"开始更新用户，用户ID: {user_id}, 接收数据: {user.model_dump()}")
         with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # 检查用户是否存在
             cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
@@ -5365,6 +5402,12 @@ async def import_scheduling_records(
 
 GUI_SERVICE_URL = "http://172.32.48.239:9000"
 
+def get_gui_service_headers(username: str = None) -> dict:
+    return {
+        'X-Forwarded-User': username or '未知',
+        'X-Request-Time': datetime.now().isoformat()
+    }
+
 class CloudPortalLoginRequest(BaseModel):
     session_id: str
     username: str
@@ -5379,12 +5422,19 @@ class CloudPortalQueryRequest(BaseModel):
 class CloudPortalLogoutRequest(BaseModel):
     session_id: str
 
+class AutoLoginRequest(BaseModel):
+    session_id: Optional[str] = None
+    username: str
+    password: str
+
 @app.get("/api/cloud-portal/captcha")
-async def get_cloud_portal_captcha(session_id: Optional[str] = None):
+async def get_cloud_portal_captcha(session_id: Optional[str] = None, user: dict = Depends(get_current_user)):
     try:
         params = {}
         if session_id:
             params['session_id'] = session_id
+        
+        headers = get_gui_service_headers(user.get('username'))
         
         logger.info(f"[云门户验证码] 开始请求 - session_id: {session_id}, 目标: {GUI_SERVICE_URL}/api/portal/captcha")
         
@@ -5393,6 +5443,7 @@ async def get_cloud_portal_captcha(session_id: Optional[str] = None):
             requests.get,
             f"{GUI_SERVICE_URL}/api/portal/captcha",
             params=params,
+            headers=headers,
             timeout=30
         )
         
@@ -5418,8 +5469,9 @@ async def get_cloud_portal_captcha(session_id: Optional[str] = None):
         )
 
 @app.post("/api/cloud-portal/login")
-async def cloud_portal_login(request: CloudPortalLoginRequest):
+async def cloud_portal_login(request: CloudPortalLoginRequest, user: dict = Depends(get_current_user)):
     try:
+        headers = get_gui_service_headers(user.get('username'))
         logger.info(f"[云门户登录] 开始请求 - session_id: {request.session_id}")
 
         response = await asyncio.to_thread(
@@ -5432,6 +5484,7 @@ async def cloud_portal_login(request: CloudPortalLoginRequest):
                 'captcha': request.captcha,
                 'uuid': request.uuid
             },
+            headers=headers,
             timeout=20
         )
 
@@ -5456,9 +5509,138 @@ async def cloud_portal_login(request: CloudPortalLoginRequest):
             content={"code": 500, "message": f"登录失败: {str(e)}"}
         )
 
-@app.post("/api/cloud-portal/query")
-async def cloud_portal_query(request: CloudPortalQueryRequest):
+@app.post("/api/cloud-portal/auto-login")
+async def cloud_portal_auto_login(request: AutoLoginRequest, user: dict = Depends(get_current_user)):
+    """
+    云门户自动登录
+    
+    流程:
+    1. 获取验证码
+    2. ddddocr识别验证码
+    3. 识别成功 -> 自动提交登录
+    4. 识别失败 -> 返回验证码图片，等待手动输入
+    """
+    session_id = request.session_id
+    headers = get_gui_service_headers(user.get('username'))
+    
     try:
+        logger.info(f"[自动登录] 开始 - 用户: {request.username}")
+        
+        params = {}
+        if session_id:
+            params['session_id'] = session_id
+        
+        captcha_response = await asyncio.to_thread(
+            requests.get,
+            f"{GUI_SERVICE_URL}/api/portal/captcha",
+            params=params,
+            headers=headers,
+            timeout=30
+        )
+        
+        if captcha_response.status_code != 200:
+            return JSONResponse(
+                status_code=captcha_response.status_code,
+                content=captcha_response.json()
+            )
+        
+        captcha_data = captcha_response.json()
+        
+        if captcha_data.get('code') != 200:
+            return JSONResponse(
+                status_code=500,
+                content={"code": 500, "message": "获取验证码失败"}
+            )
+        
+        session_id = captcha_data['data']['session_id']
+        base64_img = captcha_data['data']['img']
+        uuid = captcha_data['data']['uuid']
+        
+        logger.info(f"[自动登录] 获取验证码成功 - session_id: {session_id}")
+        
+        success, result, message = await asyncio.to_thread(
+            recognize_captcha,
+            base64_img
+        )
+        
+        if not success:
+            logger.warning(f"[自动登录] 验证码识别失败 - {message}")
+            return {
+                "code": 201,
+                "message": "验证码识别失败，请手动输入",
+                "data": {
+                    "session_id": session_id,
+                    "img": base64_img,
+                    "uuid": uuid,
+                    "need_captcha": True
+                }
+            }
+        
+        logger.info(f"[自动登录] 验证码识别成功 - 结果: {result}")
+        
+        login_response = await asyncio.to_thread(
+            requests.post,
+            f"{GUI_SERVICE_URL}/api/portal/login",
+            json={
+                'session_id': session_id,
+                'username': request.username,
+                'password': request.password,
+                'captcha': result,
+                'uuid': uuid
+            },
+            headers=headers,
+            timeout=20
+        )
+        
+        login_data = login_response.json()
+        
+        if login_data.get('code') == 200:
+            logger.info(f"[自动登录] 登录成功 - 用户: {request.username}")
+            return login_data
+        else:
+            error_msg = login_data.get('message', '登录失败')
+            logger.warning(f"[自动登录] 登录失败 - {error_msg}")
+            
+            if '验证码' in error_msg or 'captcha' in error_msg.lower():
+                return {
+                    "code": 201,
+                    "message": f"验证码错误: {error_msg}，请手动输入",
+                    "data": {
+                        "session_id": session_id,
+                        "img": base64_img,
+                        "uuid": uuid,
+                        "need_captcha": True
+                    }
+                }
+            
+            return JSONResponse(
+                status_code=login_response.status_code,
+                content=login_data
+            )
+            
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"[自动登录] 连接失败 - 错误: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
+        )
+    except requests.exceptions.Timeout:
+        logger.error("[自动登录] 请求超时")
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "请求超时"}
+        )
+    except Exception as e:
+        logger.error(f"[自动登录] 异常 - 错误: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"自动登录失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/query")
+async def cloud_portal_query(request: CloudPortalQueryRequest, user: dict = Depends(get_current_user)):
+    try:
+        headers = get_gui_service_headers(user.get('username'))
         logger.info(f"[云门户查询] 开始请求 - session_id: {request.session_id}")
 
         response = await asyncio.to_thread(
@@ -5468,6 +5650,7 @@ async def cloud_portal_query(request: CloudPortalQueryRequest):
                 'session_id': request.session_id,
                 'query_params': request.query_params
             },
+            headers=headers,
             timeout=45
         )
 
@@ -5493,14 +5676,16 @@ async def cloud_portal_query(request: CloudPortalQueryRequest):
         )
 
 @app.get("/api/cloud-portal/status")
-async def cloud_portal_status(session_id: str):
+async def cloud_portal_status(session_id: str, user: dict = Depends(get_current_user)):
     try:
+        headers = get_gui_service_headers(user.get('username'))
         logger.info(f"[云门户状态] 开始请求 - session_id: {session_id}")
 
         response = await asyncio.to_thread(
             requests.get,
             f"{GUI_SERVICE_URL}/api/portal/status",
             params={'session_id': session_id},
+            headers=headers,
             timeout=15
         )
 
@@ -5526,14 +5711,16 @@ async def cloud_portal_status(session_id: str):
         )
 
 @app.post("/api/cloud-portal/logout")
-async def cloud_portal_logout(request: CloudPortalLogoutRequest):
+async def cloud_portal_logout(request: CloudPortalLogoutRequest, user: dict = Depends(get_current_user)):
     try:
+        headers = get_gui_service_headers(user.get('username'))
         logger.info(f"[云门户登出] 开始请求 - session_id: {request.session_id}")
 
         response = await asyncio.to_thread(
             requests.post,
             f"{GUI_SERVICE_URL}/api/portal/logout",
             json={'session_id': request.session_id},
+            headers=headers,
             timeout=15
         )
 
@@ -5607,6 +5794,18 @@ class AIAuditQueryRequest(BaseModel):
     start_time: str
     end_time: str
     trade_type: Optional[int] = 1
+    page: Optional[int] = 0
+    page_size: Optional[int] = 20
+    sort: Optional[str] = "picTime DESC"
+
+class AIAuditGantryImagesRequest(BaseModel):
+    session_id: str
+    station_id: str
+    start_time: str
+    end_time: str
+    rows: Optional[int] = 20
+    start: Optional[int] = 0
+    sort: Optional[str] = "picTime DESC"
 
 class AIAuditSelectImagesRequest(BaseModel):
     images: List[dict]
@@ -5633,7 +5832,10 @@ async def ai_audit_vehicle_images(request: AIAuditQueryRequest):
                 'session_id': request.session_id,
                 'plate_number': request.plate_number,
                 'start_time': request.start_time,
-                'end_time': request.end_time
+                'end_time': request.end_time,
+                'page': request.page,
+                'page_size': request.page_size,
+                'sort': request.sort
             },
             timeout=60
         )
@@ -5650,6 +5852,40 @@ async def ai_audit_vehicle_images(request: AIAuditQueryRequest):
         )
     except Exception as e:
         logger.error(f"车辆图库查询失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": f"查询失败: {str(e)}"}
+        )
+
+@app.post("/api/cloud-portal/ai-audit/gantry-images")
+async def ai_audit_gantry_images(request: AIAuditGantryImagesRequest):
+    try:
+        response = requests.post(
+            f"{GUI_SERVICE_URL}/api/portal/ai-audit/gantry-images",
+            json={
+                'session_id': request.session_id,
+                'station_id': request.station_id,
+                'start_time': request.start_time,
+                'end_time': request.end_time,
+                'rows': request.rows,
+                'start': request.start,
+                'sort': request.sort
+            },
+            timeout=60
+        )
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        return JSONResponse(
+            status_code=503,
+            content={"code": 503, "message": "无法连接到云门户查询服务"}
+        )
+    except requests.exceptions.Timeout:
+        return JSONResponse(
+            status_code=504,
+            content={"code": 504, "message": "连接云门户查询服务超时"}
+        )
+    except Exception as e:
+        logger.error(f"门架图库查询失败: {e}")
         return JSONResponse(
             status_code=500,
             content={"code": 500, "message": f"查询失败: {str(e)}"}
@@ -6019,6 +6255,12 @@ async def ai_audit_gantry_list(request: GantryListRequest):
             status_code=500,
             content={"code": 500, "message": f"获取门架列表失败: {str(e)}"}
         )
+
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+else:
+    logger.warning(f"静态文件目录不存在: {static_dir}")
 
 @app.on_event("shutdown")
 async def shutdown_event():

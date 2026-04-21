@@ -3,12 +3,32 @@ import hashlib
 import json
 import time
 import logging
-import socket
+import base64
 from typing import Dict, Optional, Any
-from network_utils import create_portal_session, restore_create_connection, get_local_ips
-from config import config
+from network_utils import create_portal_session, validate_source_ip, get_local_ips
+from config import config, Timeouts
 
 logger = logging.getLogger(__name__)
+
+
+def parse_jwt_expiration(token: str) -> Optional[float]:
+    try:
+        parts = token.split('.')
+        if len(parts) != 3:
+            logger.warning("[JWT解析] Token格式不正确，不是标准JWT格式")
+            return None
+        payload = parts[1]
+        payload += '=' * (4 - len(payload) % 4)
+        decoded = base64.urlsafe_b64decode(payload)
+        data = json.loads(decoded)
+        exp = data.get('exp')
+        if exp:
+            logger.info(f"[JWT解析] Token过期时间: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(exp))}")
+        return exp
+    except Exception as e:
+        logger.error(f"[JWT解析] 解析Token失败: {e}")
+        return None
+
 
 class PortalClient:
     def __init__(self, source_ip: Optional[str] = None):
@@ -16,7 +36,7 @@ class PortalClient:
         
         logger.info(f"PortalClient初始化 - 配置源IP: {self.source_ip}")
         
-        if self._validate_source_ip(self.source_ip):
+        if validate_source_ip(self.source_ip):
             self.session = create_portal_session(self.source_ip)
             logger.info(f"成功绑定源IP: {self.source_ip}")
         else:
@@ -24,6 +44,7 @@ class PortalClient:
             self.session = create_portal_session(None)
             self.source_ip = None
             
+        self.owner_id: Optional[str] = None
         self.access_token: Optional[str] = None
         self.refresh_token: Optional[str] = None
         self.redirect_uri: Optional[str] = None
@@ -34,30 +55,30 @@ class PortalClient:
         self.needs_relogin: bool = False
         self.relogin_reason: Optional[str] = None
     
-    def _validate_source_ip(self, ip: str) -> bool:
-        if not ip:
-            return False
-            
-        try:
-            local_ips = get_local_ips()
-            if ip not in local_ips:
-                logger.warning(f"源IP {ip} 不在本地接口列表中: {local_ips}")
-                return False
-                
-            test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            test_socket.bind((ip, 0))
-            test_socket.close()
-            
-            logger.info(f"源IP {ip} 验证通过")
-            return True
-            
-        except OSError as e:
-            logger.error(f"无法绑定源IP {ip}: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"验证源IP时出错: {e}")
-            return False
+    def set_owner(self, owner_id: str) -> None:
+        """
+        设置会话所有者
         
+        Args:
+            owner_id: 所有者标识（用户名或用户ID）
+        """
+        self.owner_id = owner_id
+        logger.info(f"[会话绑定] 会话已绑定到用户: {owner_id}")
+    
+    def validate_owner(self, owner_id: str) -> bool:
+        """
+        验证请求者是否为会话所有者
+        
+        Args:
+            owner_id: 待验证的所有者标识
+            
+        Returns:
+            是否为会话所有者
+        """
+        if self.owner_id is None:
+            return True
+        return self.owner_id == owner_id
+    
     def get_captcha(self) -> Dict[str, Any]:
         url = f"{config.PORTAL_BASE_URL}/captcha-server/api/captcha"
         
@@ -71,7 +92,7 @@ class PortalClient:
             
             response = self.session.get(
                 url,
-                timeout=10
+                timeout=Timeouts.CAPTCHA
             )
             
             dns_time = time.time() - dns_start
@@ -88,7 +109,7 @@ class PortalClient:
             }
         except requests.exceptions.Timeout:
             total_time = time.time() - total_start
-            logger.error(f"[超时] 获取验证码超时 - 总耗时: {total_time:.2f}s (限制: 10s), URL: {url}, 源IP: {self.source_ip}")
+            logger.error(f"[超时] 获取验证码超时 - 总耗时: {total_time:.2f}s (限制: {Timeouts.CAPTCHA}s), URL: {url}, 源IP: {self.source_ip}")
             return {
                 'success': False,
                 'error': f'获取验证码超时 ({total_time:.1f}s)，请检查网络连接或云门户服务器状态'
@@ -101,13 +122,12 @@ class PortalClient:
             
             if self.source_ip and ("Cannot assign requested address" in error_detail or "failed to bind" in error_detail.lower()):
                 logger.error(f"[自动重试] 源IP {self.source_ip} 绑定失败，尝试使用默认路由重试...")
-                restore_create_connection()
                 self.session = create_portal_session(None)
                 self.source_ip = None
                 
                 try:
                     retry_start = time.time()
-                    retry_response = self.session.get(url, timeout=5)
+                    retry_response = self.session.get(url, timeout=Timeouts.CAPTCHA)
                     retry_response.raise_for_status()
                     data = retry_response.json()
                     retry_time = time.time() - retry_start
@@ -147,7 +167,7 @@ class PortalClient:
             response = self.session.get(
                 url,
                 params=params,
-                timeout=10
+                timeout=Timeouts.CAPTCHA
             )
             response.raise_for_status()
             
@@ -197,7 +217,7 @@ class PortalClient:
             response = self.session.post(
                 url,
                 data=data,
-                timeout=15,
+                timeout=Timeouts.LOGIN,
                 headers={
                     'Content-Type': 'application/x-www-form-urlencoded'
                 }
@@ -212,7 +232,14 @@ class PortalClient:
                 self.refresh_token = result['result']['global_refresh_token']
                 self.redirect_uri = result['result'].get('redirect_uri', '')
                 self.login_time = time.time()
-                self.token_expires_at = self.login_time + 86400
+                
+                jwt_exp = parse_jwt_expiration(self.access_token)
+                if jwt_exp:
+                    self.token_expires_at = jwt_exp
+                    logger.info(f"[登录] 使用JWT实际过期时间: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(jwt_exp))}")
+                else:
+                    self.token_expires_at = self.login_time + 7200
+                    logger.warning(f"[登录] JWT解析失败，使用默认2小时过期时间")
                 
                 self.needs_relogin = False
                 self.relogin_reason = None
@@ -267,7 +294,7 @@ class PortalClient:
             response = self.session.get(
                 url,
                 headers=headers,
-                timeout=10
+                timeout=Timeouts.USER_INFO
             )
             response.raise_for_status()
             
@@ -303,7 +330,7 @@ class PortalClient:
                 url,
                 headers=headers,
                 json=query_params,
-                timeout=30
+                timeout=Timeouts.QUERY
             )
             response.raise_for_status()
             
@@ -349,7 +376,7 @@ class PortalClient:
             response = self.session.post(
                 url,
                 data=data,
-                timeout=10
+                timeout=Timeouts.REFRESH_TOKEN
             )
             response.raise_for_status()
             
@@ -357,7 +384,14 @@ class PortalClient:
             if result.get('code', {}).get('ok'):
                 self.access_token = result['result']['global_access_token']
                 self.refresh_token = result['result'].get('global_refresh_token', self.refresh_token)
-                self.token_expires_at = time.time() + 86400
+                
+                jwt_exp = parse_jwt_expiration(self.access_token)
+                if jwt_exp:
+                    self.token_expires_at = jwt_exp
+                    logger.info(f"[刷新Token] 使用JWT实际过期时间: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(jwt_exp))}")
+                else:
+                    self.token_expires_at = time.time() + 7200
+                    logger.warning(f"[刷新Token] JWT解析失败，使用默认2小时过期时间")
                 
                 self.needs_relogin = False
                 self.relogin_reason = None
@@ -443,7 +477,7 @@ class PortalClient:
                 url,
                 params={'tenantId': tenant_id},
                 headers=headers,
-                timeout=10
+                timeout=Timeouts.HEARTBEAT
             )
             
             if response.status_code == 200:
@@ -475,6 +509,7 @@ class PortalClient:
             }
     
     def logout(self) -> Dict[str, Any]:
+        self.owner_id = None
         self.access_token = None
         self.refresh_token = None
         self.user_info = None
@@ -487,23 +522,15 @@ class PortalClient:
         return {'success': True}
     
     def is_logged_in(self) -> bool:
-        if not self.access_token:
-            return False
-        
-        if self.token_expires_at and time.time() > self.token_expires_at:
-            return False
-        
-        return True
+        return self.access_token is not None and not self.needs_relogin
     
     def get_status(self) -> Dict[str, Any]:
         return {
             'logged_in': self.is_logged_in(),
-            'user_info': self.user_info if self.is_logged_in() else None,
+            'user_info': self.user_info,
             'login_time': self.login_time,
             'expires_at': self.token_expires_at,
             'needs_relogin': self.needs_relogin,
-            'relogin_reason': self.relogin_reason
+            'relogin_reason': self.relogin_reason,
+            'owner_id': self.owner_id
         }
-    
-    def __del__(self):
-        restore_create_connection()

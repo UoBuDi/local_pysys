@@ -11,7 +11,23 @@ import {
   type TaskExecutionHistory
 } from '@/api/scheduled-tasks'
 import { syncCloudPortalDataApi, getCloudPortalDataStatusApi } from '@/api/cloud-portal-data'
-import { ElMessage, ElSwitch, ElTag, ElCard, ElDescriptions, ElDescriptionsItem, ElButton, ElTable, ElTableColumn, ElDialog, ElForm, ElFormItem, ElInput, ElTabs, ElTabPane } from 'element-plus'
+import {
+  ElMessage,
+  ElSwitch,
+  ElTag,
+  ElCard,
+  ElDescriptions,
+  ElDescriptionsItem,
+  ElButton,
+  ElTable,
+  ElTableColumn,
+  ElDialog,
+  ElForm,
+  ElFormItem,
+  ElInput,
+  ElTabs,
+  ElTabPane
+} from 'element-plus'
 import { ContentWrap } from '@/components/ContentWrap'
 import { CloudPortalLoginDialog } from '@/components/CloudPortalLoginDialog'
 
@@ -101,7 +117,7 @@ const handleRunTask = async (task: ScheduledTask) => {
     await checkCloudPortalLoginAndRun()
     return
   }
-  
+
   runLoading.value = task.task_name
   try {
     ElMessage.info('正在执行任务...')
@@ -136,15 +152,15 @@ const handleLoginSuccess = async (data: { access_token: string; user_info: any }
 
 const executeCloudPortalDataSync = async () => {
   if (!pendingTask.value) return
-  
+
   runLoading.value = pendingTask.value.task_name
   try {
     ElMessage.info('正在同步云门户数据...')
-    
+
     const res = await syncCloudPortalDataApi({
       access_token: cloudPortalAccessToken.value
     })
-    
+
     if (res.code === 200) {
       ElMessage.success(res.message || '数据同步成功')
       await fetchTasks()
@@ -183,12 +199,12 @@ const handleEditTask = (task: ScheduledTask) => {
 
 const handleSaveEdit = async () => {
   if (!editingTask.value) return
-  
+
   if (!validateCronExpression(editForm.value.cron_expression)) {
     ElMessage.error('Cron表达式格式无效')
     return
   }
-  
+
   try {
     const res = await updateScheduledTaskApi(editingTask.value.id, {
       cron_expression: editForm.value.cron_expression
@@ -216,7 +232,7 @@ const validateCronExpression = (expression: string): boolean => {
   if (!expression) return false
   const parts = expression.trim().split(/\s+/)
   if (parts.length !== 5) return false
-  
+
   const validatePart = (part: string, min: number, max: number): boolean => {
     if (part === '*') return true
     if (part === '?') return true
@@ -234,16 +250,18 @@ const validateCronExpression = (expression: string): boolean => {
     }
     if (/^\d+(,\d+)*$/.test(part)) {
       const nums = part.split(',').map(Number)
-      return nums.every(n => n >= min && n <= max)
+      return nums.every((n) => n >= min && n <= max)
     }
     return false
   }
-  
-  return validatePart(parts[0], 0, 59) &&
-         validatePart(parts[1], 0, 23) &&
-         validatePart(parts[2], 1, 31) &&
-         validatePart(parts[3], 1, 12) &&
-         validatePart(parts[4], 0, 6)
+
+  return (
+    validatePart(parts[0], 0, 59) &&
+    validatePart(parts[1], 0, 23) &&
+    validatePart(parts[2], 1, 31) &&
+    validatePart(parts[3], 1, 12) &&
+    validatePart(parts[4], 0, 6)
+  )
 }
 
 const getStatusType = (status: string | null): 'success' | 'danger' | 'warning' | 'info' => {
@@ -265,7 +283,7 @@ const getStatusText = (status: string | null): string => {
 // ✅ 正确：加空值判断，彻底解决报错
 const formatNumber = (num) => {
   // 关键：undefined/null 直接返回 0 或空字符串
-  if (num === undefined || num === null) return '0' 
+  if (num === undefined || num === null) return '0'
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
@@ -315,7 +333,12 @@ onMounted(() => {
               </template>
             </ElTableColumn>
             <ElTableColumn prop="last_run_time" label="上次执行时间" width="180" />
-            <ElTableColumn prop="last_run_message" label="执行消息" min-width="200" show-overflow-tooltip />
+            <ElTableColumn
+              prop="last_run_message"
+              label="执行消息"
+              min-width="200"
+              show-overflow-tooltip
+            />
             <ElTableColumn label="操作" width="260" fixed="right">
               <template #default="{ row }">
                 <ElButton
@@ -326,20 +349,8 @@ onMounted(() => {
                 >
                   立即执行
                 </ElButton>
-                <ElButton
-                  type="default"
-                  size="small"
-                  @click="handleEditTask(row)"
-                >
-                  编辑
-                </ElButton>
-                <ElButton
-                  type="info"
-                  size="small"
-                  @click="handleViewHistory(row)"
-                >
-                  历史
-                </ElButton>
+                <ElButton type="default" size="small" @click="handleEditTask(row)"> 编辑 </ElButton>
+                <ElButton type="info" size="small" @click="handleViewHistory(row)"> 历史 </ElButton>
               </template>
             </ElTableColumn>
           </ElTable>
@@ -356,16 +367,31 @@ onMounted(() => {
           </template>
           <ElDescriptions :column="4" border>
             <ElDescriptionsItem label="统计月份">{{ statistics.stat_month }}</ElDescriptionsItem>
-            <ElDescriptionsItem label="总交易数">{{ formatNumber(statistics.total_transactions) }}</ElDescriptionsItem>
-            <ElDescriptionsItem label="总交易金额">¥{{ formatNumber(statistics.total_amount) }}</ElDescriptionsItem>
-            <ElDescriptionsItem label="总拆分金额">¥{{ formatNumber(statistics.total_split_amount) }}</ElDescriptionsItem>
-            <ElDescriptionsItem label="收费站数量">{{ statistics.station_count }}</ElDescriptionsItem>
-            <ElDescriptionsItem label="更新时间" :span="3">{{ statistics.updated_at }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="总交易数">{{
+              formatNumber(statistics.total_transactions)
+            }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="总交易金额"
+              >¥{{ formatNumber(statistics.total_amount) }}</ElDescriptionsItem
+            >
+            <ElDescriptionsItem label="总拆分金额"
+              >¥{{ formatNumber(statistics.total_split_amount) }}</ElDescriptionsItem
+            >
+            <ElDescriptionsItem label="收费站数量">{{
+              statistics.station_count
+            }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="更新时间" :span="3">{{
+              statistics.updated_at
+            }}</ElDescriptionsItem>
           </ElDescriptions>
 
           <div class="mt-20px" v-if="statistics.vehicle_types && statistics.vehicle_types.length">
             <h4 class="mb-10px">车型分布</h4>
-            <ElTable :data="statistics.vehicle_types.slice(0, 10)" stripe size="small" max-height="300">
+            <ElTable
+              :data="statistics.vehicle_types.slice(0, 10)"
+              stripe
+              size="small"
+              max-height="300"
+            >
               <ElTableColumn prop="type" label="车型" width="150" />
               <ElTableColumn prop="count" label="数量">
                 <template #default="{ row }">
@@ -375,7 +401,10 @@ onMounted(() => {
             </ElTable>
           </div>
 
-          <div class="mt-20px" v-if="statistics.daily_transactions && statistics.daily_transactions.length">
+          <div
+            class="mt-20px"
+            v-if="statistics.daily_transactions && statistics.daily_transactions.length"
+          >
             <h4 class="mb-10px">每日交易趋势 (最近7天)</h4>
             <ElTable :data="statistics.daily_transactions.slice(-7)" stripe size="small">
               <ElTableColumn prop="date" label="日期" width="150" />
@@ -410,7 +439,11 @@ onMounted(() => {
       </template>
     </ElDialog>
 
-    <ElDialog v-model="historyDialogVisible" :title="`执行历史 - ${selectedTaskName}`" width="800px">
+    <ElDialog
+      v-model="historyDialogVisible"
+      :title="`执行历史 - ${selectedTaskName}`"
+      width="800px"
+    >
       <ElTable :data="executionHistory" v-loading="historyLoading" stripe max-height="500">
         <ElTableColumn label="状态" width="100">
           <template #default="{ row }">
@@ -430,7 +463,12 @@ onMounted(() => {
       </ElTable>
       <template #footer>
         <ElButton @click="historyDialogVisible = false">关闭</ElButton>
-        <ElButton type="primary" @click="fetchExecutionHistory(selectedTaskName)" :loading="historyLoading">刷新</ElButton>
+        <ElButton
+          type="primary"
+          @click="fetchExecutionHistory(selectedTaskName)"
+          :loading="historyLoading"
+          >刷新</ElButton
+        >
       </template>
     </ElDialog>
 

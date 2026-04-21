@@ -842,6 +842,8 @@ export default {
     logWebsocketClosed: 'Log WebSocket closed',
     connectedToSyncProgress: 'Connected to sync progress service',
     connectedToLogService: 'Connected to log service',
+    webSocketConnected: 'WebSocket Connected',
+    webSocketDisconnected: 'WebSocket Disconnected',
     syncControlPageLoaded: 'Sync control page loaded'
   },
   syncConfig: {

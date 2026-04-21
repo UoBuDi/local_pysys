@@ -15,7 +15,7 @@ const prefixCls = getPrefixCls('panel')
 
 const loading = ref(true)
 
-let totalState = reactive({
+const totalState = reactive({
   totalTransactions: 0,
   freeTransactions: 0,
   splitSectionAmount: 0

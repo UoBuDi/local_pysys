@@ -14,7 +14,7 @@ const MAX_RETRY_COUNT = 3
 const RETRY_DELAY = 1000
 
 const retryDelay = (delay: number) => {
-  return new Promise(resolve => setTimeout(resolve, delay))
+  return new Promise((resolve) => setTimeout(resolve, delay))
 }
 
 const axiosInstance: AxiosInstance = axios.create({
@@ -41,37 +41,37 @@ axiosInstance.interceptors.response.use(
   },
   async (error: AxiosError) => {
     const config = error.config as any
-    
+
     if (!config) {
       console.log('err： ' + error)
       ElMessage.error(error.message)
       return Promise.reject(error)
     }
-    
+
     config.__retryCount = config.__retryCount || 0
-    
+
     if (error.response?.status === 429) {
       console.warn('[HTTP] 请求频率限制 (429)，准备重试...')
-      
+
       if (config.__retryCount < MAX_RETRY_COUNT) {
         config.__retryCount++
         const delay = RETRY_DELAY * Math.pow(2, config.__retryCount - 1)
         console.log(`[HTTP] 第 ${config.__retryCount} 次重试，延迟 ${delay}ms`)
-        
+
         await retryDelay(delay)
-        
+
         const url = config.url || ''
         const controller = new AbortController()
         config.signal = controller.signal
         abortControllerMap.set(url, controller)
-        
+
         return axiosInstance.request(config)
       } else {
         ElMessage.error('请求过于频繁，请稍后再试')
         return Promise.reject(error)
       }
     }
-    
+
     console.log('err： ' + error)
     ElMessage.error(error.message)
     return Promise.reject(error)

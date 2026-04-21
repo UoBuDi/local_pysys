@@ -12,7 +12,8 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QSpinBox, QCheckBox, QGroupBox,
     QFormLayout, QMessageBox, QSystemTrayIcon, QMenu,
-    QTabWidget, QDialog, QDialogButtonBox, QComboBox, QGridLayout
+    QTabWidget, QDialog, QDialogButtonBox, QComboBox, QGridLayout,
+    QTableWidget, QTableWidgetItem, QHeaderView, QTextEdit
 )
 from PySide6.QtCore import Qt, QThread, Signal, QTimer, Slot
 from PySide6.QtGui import QIcon, QAction
@@ -146,10 +147,19 @@ class FlaskThread(QThread):
         self._is_running = False
         if self.server:
             try:
+                logger.info("[FlaskThread] 正在关闭服务器...")
                 self.server.shutdown()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"[FlaskThread] 关闭服务器异常: {e}")
             self.server = None
+        
+        if self.isRunning():
+            logger.info("[FlaskThread] 等待线程结束...")
+            if not self.wait(3000):
+                logger.warning("[FlaskThread] 线程未在3秒内结束，强制终止")
+                self.terminate()
+                self.wait(1000)
+            logger.info("[FlaskThread] 线程已停止")
 
 class WebSocketClientThread(QThread):
     connected_signal = Signal()
@@ -254,10 +264,19 @@ class WebSocketClientThread(QThread):
         self._is_running = False
         if self._ws:
             try:
+                logger.info("[WebSocket] 正在关闭连接...")
                 self._ws.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"[WebSocket] 关闭连接异常: {e}")
             self._ws = None
+        
+        if self.isRunning():
+            logger.info("[WebSocket] 等待线程结束...")
+            if not self.wait(2000):
+                logger.warning("[WebSocket] 线程未在2秒内结束，强制终止")
+                self.terminate()
+                self.wait(1000)
+            logger.info("[WebSocket] 线程已停止")
     
     def get_last_status(self):
         return self._last_status
@@ -747,6 +766,44 @@ class MainWindow(QMainWindow):
         status_detail_layout.setColumnStretch(5, 1)
         
         layout.addWidget(status_detail_group)
+        
+        request_info_group = QGroupBox("请求信息")
+        request_info_layout = QVBoxLayout(request_info_group)
+        
+        self.request_info_table = QTableWidget()
+        self.request_info_table.setColumnCount(5)
+        self.request_info_table.setHorizontalHeaderLabels([
+            '时间', '用户', '方法', '路径', '来源'
+        ])
+        self.request_info_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.request_info_table.setMaximumHeight(180)
+        self.request_info_table.setAlternatingRowColors(True)
+        self.request_info_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        
+        request_info_layout.addWidget(self.request_info_table)
+        layout.addWidget(request_info_group)
+        
+        detail_group = QGroupBox("数据详情")
+        detail_layout = QVBoxLayout(detail_group)
+        
+        self.detail_text = QTextEdit()
+        self.detail_text.setReadOnly(True)
+        self.detail_text.setMaximumHeight(120)
+        self.detail_text.setStyleSheet("""
+            QTextEdit {
+                background-color: #f5f7fa;
+                border: 1px solid #dcdfe6;
+                border-radius: 4px;
+                padding: 8px;
+                font-family: Consolas, monospace;
+                font-size: 12px;
+            }
+        """)
+        
+        detail_layout.addWidget(self.detail_text)
+        layout.addWidget(detail_group)
+        
+        self.request_info_table.itemClicked.connect(self.show_request_detail)
     
     def setup_tray(self):
         self.tray_icon = QSystemTrayIcon(self)
@@ -825,6 +882,13 @@ class MainWindow(QMainWindow):
     def stop_service(self):
         if self.flask_thread and self.is_service_running:
             self.log_message("正在停止服务...")
+            
+            self.stop_websocket_client()
+            
+            if hasattr(self, 'request_log_timer') and self.request_log_timer:
+                self.request_log_timer.stop()
+                self.request_log_timer = None
+            
             self.flask_thread.stop()
             
             from session_manager import session_manager
@@ -953,7 +1017,7 @@ class MainWindow(QMainWindow):
     
     def fetch_request_logs(self):
         from session_manager import session_manager
-        from api_server import request_log
+        from api_server import request_log, get_request_info_logs
         import time
         
         success = session_manager.heartbeat_success_count
@@ -982,6 +1046,31 @@ class MainWindow(QMainWindow):
         else:
             self.idle_countdown_label.setText("空闲中")
             self.idle_countdown_label.setStyleSheet("color: #67C23A; font-weight: bold; font-size: 14px;")
+        
+        request_infos = get_request_info_logs()
+        self.request_info_table.setRowCount(len(request_infos))
+        for i, info in enumerate(reversed(request_infos)):
+            self.request_info_table.setItem(i, 0, QTableWidgetItem(info.get('display_time', '')))
+            self.request_info_table.setItem(i, 1, QTableWidgetItem(info.get('username', '')))
+            self.request_info_table.setItem(i, 2, QTableWidgetItem(info.get('method', '')))
+            self.request_info_table.setItem(i, 3, QTableWidgetItem(info.get('path', '')))
+            self.request_info_table.setItem(i, 4, QTableWidgetItem(info.get('source', '')))
+            
+            for j in range(5):
+                item = self.request_info_table.item(i, j)
+                if item:
+                    item.setData(Qt.ItemDataRole.UserRole, info)
+    
+    def show_request_detail(self, item):
+        info = item.data(Qt.ItemDataRole.UserRole)
+        if info:
+            detail = f"时间: {info.get('request_time', '')}\n"
+            detail += f"用户: {info.get('username', '')}\n"
+            detail += f"方法: {info.get('method', '')}\n"
+            detail += f"路径: {info.get('path', '')}\n"
+            detail += f"来源: {info.get('source', '')}\n"
+            detail += f"\n数据:\n{json.dumps(info.get('data', {}), ensure_ascii=False, indent=2)}"
+            self.detail_text.setPlainText(detail)
     
     @Slot(str)
     def on_service_error(self, error):
@@ -1004,6 +1093,8 @@ class MainWindow(QMainWindow):
     
     @Slot()
     def quit_app(self):
+        logger.info("[退出] 开始退出程序...")
+        
         self.stop_websocket_client()
         
         if hasattr(self, 'request_log_timer') and self.request_log_timer:
@@ -1018,13 +1109,20 @@ class MainWindow(QMainWindow):
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             )
             if reply == QMessageBox.StandardButton.No:
+                logger.info("[退出] 用户取消退出")
                 return
             
             self.stop_service()
         
+        if self.flask_thread and self.flask_thread.isRunning():
+            logger.info("[退出] 等待Flask线程结束...")
+            if not self.flask_thread.wait(5000):
+                logger.warning("[退出] Flask线程未在5秒内结束")
+        
         if hasattr(self, 'tray_icon'):
             self.tray_icon.hide()
         
+        logger.info("[退出] 程序退出")
         QApplication.quit()
 
 def main():
