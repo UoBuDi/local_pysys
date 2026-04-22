@@ -1,5 +1,8 @@
 {
 	"dependencies": {
 		"@tanstack/vue-table": "^8.21.3"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.59.1"
 	}
 }
