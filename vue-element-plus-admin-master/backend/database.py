@@ -75,10 +75,13 @@ def create_db_pool(section: str, config, max_connections: int = 10) -> PooledDB:
             'password': config.get(section, 'password', fallback='password'),
             'database': config.get(section, 'database', fallback='test'),
             'charset': config.get(section, 'charset', fallback='utf8mb4'),
+            'connect_timeout': 5,
+            'read_timeout': 30,
+            'write_timeout': 30,
             'maxconnections': max_connections,
             'mincached': 2,
             'maxcached': 5,
-            'blocking': True,
+            'blocking': False,
             'ping': 1
         }
         pool = PooledDB(pymysql, **db_config)

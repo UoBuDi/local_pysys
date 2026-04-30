@@ -15,11 +15,34 @@ from PySide6.QtWidgets import (
     QTabWidget, QDialog, QDialogButtonBox, QComboBox, QGridLayout,
     QTableWidget, QTableWidgetItem, QHeaderView, QTextEdit
 )
-from PySide6.QtCore import Qt, QThread, Signal, QTimer, Slot
-from PySide6.QtGui import QIcon, QAction
+from PySide6.QtCore import Qt, QThread, Signal, QTimer, Slot, QObject
+from PySide6.QtGui import QIcon, QAction, QTextCursor, QColor
 from werkzeug.serving import run_simple, make_server
 from config import config, DEFAULT_CONFIG, get_base_path
 from network_utils import get_local_ips, check_network_connectivity
+
+class LogSignalEmitter(QObject):
+    log_signal = Signal(str, str)
+
+class QtLogHandler(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.emitter = LogSignalEmitter()
+        self._formatter = logging.Formatter(
+            '%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+    
+    def emit(self, record):
+        try:
+            msg = self._formatter.format(record)
+            level = record.levelname
+            self.emitter.log_signal.emit(msg, level)
+        except Exception:
+            self.handleError(record)
+    
+    def get_signal(self):
+        return self.emitter.log_signal
 
 def get_log_file_path():
     log_dir = get_base_path()
@@ -60,19 +83,23 @@ def setup_logging():
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
     
+    qt_handler = QtLogHandler()
+    qt_handler.setLevel(logging.DEBUG)
+    
     if logger.handlers:
         for handler in logger.handlers[:]:
             logger.removeHandler(handler)
     
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
+    logger.addHandler(qt_handler)
     
     logging.getLogger('urllib3').setLevel(logging.WARNING)
     logging.getLogger('requests').setLevel(logging.WARNING)
     
-    return logger, file_handler
+    return logger, file_handler, qt_handler
 
-logger, log_file_handler = setup_logging()
+logger, log_file_handler, qt_log_handler = setup_logging()
 
 from api_server import app
 
@@ -571,6 +598,8 @@ class MainWindow(QMainWindow):
         self.init_ui()
         self.setup_tray()
         
+        qt_log_handler.get_signal().connect(self.append_log)
+        
         if config.AUTO_START:
             QTimer.singleShot(500, self.start_service)
     
@@ -626,9 +655,15 @@ class MainWindow(QMainWindow):
         layout.setSpacing(15)
         layout.setContentsMargins(20, 20, 20, 20)
         
+        self.tab_widget = QTabWidget()
+        
+        status_tab = QWidget()
+        status_layout = QVBoxLayout(status_tab)
+        status_layout.setSpacing(15)
+        
         status_group = QGroupBox("服务状态")
-        status_layout = QVBoxLayout(status_group)
-        status_layout.setSpacing(12)
+        status_layout_inner = QVBoxLayout(status_group)
+        status_layout_inner.setSpacing(12)
         
         status_row = QHBoxLayout()
         status_row.setSpacing(20)
@@ -692,9 +727,9 @@ class MainWindow(QMainWindow):
         btn_layout.addWidget(config_btn)
         
         status_row.addLayout(btn_layout)
-        status_layout.addLayout(status_row)
+        status_layout_inner.addLayout(status_row)
         
-        layout.addWidget(status_group)
+        status_layout.addWidget(status_group)
         
         info_group = QGroupBox("连接信息")
         info_layout = QGridLayout(info_group)
@@ -725,7 +760,7 @@ class MainWindow(QMainWindow):
         info_layout.setColumnStretch(1, 1)
         info_layout.setColumnStretch(3, 1)
         
-        layout.addWidget(info_group)
+        status_layout.addWidget(info_group)
         
         status_detail_group = QGroupBox("状态详情")
         status_detail_layout = QGridLayout(status_detail_group)
@@ -765,7 +800,7 @@ class MainWindow(QMainWindow):
         status_detail_layout.setColumnStretch(3, 1)
         status_detail_layout.setColumnStretch(5, 1)
         
-        layout.addWidget(status_detail_group)
+        status_layout.addWidget(status_detail_group)
         
         request_info_group = QGroupBox("请求信息")
         request_info_layout = QVBoxLayout(request_info_group)
@@ -781,7 +816,7 @@ class MainWindow(QMainWindow):
         self.request_info_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         
         request_info_layout.addWidget(self.request_info_table)
-        layout.addWidget(request_info_group)
+        status_layout.addWidget(request_info_group)
         
         detail_group = QGroupBox("数据详情")
         detail_layout = QVBoxLayout(detail_group)
@@ -801,9 +836,102 @@ class MainWindow(QMainWindow):
         """)
         
         detail_layout.addWidget(self.detail_text)
-        layout.addWidget(detail_group)
+        status_layout.addWidget(detail_group)
         
         self.request_info_table.itemClicked.connect(self.show_request_detail)
+        
+        log_tab = QWidget()
+        log_layout = QVBoxLayout(log_tab)
+        
+        log_control_layout = QHBoxLayout()
+        log_control_layout.setSpacing(10)
+        
+        log_control_layout.addWidget(QLabel("日志级别:"))
+        self.log_level_combo = QComboBox()
+        self.log_level_combo.addItems(["ALL", "DEBUG", "INFO", "WARNING", "ERROR"])
+        self.log_level_combo.setCurrentText("INFO")
+        self.log_level_combo.currentTextChanged.connect(self.on_log_level_changed)
+        log_control_layout.addWidget(self.log_level_combo)
+        
+        log_control_layout.addStretch()
+        
+        clear_log_btn = QPushButton("清空日志")
+        clear_log_btn.clicked.connect(self.clear_log)
+        clear_log_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #909399;
+            }
+            QPushButton:hover {
+                background-color: #a6a9ad;
+            }
+        """)
+        log_control_layout.addWidget(clear_log_btn)
+        
+        log_layout.addLayout(log_control_layout)
+        
+        self.log_text = QTextEdit()
+        self.log_text.setReadOnly(True)
+        self.log_text.setStyleSheet("""
+            QTextEdit {
+                background-color: #1e1e1e;
+                color: #d4d4d4;
+                border: 1px solid #3c3c3c;
+                border-radius: 4px;
+                padding: 8px;
+                font-family: Consolas, 'Courier New', monospace;
+                font-size: 12px;
+            }
+        """)
+        log_layout.addWidget(self.log_text)
+        
+        self.tab_widget.addTab(status_tab, "状态信息")
+        self.tab_widget.addTab(log_tab, "运行日志")
+        
+        layout.addWidget(self.tab_widget)
+        
+        self.current_log_level = "INFO"
+    
+    def on_log_level_changed(self, level):
+        self.current_log_level = level
+    
+    def append_log(self, message, level):
+        if level not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+            level = "INFO"
+        
+        level_order = {"DEBUG": 0, "INFO": 1, "WARNING": 2, "ERROR": 3, "CRITICAL": 4}
+        current_level_val = level_order.get(self.current_log_level, 1)
+        message_level_val = level_order.get(level, 1)
+        
+        if message_level_val < current_level_val:
+            return
+        
+        color_map = {
+            "DEBUG": "#808080",
+            "INFO": "#d4d4d4",
+            "WARNING": "#dcdcaa",
+            "ERROR": "#f14c4c",
+            "CRITICAL": "#ff0000"
+        }
+        color = color_map.get(level, "#d4d4d4")
+        
+        self.log_text.moveCursor(QTextCursor.MoveOperation.End)
+        self.log_text.setTextColor(QColor(color))
+        self.log_text.append(message)
+        
+        cursor = self.log_text.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        self.log_text.setTextCursor(cursor)
+        
+        max_lines = 1000
+        doc = self.log_text.document()
+        while doc.blockCount() > max_lines:
+            cursor = QTextCursor(doc.begin())
+            cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
+            cursor.removeSelectedText()
+            cursor.deleteChar()
+    
+    def clear_log(self):
+        self.log_text.clear()
     
     def setup_tray(self):
         self.tray_icon = QSystemTrayIcon(self)

@@ -11,10 +11,13 @@ import asyncio
 import json
 import requests
 import base64
+from collections import defaultdict
+from time import time as current_time
 from io import BytesIO
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from typing import List, Optional
 from openpyxl import Workbook, load_workbook
 from config import load_config, save_config, get_database_config
@@ -125,6 +128,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 # 数据模型
 class DatabaseConfig(BaseModel):
     host: str
@@ -222,10 +227,24 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 # JWT配置
 SECRET_KEY = os.environ.get("SECRET_KEY", "change-me")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 120
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 security = HTTPBearer()
+
+user_refresh_records: dict[str, list[float]] = defaultdict(list)
+REFRESH_RATE_LIMIT = 3
+REFRESH_WINDOW_SECONDS = 120
+
+def check_refresh_rate_limit(username: str) -> tuple[bool, str]:
+    now = current_time()
+    user_records = user_refresh_records.get(username, [])
+    valid_records = [t for t in user_records if now - t < REFRESH_WINDOW_SECONDS]
+    user_refresh_records[username] = valid_records
+    if len(valid_records) >= REFRESH_RATE_LIMIT:
+        return False, f"刷新过于频繁，请在{int(REFRESH_WINDOW_SECONDS - (now - valid_records[0]))}秒后重试"
+    user_refresh_records[username].append(now)
+    return True, ""
 
 def create_access_token(data: dict):
     """创建访问令牌"""
@@ -645,6 +664,10 @@ async def refresh_token(request: RefreshTokenRequest):
         username = payload.get("sub")
         if not username:
             return {"code": 401, "message": "无效的刷新令牌"}
+        
+        allowed, message = check_refresh_rate_limit(username)
+        if not allowed:
+            return {"code": 429, "message": message}
         
         conn = create_db_connection("USER_DB", config) or create_db_connection("LOCAL_DB", config)
         if not conn:
@@ -1202,11 +1225,11 @@ async def broadcast_sync_progress():
             await manager.broadcast(progress_message)
         await asyncio.sleep(1)  # 每秒更新一次
 
-# 启动后台任务
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(broadcast_sync_progress())
-    asyncio.create_task(broadcast_status_periodically())
+# 启动后台任务（已合并到下方的统一启动事件中）
+# @app.on_event("startup")
+# async def startup_event():
+#     asyncio.create_task(broadcast_sync_progress())
+#     asyncio.create_task(broadcast_status_periodically())
 
 # 获取数据库连接的依赖项
 def get_db():
@@ -2249,6 +2272,50 @@ async def get_table_data(
         logger.error(f"获取表数据失败: {e}")
         return JSONResponse(status_code=500, content={"code": 500, "message": "获取表数据失败"})
 
+@app.get("/api/split-match/original-image/")
+async def get_original_image(
+    table_name: str = Query(..., description="表名"),
+    pass_id: str = Query(..., description="通行标识ID"),
+    field: str = Query(..., description="字段名：查核资料1 或 查核资料2")
+):
+    """获取原图，用于点击预览时加载"""
+    try:
+        if field not in ['查核资料1', '查核资料2']:
+            return JSONResponse(status_code=400, content={"code": 400, "message": "无效的字段名，必须是 查核资料1 或 查核资料2"})
+        
+        result = split_match_service.get_original_image(table_name, pass_id, field)
+        if result is None:
+            return JSONResponse(status_code=404, content={"code": 404, "message": "未找到图片数据"})
+        
+        return {"code": 200, "message": "success", "data": result}
+    except Exception as e:
+        logger.error(f"获取原图失败: {e}")
+        return JSONResponse(status_code=500, content={"code": 500, "message": f"获取原图失败: {str(e)}"})
+
+@app.get("/api/split-match/images/")
+async def get_table_images(
+    table_name: str = Query(..., description="表名"),
+    pass_ids: str = Query(..., description="通行标识ID列表，逗号分隔"),
+    fields: Optional[str] = Query("查核资料1,查核资料2", description="图片字段列表，逗号分隔")
+):
+    """批量获取图片缩略图，用于两阶段加载的第二阶段"""
+    try:
+        pass_id_list = [pid.strip() for pid in pass_ids.split(',') if pid.strip()]
+        if not pass_id_list:
+            return {"code": 200, "message": "success", "data": {}}
+
+        field_list = [f.strip() for f in fields.split(',') if f.strip()] if fields else ['查核资料1', '查核资料2']
+
+        result = split_match_service.get_table_images(
+            table_name=table_name,
+            pass_ids=pass_id_list,
+            fields=field_list
+        )
+        return {"code": 200, "message": "success", "data": result}
+    except Exception as e:
+        logger.error(f"批量获取图片失败: {e}")
+        return JSONResponse(status_code=500, content={"code": 500, "message": f"批量获取图片失败: {str(e)}"})
+
 @app.get("/api/split-match/export/")
 async def export_table_data(
     table_name: Optional[str] = Query(None, description="表名"),
@@ -2361,8 +2428,67 @@ async def update_match_data(request: UpdateMatchRequest):
                 "data": {"updated": False}
             }
     except Exception as e:
-        logger.error(f"更新数据失败: {e}", exc_info=True)
-        return JSONResponse(status_code=500, content={"code": 500, "message": f"更新数据失败: {str(e)}"})
+        error_msg = str(e)
+        logger.error(f"更新数据失败: {error_msg}", exc_info=True)
+        
+        # 根据错误类型返回不同的 HTTP 状态码和结构化响应
+        if "表空间不足" in error_msg or "1114" in error_msg or "is full" in error_msg.lower():
+            return JSONResponse(
+                status_code=507,
+                content={
+                    "code": 507,
+                    "message": "数据库存储空间不足",
+                    "data": {
+                        "success": False,
+                        "error_type": "STORAGE_FULL",
+                        "detail": error_msg,
+                        "suggestion": "请联系管理员清理数据库空间或扩展存储容量",
+                        "retryable": False
+                    }
+                }
+            )
+        elif "连接" in error_msg.lower() or "1040" in error_msg or "1041" in error_msg:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "code": 503,
+                    "message": "数据库服务暂时不可用",
+                    "data": {
+                        "success": False,
+                        "error_type": "DB_CONNECTION_ERROR",
+                        "detail": error_msg,
+                        "suggestion": "请稍后重试",
+                        "retryable": True,
+                        "retry_after": 5
+                    }
+                }
+            )
+        elif "不存在" in error_msg or "1146" in error_msg:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "code": 400,
+                    "message": "数据表配置错误",
+                    "data": {
+                        "success": False,
+                        "error_type": "CONFIG_ERROR",
+                        "detail": error_msg,
+                        "suggestion": "请检查参数配置中的表名设置"
+                    }
+                }
+            )
+        else:
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "code": 500,
+                    "message": f"服务器内部错误: {error_msg}",
+                    "data": {
+                        "success": False,
+                        "error_type": "UNKNOWN_ERROR"
+                    }
+                }
+            )
 
 @app.get("/api/split-match/cf-tables/")
 async def get_cf_tables():
@@ -3166,20 +3292,54 @@ async def save_params_config(config_data: dict):
 
 @app.on_event("startup")
 async def startup_event():
-    """应用启动时初始化连接池"""
-    logger.info("应用启动，正在初始化数据库连接池...")
+    """应用启动时统一初始化（合并后台任务和数据库连接池）"""
+    
+    logger.info("=========================================")
+    logger.info("  应用启动中...")
+    logger.info("=========================================")
+    
+    # 1. 启动WebSocket后台任务
     try:
-        common_db_types = ["USER_DB", "LOCAL_DB", "REMOTE_DB", "CHECK_DATA_DB"]
+        asyncio.create_task(broadcast_sync_progress())
+        asyncio.create_task(broadcast_status_periodically())
+        logger.info("✓ 后台任务已启动（同步进度广播、状态周期更新）")
+    except Exception as e:
+        logger.error(f"✗ 后台任务启动失败: {e}")
+    
+    # 2. 初始化数据库连接池（已屏蔽REMOTE_DB，需要内网环境）
+    logger.info("正在初始化数据库连接池...")
+    try:
+        common_db_types = ["USER_DB", "LOCAL_DB", "CHECK_DATA_DB"]
+        
         for db_type in common_db_types:
             try:
                 create_db_pool(db_type, config, max_connections=10)
+                logger.info(f"  ✓ {db_type} 连接池初始化成功")
             except Exception as e:
-                logger.warning(f"预初始化 {db_type} 连接池失败: {e}，将在首次使用时创建")
-        init_special_records_table()
-        init_cloud_portal_account_table()
-        logger.info("应用启动完成，数据库连接池已初始化")
+                logger.warning(f"  ✗ {db_type} 连接池初始化失败: {e}，将在首次使用时创建")
+        
+        # REMOTE_DB (10.143.163.38) 需要内网连接，暂时屏蔽
+        logger.info("  - REMOTE_DB (10.143.163.38) 已屏蔽（需要内网环境），将在首次使用时尝试连接")
+        
     except Exception as e:
-        logger.error(f"应用启动时初始化连接池失败: {e}", exc_info=True)
+        logger.error(f"数据库连接池初始化异常: {e}", exc_info=True)
+    
+    # 3. 初始化数据表
+    try:
+        init_special_records_table()
+        logger.info("✓ 特情记录表初始化完成")
+    except Exception as e:
+        logger.warning(f"特情记录表初始化失败: {e}")
+    
+    try:
+        init_cloud_portal_account_table()
+        logger.info("✓ 云门户账号表初始化完成")
+    except Exception as e:
+        logger.warning(f"云门户账号表初始化失败: {e}")
+    
+    logger.info("=========================================")
+    logger.info("  应用启动完成 ✓")
+    logger.info("=========================================")
 
 @app.get("/api/scheduled-tasks/")
 async def get_scheduled_tasks(user: dict = Depends(require_permission('system:scheduled-tasks:view'))):
@@ -5401,6 +5561,29 @@ def get_gui_service_headers(username: str = None) -> dict:
         'X-Request-Time': datetime.now().isoformat()
     }
 
+def handle_gui_response(response: requests.Response, operation: str = "操作") -> dict:
+    if response.status_code != 200:
+        logger.warning(f"[GUI服务] {operation}失败 - HTTP {response.status_code}")
+        return {"code": response.status_code, "message": f"GUI服务返回错误: HTTP {response.status_code}"}
+    
+    content_type = response.headers.get('Content-Type', '')
+    if 'application/json' not in content_type:
+        logger.warning(f"[GUI服务] {operation}失败 - 非JSON响应: {content_type}")
+        return {"code": 500, "message": f"GUI服务返回非JSON响应"}
+    
+    if not response.text or response.text.strip() == '':
+        logger.warning(f"[GUI服务] {operation}失败 - 空响应")
+        return {"code": 500, "message": "GUI服务返回空响应"}
+    
+    try:
+        result = response.json()
+        if isinstance(result, dict) and 'code' in result and result['code'] != 200:
+            logger.warning(f"[GUI服务] {operation}失败 - 业务错误: {result.get('message', '未知错误')}")
+        return result
+    except json.JSONDecodeError as e:
+        logger.error(f"[GUI服务] {operation}失败 - JSON解析错误: {e}, 响应内容: {response.text[:500]}")
+        return {"code": 500, "message": f"响应解析失败: {str(e)}"}
+
 class CloudPortalLoginRequest(BaseModel):
     session_id: str
     username: str
@@ -5431,7 +5614,6 @@ async def get_cloud_portal_captcha(session_id: Optional[str] = None, user: dict 
         
         logger.info(f"[云门户验证码] 开始请求 - session_id: {session_id}, 目标: {GUI_SERVICE_URL}/api/portal/captcha")
         
-        loop = asyncio.get_event_loop()
         response = await asyncio.to_thread(
             requests.get,
             f"{GUI_SERVICE_URL}/api/portal/captcha",
@@ -5441,25 +5623,16 @@ async def get_cloud_portal_captcha(session_id: Optional[str] = None, user: dict 
         )
         
         logger.info(f"[云门户验证码] 请求成功 - 状态码: {response.status_code}")
-        return response.json()
+        return handle_gui_response(response, "获取验证码")
     except requests.exceptions.ConnectionError as e:
         logger.error(f"[云门户验证码] 连接失败 - 错误: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
     except requests.exceptions.Timeout:
         logger.error("[云门户验证码] 请求超时")
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"[云门户验证码] 异常 - 错误: {e}", exc_info=True)
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"获取验证码失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"获取验证码失败: {str(e)}"}
 
 @app.post("/api/cloud-portal/login")
 async def cloud_portal_login(request: CloudPortalLoginRequest, user: dict = Depends(get_current_user)):
@@ -5482,122 +5655,89 @@ async def cloud_portal_login(request: CloudPortalLoginRequest, user: dict = Depe
         )
 
         logger.info(f"[云门户登录] 请求成功 - 状态码: {response.status_code}")
-        return response.json()
+        return handle_gui_response(response, "云门户登录")
     except requests.exceptions.ConnectionError as e:
         logger.error(f"[云门户登录] 连接失败 - 错误: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
     except requests.exceptions.Timeout:
         logger.error("[云门户登录] 请求超时")
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"[云门户登录] 异常 - 错误: {e}", exc_info=True)
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"登录失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"登录失败: {str(e)}"}
 
 @app.post("/api/cloud-portal/auto-login")
 async def cloud_portal_auto_login(request: AutoLoginRequest, user: dict = Depends(get_current_user)):
     """
-    云门户自动登录
+    云门户自动登录（带重试机制）
     
     流程:
     1. 获取验证码
-    2. ddddocr识别验证码
+    2. ddddocr识别验证码（针对纯数字优化）
     3. 识别成功 -> 自动提交登录
-    4. 识别失败 -> 返回验证码图片，等待手动输入
+    4. 识别失败 -> 重试（最多3次）
+    5. 重试后仍失败 -> 返回验证码图片，等待手动输入
     """
+    MAX_RETRIES = 3
     session_id = request.session_id
     headers = get_gui_service_headers(user.get('username'))
     
     try:
         logger.info(f"[自动登录] 开始 - 用户: {request.username}")
         
-        params = {}
-        if session_id:
-            params['session_id'] = session_id
-        
-        captcha_response = await asyncio.to_thread(
-            requests.get,
-            f"{GUI_SERVICE_URL}/api/portal/captcha",
-            params=params,
-            headers=headers,
-            timeout=30
-        )
-        
-        if captcha_response.status_code != 200:
-            return JSONResponse(
-                status_code=captcha_response.status_code,
-                content=captcha_response.json()
-            )
-        
-        captcha_data = captcha_response.json()
-        
-        if captcha_data.get('code') != 200:
-            return JSONResponse(
-                status_code=500,
-                content={"code": 500, "message": "获取验证码失败"}
-            )
-        
-        session_id = captcha_data['data']['session_id']
-        base64_img = captcha_data['data']['img']
-        uuid = captcha_data['data']['uuid']
-        
-        logger.info(f"[自动登录] 获取验证码成功 - session_id: {session_id}")
-        
-        success, result, message = await asyncio.to_thread(
-            recognize_captcha,
-            base64_img
-        )
-        
-        if not success:
-            logger.warning(f"[自动登录] 验证码识别失败 - {message}")
-            return {
-                "code": 201,
-                "message": "验证码识别失败，请手动输入",
-                "data": {
-                    "session_id": session_id,
-                    "img": base64_img,
-                    "uuid": uuid,
-                    "need_captcha": True
-                }
-            }
-        
-        logger.info(f"[自动登录] 验证码识别成功 - 结果: {result}")
-        
-        login_response = await asyncio.to_thread(
-            requests.post,
-            f"{GUI_SERVICE_URL}/api/portal/login",
-            json={
-                'session_id': session_id,
-                'username': request.username,
-                'password': request.password,
-                'captcha': result,
-                'uuid': uuid
-            },
-            headers=headers,
-            timeout=20
-        )
-        
-        login_data = login_response.json()
-        
-        if login_data.get('code') == 200:
-            logger.info(f"[自动登录] 登录成功 - 用户: {request.username}")
-            return login_data
-        else:
-            error_msg = login_data.get('message', '登录失败')
-            logger.warning(f"[自动登录] 登录失败 - {error_msg}")
+        for attempt in range(MAX_RETRIES):
+            params = {}
+            if session_id:
+                params['session_id'] = session_id
             
-            if '验证码' in error_msg or 'captcha' in error_msg.lower():
+            captcha_response = await asyncio.to_thread(
+                requests.get,
+                f"{GUI_SERVICE_URL}/api/portal/captcha",
+                params=params,
+                headers=headers,
+                timeout=30
+            )
+            
+            if captcha_response.status_code != 200:
+                if attempt < MAX_RETRIES - 1:
+                    logger.warning(f"[自动登录] 获取验证码失败，重试中 ({attempt + 2}/{MAX_RETRIES})")
+                    continue
+                return JSONResponse(
+                    status_code=captcha_response.status_code,
+                    content=captcha_response.json()
+                )
+            
+            captcha_data = captcha_response.json()
+            
+            if captcha_data.get('code') != 200:
+                if attempt < MAX_RETRIES - 1:
+                    logger.warning(f"[自动登录] 获取验证码响应异常，重试中 ({attempt + 2}/{MAX_RETRIES})")
+                    continue
+                return JSONResponse(
+                    status_code=500,
+                    content={"code": 500, "message": "获取验证码失败"}
+                )
+            
+            session_id = captcha_data['data']['session_id']
+            base64_img = captcha_data['data']['img']
+            uuid = captcha_data['data']['uuid']
+            
+            logger.info(f"[自动登录] 第{attempt + 1}次尝试 - session_id: {session_id}")
+            
+            success, result, message = await asyncio.to_thread(
+                recognize_captcha,
+                base64_img,
+                False
+            )
+            
+            if not success:
+                logger.warning(f"[自动登录] 第{attempt + 1}次识别失败 - {message}")
+                if attempt < MAX_RETRIES - 1:
+                    continue
+                logger.warning(f"[自动登录] 已重试{MAX_RETRIES}次，返回手动输入")
                 return {
                     "code": 201,
-                    "message": f"验证码错误: {error_msg}，请手动输入",
+                    "message": f"验证码识别失败（已重试{MAX_RETRIES}次），请手动输入",
                     "data": {
                         "session_id": session_id,
                         "img": base64_img,
@@ -5606,10 +5746,56 @@ async def cloud_portal_auto_login(request: AutoLoginRequest, user: dict = Depend
                     }
                 }
             
-            return JSONResponse(
-                status_code=login_response.status_code,
-                content=login_data
+            logger.info(f"[自动登录] 第{attempt + 1}次识别成功 - 结果: {result}")
+            
+            login_response = await asyncio.to_thread(
+                requests.post,
+                f"{GUI_SERVICE_URL}/api/portal/login",
+                json={
+                    'session_id': session_id,
+                    'username': request.username,
+                    'password': request.password,
+                    'captcha': result,
+                    'uuid': uuid
+                },
+                headers=headers,
+                timeout=20
             )
+            
+            login_data = login_response.json()
+            
+            if login_data.get('code') == 200:
+                logger.info(f"[自动登录] 登录成功 - 用户: {request.username}, 尝试次数: {attempt + 1}")
+                return login_data
+            else:
+                error_msg = login_data.get('message', '登录失败')
+                logger.warning(f"[自动登录] 第{attempt + 1}次登录失败 - {error_msg}")
+                
+                if '验证码' in error_msg or 'captcha' in error_msg.lower():
+                    if attempt < MAX_RETRIES - 1:
+                        logger.info(f"[自动登录] 验证码错误，重新获取验证码重试 ({attempt + 2}/{MAX_RETRIES})")
+                        session_id = None
+                        continue
+                    return {
+                        "code": 201,
+                        "message": f"验证码错误（已重试{MAX_RETRIES}次），请手动输入",
+                        "data": {
+                            "session_id": session_id,
+                            "img": base64_img,
+                            "uuid": uuid,
+                            "need_captcha": True
+                        }
+                    }
+                
+                return JSONResponse(
+                    status_code=login_response.status_code,
+                    content=login_data
+                )
+        
+        return JSONResponse(
+            status_code=500,
+            content={"code": 500, "message": "自动登录失败，请手动输入验证码"}
+        )
             
     except requests.exceptions.ConnectionError as e:
         logger.error(f"[自动登录] 连接失败 - 错误: {e}")
@@ -5648,25 +5834,16 @@ async def cloud_portal_query(request: CloudPortalQueryRequest, user: dict = Depe
         )
 
         logger.info(f"[云门户查询] 请求成功 - 状态码: {response.status_code}")
-        return response.json()
+        return handle_gui_response(response, "云门户查询")
     except requests.exceptions.ConnectionError as e:
         logger.error(f"[云门户查询] 连接失败 - 错误: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
     except requests.exceptions.Timeout:
         logger.error("[云门户查询] 请求超时")
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"[云门户查询] 异常 - 错误: {e}", exc_info=True)
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"查询失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"查询失败: {str(e)}"}
 
 @app.get("/api/cloud-portal/status")
 async def cloud_portal_status(session_id: str, user: dict = Depends(get_current_user)):
@@ -5683,25 +5860,16 @@ async def cloud_portal_status(session_id: str, user: dict = Depends(get_current_
         )
 
         logger.info(f"[云门户状态] 请求成功 - 状态码: {response.status_code}")
-        return response.json()
+        return handle_gui_response(response, "云门户状态")
     except requests.exceptions.ConnectionError as e:
         logger.error(f"[云门户状态] 连接失败 - 错误: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
     except requests.exceptions.Timeout:
         logger.error("[云门户状态] 请求超时")
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"[云门户状态] 异常 - 错误: {e}", exc_info=True)
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"获取状态失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"获取状态失败: {str(e)}"}
 
 @app.post("/api/cloud-portal/logout")
 async def cloud_portal_logout(request: CloudPortalLogoutRequest, user: dict = Depends(get_current_user)):
@@ -5718,25 +5886,16 @@ async def cloud_portal_logout(request: CloudPortalLogoutRequest, user: dict = De
         )
 
         logger.info(f"[云门户登出] 请求成功 - 状态码: {response.status_code}")
-        return response.json()
+        return handle_gui_response(response, "云门户登出")
     except requests.exceptions.ConnectionError as e:
         logger.error(f"[云门户登出] 连接失败 - 错误: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
     except requests.exceptions.Timeout:
         logger.error("[云门户登出] 请求超时")
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"[云门户登出] 异常 - 错误: {e}", exc_info=True)
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"登出失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"登出失败: {str(e)}"}
 
 @app.get("/api/cloud-portal/health")
 async def cloud_portal_health():
@@ -5750,25 +5909,16 @@ async def cloud_portal_health():
         )
 
         logger.info(f"[云门户健康检查] 请求成功 - 状态码: {response.status_code}")
-        return response.json()
+        return handle_gui_response(response, "云门户健康检查")
     except requests.exceptions.ConnectionError as e:
         logger.error(f"[云门户健康检查] 连接失败 - 错误: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "云门户查询服务未启动", "data": {"status": "offline"}}
-        )
+        return {"code": 503, "message": "云门户查询服务未启动", "data": {"status": "offline"}}
     except requests.exceptions.Timeout:
         logger.error("[云门户健康检查] 请求超时")
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "云门户查询服务响应超时", "data": {"status": "timeout"}}
-        )
+        return {"code": 504, "message": "云门户查询服务响应超时", "data": {"status": "timeout"}}
     except Exception as e:
         logger.error(f"[云门户健康检查] 异常 - 错误: {e}", exc_info=True)
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"健康检查失败: {str(e)}", "data": {"status": "error"}}
-        )
+        return {"code": 500, "message": f"健康检查失败: {str(e)}", "data": {"status": "error"}}
 
 class AIAuditBatchQueryRequest(BaseModel):
     session_id: str
@@ -5819,7 +5969,8 @@ class SaveImagesRequest(BaseModel):
 @app.post("/api/cloud-portal/ai-audit/vehicle-images")
 async def ai_audit_vehicle_images(request: AIAuditQueryRequest):
     try:
-        response = requests.post(
+        response = await asyncio.to_thread(
+            requests.post,
             f"{GUI_SERVICE_URL}/api/portal/ai-audit/vehicle-images",
             json={
                 'session_id': request.session_id,
@@ -5832,28 +5983,20 @@ async def ai_audit_vehicle_images(request: AIAuditQueryRequest):
             },
             timeout=60
         )
-        return response.json()
+        return handle_gui_response(response, "车辆图库查询")
     except requests.exceptions.ConnectionError:
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务"}
     except requests.exceptions.Timeout:
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"车辆图库查询失败: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"查询失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"查询失败: {str(e)}"}
 
 @app.post("/api/cloud-portal/ai-audit/gantry-images")
 async def ai_audit_gantry_images(request: AIAuditGantryImagesRequest):
     try:
-        response = requests.post(
+        response = await asyncio.to_thread(
+            requests.post,
             f"{GUI_SERVICE_URL}/api/portal/ai-audit/gantry-images",
             json={
                 'session_id': request.session_id,
@@ -5866,28 +6009,20 @@ async def ai_audit_gantry_images(request: AIAuditGantryImagesRequest):
             },
             timeout=60
         )
-        return response.json()
+        return handle_gui_response(response, "门架图库查询")
     except requests.exceptions.ConnectionError:
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务"}
     except requests.exceptions.Timeout:
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"门架图库查询失败: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"查询失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"查询失败: {str(e)}"}
 
 @app.post("/api/cloud-portal/ai-audit/gantry-trade")
 async def ai_audit_gantry_trade(request: AIAuditQueryRequest):
     try:
-        response = requests.post(
+        response = await asyncio.to_thread(
+            requests.post,
             f"{GUI_SERVICE_URL}/api/portal/ai-audit/gantry-trade",
             json={
                 'session_id': request.session_id,
@@ -5897,28 +6032,20 @@ async def ai_audit_gantry_trade(request: AIAuditQueryRequest):
             },
             timeout=60
         )
-        return response.json()
+        return handle_gui_response(response, "门架交易查询")
     except requests.exceptions.ConnectionError:
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务"}
     except requests.exceptions.Timeout:
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"门架交易查询失败: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"查询失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"查询失败: {str(e)}"}
 
 @app.post("/api/cloud-portal/ai-audit/gantry-plate")
 async def ai_audit_gantry_plate(request: AIAuditQueryRequest):
     try:
-        response = requests.post(
+        response = await asyncio.to_thread(
+            requests.post,
             f"{GUI_SERVICE_URL}/api/portal/ai-audit/gantry-plate",
             json={
                 'session_id': request.session_id,
@@ -5928,28 +6055,20 @@ async def ai_audit_gantry_plate(request: AIAuditQueryRequest):
             },
             timeout=60
         )
-        return response.json()
+        return handle_gui_response(response, "门架牌识查询")
     except requests.exceptions.ConnectionError:
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务"}
     except requests.exceptions.Timeout:
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"门架牌识查询失败: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"查询失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"查询失败: {str(e)}"}
 
 @app.post("/api/cloud-portal/ai-audit/exit-trade")
 async def ai_audit_exit_trade(request: AIAuditQueryRequest):
     try:
-        response = requests.post(
+        response = await asyncio.to_thread(
+            requests.post,
             f"{GUI_SERVICE_URL}/api/portal/ai-audit/exit-trade",
             json={
                 'session_id': request.session_id,
@@ -5960,28 +6079,20 @@ async def ai_audit_exit_trade(request: AIAuditQueryRequest):
             },
             timeout=60
         )
-        return response.json()
+        return handle_gui_response(response, "出口交易查询")
     except requests.exceptions.ConnectionError:
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务"}
     except requests.exceptions.Timeout:
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"出口交易查询失败: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"查询失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"查询失败: {str(e)}"}
 
 @app.post("/api/cloud-portal/ai-audit/suspected-car")
 async def ai_audit_suspected_car(request: AIAuditQueryRequest):
     try:
-        response = requests.post(
+        response = await asyncio.to_thread(
+            requests.post,
             f"{GUI_SERVICE_URL}/api/portal/ai-audit/suspected-car",
             json={
                 'session_id': request.session_id,
@@ -5991,28 +6102,20 @@ async def ai_audit_suspected_car(request: AIAuditQueryRequest):
             },
             timeout=60
         )
-        return response.json()
+        return handle_gui_response(response, "疑难车牌追查")
     except requests.exceptions.ConnectionError:
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务"}
     except requests.exceptions.Timeout:
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"疑难车牌追查失败: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"查询失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"查询失败: {str(e)}"}
 
 @app.post("/api/cloud-portal/ai-audit/batch-query")
 async def ai_audit_batch_query(request: AIAuditBatchQueryRequest):
     try:
-        response = requests.post(
+        response = await asyncio.to_thread(
+            requests.post,
             f"{GUI_SERVICE_URL}/api/portal/ai-audit/batch-query",
             json={
                 'session_id': request.session_id,
@@ -6025,23 +6128,14 @@ async def ai_audit_batch_query(request: AIAuditBatchQueryRequest):
             },
             timeout=120
         )
-        return response.json()
+        return handle_gui_response(response, "批量查询")
     except requests.exceptions.ConnectionError:
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务"}
     except requests.exceptions.Timeout:
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"批量查询失败: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"查询失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"查询失败: {str(e)}"}
 
 class OriginalImageRequest(BaseModel):
     session_id: str
@@ -6050,7 +6144,6 @@ class OriginalImageRequest(BaseModel):
 @app.post("/api/cloud-portal/ai-audit/original-image")
 async def ai_audit_original_image(request: OriginalImageRequest):
     try:
-        loop = asyncio.get_event_loop()
         response = await asyncio.to_thread(
             requests.post,
             f"{GUI_SERVICE_URL}/api/portal/ai-audit/original-image",
@@ -6060,28 +6153,20 @@ async def ai_audit_original_image(request: OriginalImageRequest):
             },
             timeout=30
         )
-        return response.json()
+        return handle_gui_response(response, "获取原图")
     except requests.exceptions.ConnectionError:
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务"}
     except requests.exceptions.Timeout:
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
-        logger.error(f"获取高清原图失败: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"获取原图失败: {str(e)}"}
-        )
+        logger.error(f"获取原图失败: {e}")
+        return {"code": 500, "message": f"获取原图失败: {str(e)}"}
 
 @app.post("/api/cloud-portal/ai-audit/select-images")
 async def ai_audit_select_images(request: AIAuditSelectImagesRequest):
     try:
-        response = requests.post(
+        response = await asyncio.to_thread(
+            requests.post,
             f"{GUI_SERVICE_URL}/api/portal/ai-audit/select-images",
             json={
                 'images': request.images,
@@ -6089,27 +6174,20 @@ async def ai_audit_select_images(request: AIAuditSelectImagesRequest):
             },
             timeout=30
         )
-        return response.json()
+        return handle_gui_response(response, "图片选取")
     except requests.exceptions.ConnectionError:
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务"}
     except requests.exceptions.Timeout:
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"图片选取失败: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"图片选取失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"图片选取失败: {str(e)}"}
 
 @app.post("/api/cloud-portal/ai-audit/save-images")
 async def ai_audit_save_images(request: SaveImagesRequest):
     try:
+        logger.info(f"[保存图片] table_name: {request.table_name}, record_id: {request.record_id}")
+        
         conn = create_db_connection('CHECK_DATA_DB', config)
         cursor = conn.cursor()
         
@@ -6131,17 +6209,27 @@ async def ai_audit_save_images(request: SaveImagesRequest):
             if request.clear_empty or value:
                 update_fields.append(f"`{db_column}` = %s")
                 params.append(value if value else None)
+                logger.debug(f"[保存图片] 字段 {db_column}: {'有值' if value else '空值'}")
         
         if not update_fields:
+            logger.warning("[保存图片] 没有需要保存的数据")
             return {"code": 400, "message": "没有需要保存的数据"}
         
         params.append(request.record_id)
         
         sql = f"UPDATE `{request.table_name}` SET {', '.join(update_fields)} WHERE `通行标识ID` = %s"
+        logger.info(f"[保存图片] SQL: UPDATE `{request.table_name}` SET ... WHERE `通行标识ID` = %s")
+        logger.info(f"[保存图片] params 数量: {len(params)}, record_id 长度: {len(request.record_id) if request.record_id else 0}")
+        
         cursor.execute(sql, params)
         conn.commit()
         
         affected_rows = cursor.rowcount
+        logger.info(f"[保存图片] affected_rows: {affected_rows}")
+        
+        if affected_rows == 0:
+            logger.warning(f"[保存图片] 未更新任何行，检查 record_id 是否存在: {request.record_id[:50]}..." if request.record_id else "[保存图片] record_id 为空")
+        
         cursor.close()
         conn.close()
         
@@ -6151,7 +6239,7 @@ async def ai_audit_save_images(request: SaveImagesRequest):
             "data": {"affected_rows": affected_rows}
         }
     except Exception as e:
-        logger.error(f"保存图片失败: {e}")
+        logger.error(f"保存图片失败: {e}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content={"code": 500, "message": f"保存图片失败: {str(e)}"}
@@ -6171,83 +6259,86 @@ class GantryListRequest(BaseModel):
 @app.post("/api/cloud-portal/ai-audit/branch-centers")
 async def ai_audit_branch_centers(request: BranchCentersRequest):
     try:
-        gui_service_url = "http://127.0.0.1:5000/api/portal/ai-audit/branch-centers"
-        response = requests.post(
-            gui_service_url,
+        response = await asyncio.to_thread(
+            requests.post,
+            f"{GUI_SERVICE_URL}/api/portal/ai-audit/branch-centers",
             json={"session_id": request.session_id},
             timeout=30
         )
-        return response.json()
+        return handle_gui_response(response, "获取分中心列表")
     except requests.exceptions.ConnectionError:
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务"}
     except requests.exceptions.Timeout:
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"获取分中心列表失败: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"获取分中心列表失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"获取分中心列表失败: {str(e)}"}
 
 @app.post("/api/cloud-portal/ai-audit/road-sections")
 async def ai_audit_road_sections(request: RoadSectionsRequest):
     try:
-        gui_service_url = "http://127.0.0.1:5000/api/portal/ai-audit/road-sections"
-        response = requests.post(
-            gui_service_url,
+        response = await asyncio.to_thread(
+            requests.post,
+            f"{GUI_SERVICE_URL}/api/portal/ai-audit/road-sections",
             json={"session_id": request.session_id, "center_no": request.center_no},
             timeout=30
         )
-        return response.json()
+        return handle_gui_response(response, "获取路段列表")
     except requests.exceptions.ConnectionError:
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务"}
     except requests.exceptions.Timeout:
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"获取路段列表失败: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"获取路段列表失败: {str(e)}"}
-        )
+        return {"code": 500, "message": f"获取路段列表失败: {str(e)}"}
 
 @app.post("/api/cloud-portal/ai-audit/gantry-list")
 async def ai_audit_gantry_list(request: GantryListRequest):
     try:
-        gui_service_url = "http://127.0.0.1:5000/api/portal/ai-audit/gantry-list"
-        response = requests.post(
-            gui_service_url,
+        response = await asyncio.to_thread(
+            requests.post,
+            f"{GUI_SERVICE_URL}/api/portal/ai-audit/gantry-list",
             json={"session_id": request.session_id, "road_section_no": request.road_section_no},
             timeout=30
         )
-        return response.json()
+        return handle_gui_response(response, "获取门架列表")
     except requests.exceptions.ConnectionError:
-        return JSONResponse(
-            status_code=503,
-            content={"code": 503, "message": "无法连接到云门户查询服务"}
-        )
+        return {"code": 503, "message": "无法连接到云门户查询服务"}
     except requests.exceptions.Timeout:
-        return JSONResponse(
-            status_code=504,
-            content={"code": 504, "message": "连接云门户查询服务超时"}
-        )
+        return {"code": 504, "message": "连接云门户查询服务超时"}
     except Exception as e:
         logger.error(f"获取门架列表失败: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"code": 500, "message": f"获取门架列表失败: {str(e)}"}
+        return {"code": 500, "message": f"获取门架列表失败: {str(e)}"}
+
+@app.get("/api/cloud-portal/ai-audit/order-detail")
+async def get_order_detail(order_id: str, session_id: Optional[str] = None, user: dict = Depends(get_current_user)):
+    try:
+        headers = get_gui_service_headers(user.get('username'))
+        logger.info(f"[工单详情] 开始请求 - order_id: {order_id}, session_id: {session_id}")
+
+        params = {'order_id': order_id}
+        if session_id:
+            params['session_id'] = session_id
+
+        response = await asyncio.to_thread(
+            requests.get,
+            f"{GUI_SERVICE_URL}/api/portal/order-detail",
+            params=params,
+            headers=headers,
+            timeout=30
         )
+
+        logger.info(f"[工单详情] 请求成功 - 状态码: {response.status_code}")
+        return handle_gui_response(response, "获取工单详情")
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"[工单详情] 连接失败 - 错误: {e}")
+        return {"code": 503, "message": "无法连接到云门户查询服务，请确保服务已启动"}
+    except requests.exceptions.Timeout:
+        logger.error("[工单详情] 请求超时")
+        return {"code": 504, "message": "连接云门户查询服务超时"}
+    except Exception as e:
+        logger.error(f"[工单详情] 异常 - 错误: {e}", exc_info=True)
+        return {"code": 500, "message": f"获取工单详情失败: {str(e)}"}
 
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):

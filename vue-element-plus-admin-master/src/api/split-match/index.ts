@@ -118,6 +118,34 @@ export const getExportSplitMatchData = (params: { table_name?: string; filters?:
   return request.get<ApiResponse<ExportSplitMatchData>>({ url: '/api/split-match/export/', params })
 }
 
+export const getOriginalImage = (params: {
+  table_name: string
+  pass_id: string
+  field: string
+}) => {
+  return request.get<ApiResponse<string>>({
+    url: '/api/split-match/original-image/',
+    params
+  })
+}
+
+export interface TableImagesResult {
+  [passId: string]: {
+    [field: string]: string | null
+  }
+}
+
+export const getTableImages = (params: {
+  table_name: string
+  pass_ids: string
+  fields?: string
+}) => {
+  return request.get<ApiResponse<TableImagesResult>>({
+    url: '/api/split-match/images/',
+    params
+  })
+}
+
 export interface VerifyPassIdResult {
   exists: boolean
   match_count: number
@@ -469,6 +497,86 @@ export const aiAuditBatchQuery = (data: {
     url: '/api/cloud-portal/ai-audit/batch-query',
     data,
     timeout: 180000
+  })
+}
+
+export interface OrderDetailLabelCode {
+  labelCode: string
+  labelName: string
+  auditInfo: string | null
+  auditMethod: string
+}
+
+export interface OrderDetailPicture {
+  picturePath: string
+  smallPositivePic: string
+  bigPositivePic: string
+  smallBackPic: string
+  bigBackPic: string
+  bigPic: string | null
+  smallPic: string | null
+  venderName: string | null
+  vehType: string | null
+  venderId: string | null
+  plateImage: string | null
+  plateImageWidth: number | null
+  plateImageHeight: number | null
+  sideImage: string | null
+  sideImagePath: string | null
+  sideImageWidth: number | null
+  sideImageHeight: number | null
+  headImage: string | null
+  headImageHeight: number | null
+  headImageWidth: number | null
+  headImagePath: string | null
+  tailImagePath: string | null
+  tailImage: string | null
+  tailImageWidth: number | null
+  tailImageHeight: number | null
+  source: string | null
+  picTime: string
+  stationType: string
+  vehPlate: string
+  picId: string
+  vehPlateColor: string
+  shootPosition: string
+  stationId: string
+  stationName: string
+  reid_hw: string
+  reid_sm: string
+  tw_reid: string
+  gantryId: string | null
+}
+
+export interface OrderDetailLabelVo {
+  vehicle_no?: string
+  en_station_name?: string
+  en_time?: string
+  ex_station_name?: string
+  ex_time?: string
+  audit_remark?: string
+}
+
+export interface OrderDetailData {
+  pay_amount?: number
+  labelVo?: OrderDetailLabelVo
+  labelCodeList?: OrderDetailLabelCode[]
+  historyData?: any[]
+  auditCheckdescConfigs?: any[]
+  picBeanVo?: {
+    total: string
+    picBeanList: OrderDetailPicture[]
+  }
+}
+
+export const aiAuditOrderDetail = (params: {
+  order_id: string
+  session_id?: string
+}) => {
+  return request.get<ApiResponse<OrderDetailData>>({
+    url: '/api/cloud-portal/ai-audit/order-detail',
+    params,
+    timeout: 30000
   })
 }
 

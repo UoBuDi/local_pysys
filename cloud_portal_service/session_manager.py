@@ -466,8 +466,12 @@ class SessionManager:
     
     def _register_shutdown_handlers(self) -> None:
         atexit.register(self.shutdown)
-        signal.signal(signal.SIGTERM, self._signal_handler)
-        signal.signal(signal.SIGINT, self._signal_handler)
+        if threading.current_thread() is threading.main_thread():
+            try:
+                signal.signal(signal.SIGTERM, self._signal_handler)
+                signal.signal(signal.SIGINT, self._signal_handler)
+            except ValueError:
+                pass
     
     def _signal_handler(self, signum, frame) -> None:
         logger.info(f"[关闭] 收到信号 {signum}，准备关闭...")

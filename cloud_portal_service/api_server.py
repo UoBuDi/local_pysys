@@ -1031,6 +1031,341 @@ def captcha_ocr_status():
     })
 
 
+@app.route('/api/portal/ai-audit/original-image', methods=['POST'])
+def ai_audit_original_image():
+    """
+    获取高清原图
+    
+    请求体:
+    {
+        "session_id": "会话ID",
+        "picture_path": "图片URL"
+    }
+    
+    返回:
+    {
+        "code": 200,
+        "message": "success",
+        "data": {
+            "image": "base64编码的图片数据",
+            "content_type": "image/jpeg"
+        }
+    }
+    """
+    session_manager.update_activity()
+    data = request.json
+    
+    if not data:
+        get_request_logger().log_request('POST', '/api/portal/ai-audit/original-image', None, 400)
+        return jsonify({'code': 400, 'message': '请求体不能为空'}), 400
+    
+    session_id = data.get('session_id')
+    picture_path = data.get('picture_path')
+    
+    if not all([session_id, picture_path]):
+        get_request_logger().log_request('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 400)
+        return jsonify({'code': 400, 'message': '缺少必要参数'}), 400
+    
+    client = session_manager.get_session(session_id)
+    if not client or not client.is_logged_in():
+        get_request_logger().log_request('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 401)
+        return jsonify({'code': 401, 'message': '未登录或会话已过期'}), 401
+    
+    import base64
+    try:
+        picture_url = picture_path.strip()
+        if picture_url.startswith('`'):
+            picture_url = picture_url.strip('`').strip()
+        
+        headers = {
+            'Authorization': f'Bearer {client.access_token}',
+            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'http://twaudit.hngsetc.com/aiAuditWeb/index.html'
+        }
+        
+        response = client.session.get(picture_url, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            content_type = response.headers.get('Content-Type', 'image/jpeg')
+            
+            content_text = response.text.strip()
+            if content_text.startswith('data:image'):
+                image_data = content_text
+                if ';' in content_text:
+                    extracted_type = content_text.split(';')[0].replace('data:', '')
+                    if extracted_type:
+                        content_type = extracted_type
+            else:
+                image_data = base64.b64encode(response.content).decode('utf-8')
+                image_data = f"data:{content_type.split(';')[0]};base64,{image_data}"
+            
+            get_request_logger().log_request('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 200)
+            return jsonify({
+                'code': 200,
+                'message': 'success',
+                'data': {
+                    'image': image_data,
+                    'content_type': content_type
+                }
+            })
+        else:
+            get_request_logger().log_request('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, response.status_code)
+            return jsonify({
+                'code': response.status_code,
+                'message': f'获取图片失败: HTTP {response.status_code}'
+            }), response.status_code
+            
+    except Exception as e:
+        logger.error(f"获取原图失败: {e}")
+        get_request_logger().log_request('POST', '/api/portal/ai-audit/original-image', {'session_id': session_id}, 500)
+        return jsonify({'code': 500, 'message': f'获取原图失败: {str(e)}'}), 500
+
+
+@app.route('/api/portal/ai-audit/select-images', methods=['POST'])
+def ai_audit_select_images():
+    """
+    根据门架ID筛选图片
+    
+    请求体:
+    {
+        "images": [...],
+        "gantry_ids": ["门架ID1", "门架ID2"]
+    }
+    
+    返回:
+    {
+        "code": 200,
+        "message": "success",
+        "data": {
+            "first_gantry": {...},
+            "last_gantry": {...}
+        }
+    }
+    """
+    session_manager.update_activity()
+    data = request.json
+    
+    if not data:
+        get_request_logger().log_request('POST', '/api/portal/ai-audit/select-images', None, 400)
+        return jsonify({'code': 400, 'message': '请求体不能为空'}), 400
+    
+    images = data.get('images', [])
+    gantry_ids = data.get('gantry_ids', [])
+    
+    if not images:
+        get_request_logger().log_request('POST', '/api/portal/ai-audit/select-images', None, 400)
+        return jsonify({'code': 400, 'message': '缺少图片列表'}), 400
+    
+    if not gantry_ids:
+        get_request_logger().log_request('POST', '/api/portal/ai-audit/select-images', None, 400)
+        return jsonify({'code': 400, 'message': '缺少门架ID列表'}), 400
+    
+    try:
+        selected = {
+            'first_gantry': None,
+            'last_gantry': None
+        }
+        
+        first_gantry_id = gantry_ids[0] if gantry_ids else None
+        last_gantry_id = gantry_ids[-1] if len(gantry_ids) > 1 else first_gantry_id
+        
+        for image in images:
+            station_id = image.get('stationId', '')
+            
+            if first_gantry_id and station_id.startswith(first_gantry_id[:16]):
+                if selected['first_gantry'] is None:
+                    selected['first_gantry'] = image
+            
+            if last_gantry_id and station_id.startswith(last_gantry_id[:16]):
+                selected['last_gantry'] = image
+        
+        get_request_logger().log_request('POST', '/api/portal/ai-audit/select-images', None, 200)
+        return jsonify({
+            'code': 200,
+            'message': 'success',
+            'data': selected
+        })
+        
+    except Exception as e:
+        logger.error(f"图片筛选失败: {e}")
+        get_request_logger().log_request('POST', '/api/portal/ai-audit/select-images', None, 500)
+        return jsonify({'code': 500, 'message': f'图片筛选失败: {str(e)}'}), 500
+
+
+@app.route('/api/portal/ai-audit/branch-centers', methods=['POST'])
+def ai_audit_branch_centers():
+    """
+    获取分中心列表
+    
+    请求体:
+    {
+        "session_id": "会话ID"
+    }
+    
+    返回:
+    {
+        "code": 200,
+        "message": "success",
+        "data": [...]
+    }
+    """
+    session_manager.update_activity()
+    data = request.json or {}
+    session_id = data.get('session_id')
+    
+    branch_centers = [
+        {"center_no": "001", "center_name": "长沙分中心"},
+        {"center_no": "002", "center_name": "株洲分中心"},
+        {"center_no": "003", "center_name": "湘潭分中心"},
+        {"center_no": "004", "center_name": "衡阳分中心"},
+        {"center_no": "005", "center_name": "邵阳分中心"},
+        {"center_no": "006", "center_name": "岳阳分中心"},
+        {"center_no": "007", "center_name": "常德分中心"},
+        {"center_no": "008", "center_name": "张家界分中心"},
+        {"center_no": "009", "center_name": "益阳分中心"},
+        {"center_no": "010", "center_name": "郴州分中心"},
+        {"center_no": "011", "center_name": "永州分中心"},
+        {"center_no": "012", "center_name": "怀化分中心"},
+        {"center_no": "013", "center_name": "娄底分中心"},
+        {"center_no": "014", "center_name": "湘西分中心"}
+    ]
+    
+    get_request_logger().log_request('POST', '/api/portal/ai-audit/branch-centers', {'session_id': session_id}, 200)
+    return jsonify({
+        'code': 200,
+        'message': 'success',
+        'data': branch_centers
+    })
+
+
+@app.route('/api/portal/ai-audit/road-sections', methods=['POST'])
+def ai_audit_road_sections():
+    """
+    获取路段列表
+    
+    请求体:
+    {
+        "session_id": "会话ID",
+        "center_no": "分中心编号"
+    }
+    
+    返回:
+    {
+        "code": 200,
+        "message": "success",
+        "data": [...]
+    }
+    """
+    session_manager.update_activity()
+    data = request.json or {}
+    session_id = data.get('session_id')
+    center_no = data.get('center_no')
+    
+    road_sections = [
+        {"road_section_no": f"{center_no}001", "road_section_name": f"{center_no}号路段1"},
+        {"road_section_no": f"{center_no}002", "road_section_name": f"{center_no}号路段2"},
+        {"road_section_no": f"{center_no}003", "road_section_name": f"{center_no}号路段3"}
+    ]
+    
+    get_request_logger().log_request('POST', '/api/portal/ai-audit/road-sections', {'session_id': session_id, 'center_no': center_no}, 200)
+    return jsonify({
+        'code': 200,
+        'message': 'success',
+        'data': road_sections
+    })
+
+
+@app.route('/api/portal/ai-audit/gantry-list', methods=['POST'])
+def ai_audit_gantry_list():
+    """
+    获取门架列表
+    
+    请求体:
+    {
+        "session_id": "会话ID",
+        "road_section_no": "路段编号"
+    }
+    
+    返回:
+    {
+        "code": 200,
+        "message": "success",
+        "data": [...]
+    }
+    """
+    session_manager.update_activity()
+    data = request.json or {}
+    session_id = data.get('session_id')
+    road_section_no = data.get('road_section_no')
+    
+    gantry_list = [
+        {"gantry_id": f"{road_section_no}001", "gantry_name": f"{road_section_no}号门架1"},
+        {"gantry_id": f"{road_section_no}002", "gantry_name": f"{road_section_no}号门架2"},
+        {"gantry_id": f"{road_section_no}003", "gantry_name": f"{road_section_no}号门架3"}
+    ]
+    
+    get_request_logger().log_request('POST', '/api/portal/ai-audit/gantry-list', {'session_id': session_id, 'road_section_no': road_section_no}, 200)
+    return jsonify({
+        'code': 200,
+        'message': 'success',
+        'data': gantry_list
+    })
+
+
+@app.route('/api/portal/order-detail', methods=['GET'])
+def ai_audit_order_detail():
+    """
+    获取工单详情
+
+    请求参数:
+        session_id: 会话ID
+        order_id: 工单编号
+
+    返回:
+    {
+        "code": 200,
+        "message": "success",
+        "data": {
+            "labelVo": {...},
+            "enData": {...},
+            "exData": {...}
+        }
+    }
+    """
+    session_manager.update_activity()
+
+    session_id = request.args.get('session_id')
+    order_id = request.args.get('order_id')
+
+    if not all([session_id, order_id]):
+        get_request_logger().log_request('GET', '/api/portal/order-detail',
+                                        {'session_id': session_id, 'order_id': order_id}, 400)
+        return jsonify({'code': 400, 'message': '缺少必要参数: session_id 或 order_id'}), 400
+
+    client = session_manager.get_session(session_id)
+    if not client or not client.is_logged_in():
+        get_request_logger().log_request('GET', '/api/portal/order-detail',
+                                        {'session_id': session_id}, 401)
+        return jsonify({'code': 401, 'message': '未登录或会话已过期'}), 401
+
+    ai_client = AIAuditClient(client.access_token, client.source_ip)
+    result = ai_client.query_order_detail(order_id=order_id)
+
+    if result['success']:
+        get_request_logger().log_request('GET', '/api/portal/order-detail',
+                                        {'session_id': session_id, 'order_id': order_id}, 200)
+        return jsonify({
+            'code': 200,
+            'message': 'success',
+            'data': result['data']
+        })
+    else:
+        get_request_logger().log_request('GET', '/api/portal/order-detail',
+                                        {'session_id': session_id, 'order_id': order_id}, 500)
+        return jsonify({'code': 500, 'message': result['error']}), 500
+
+
 if __name__ == '__main__':
     import sys
     logging.basicConfig(

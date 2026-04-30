@@ -41,5 +41,8 @@ export default {
   },
   cancelAllRequest: () => {
     return service.cancelAllRequest()
+  },
+  clearCache: (pattern?: string) => {
+    return service.clearCache(pattern)
   }
 }

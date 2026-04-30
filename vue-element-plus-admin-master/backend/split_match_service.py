@@ -1,8 +1,182 @@
 import pymysql
 import logging
 import time
+import base64
+import io
+from PIL import Image
 
 logger = logging.getLogger(__name__)
+
+
+def compress_base64_image(base64_data, max_size: int = 200, quality: int = 60) -> str:
+    """
+    将 base64 图片压缩为缩略图
+    
+    Args:
+        base64_data: base64 编码的图片数据（str 或 bytes）
+            - str: 可能包含 data:image/xxx;base64, 前缀，或纯 base64 字符串
+            - bytes: 可能是原始图片二进制数据，或 base64 编码字符串的 bytes 形式
+        max_size: 缩略图最大边长
+        quality: JPEG 压缩质量 (1-100)
+    
+    Returns:
+        压缩后的 base64 图片数据（带 data:image/jpeg;base64, 前缀）
+    """
+    if not base64_data:
+        return base64_data
+    
+    def get_data_preview(data, max_len=50):
+        """获取数据预览"""
+        if isinstance(data, bytes):
+            preview = data[:max_len]
+            try:
+                return f"bytes({len(data)}): {preview.decode('utf-8', errors='replace')}..."
+            except:
+                return f"bytes({len(data)}): {preview.hex()}..."
+        elif isinstance(data, str):
+            return f"str({len(data)}): {data[:max_len]}..."
+        return f"{type(data).__name__}: {str(data)[:max_len]}..."
+    
+    def try_decode_as_image(data_bytes, debug_context=""):
+        """尝试将 bytes 作为原始图片数据解析"""
+        try:
+            image = Image.open(io.BytesIO(data_bytes))
+            logger.debug(f"[图片压缩] {debug_context} 成功解析为图片: {image.size}x{image.mode}")
+            return image
+        except Exception as e:
+            logger.debug(f"[图片压缩] {debug_context} 不是原始图片数据: {e}")
+            return None
+    
+    def try_decode_as_base64_string(data_bytes, debug_context=""):
+        """尝试将 bytes 解码为 base64 字符串"""
+        try:
+            decoded_str = data_bytes.decode('utf-8')
+            if decoded_str.startswith('data:image'):
+                header_end = decoded_str.find(',')
+                if header_end != -1:
+                    result = decoded_str[header_end + 1:]
+                    logger.debug(f"[图片压缩] {debug_context} 解码为 data URL base64: {len(result)} 字符")
+                    return result
+                logger.debug(f"[图片压缩] {debug_context} 解码为 data URL (无逗号)")
+                return decoded_str
+            logger.debug(f"[图片压缩] {debug_context} 解码为纯 base64 字符串: {len(decoded_str)} 字符")
+            return decoded_str
+        except Exception as e:
+            logger.debug(f"[图片压缩] {debug_context} 无法解码为 UTF-8 字符串: {e}")
+            return None
+    
+    def is_valid_base64(s):
+        """检查字符串是否看起来像有效的 base64"""
+        if not s or not isinstance(s, str):
+            return False
+        s = s.strip()
+        if len(s) < 10:
+            return False
+        import re
+        base64_pattern = re.compile(r'^[A-Za-z0-9+/]*={0,2}$')
+        return bool(base64_pattern.match(s))
+    
+    logger.debug(f"[图片压缩] 输入数据类型: {type(base64_data).__name__}, 预览: {get_data_preview(base64_data)}")
+    
+    try:
+        image = None
+        image_data = None
+        
+        if isinstance(base64_data, bytes):
+            logger.debug(f"[图片压缩] 处理 bytes 类型数据, 长度: {len(base64_data)}")
+            
+            image = try_decode_as_image(base64_data, "尝试1: 直接解析 bytes")
+            if image:
+                image_data = base64_data
+            else:
+                decoded_str = try_decode_as_base64_string(base64_data, "尝试2")
+                if decoded_str:
+                    if is_valid_base64(decoded_str):
+                        logger.debug(f"[图片压缩] 尝试2: 解码 base64 字符串")
+                        try:
+                            image_data = base64.b64decode(decoded_str)
+                            image = try_decode_as_image(image_data, "尝试2: 解码后解析")
+                        except Exception as e:
+                            logger.warning(f"[图片压缩] 尝试2: base64 解码失败: {e}")
+                    else:
+                        logger.debug(f"[图片压缩] 尝试2: 字符串不是有效的 base64 格式")
+        
+        elif isinstance(base64_data, str):
+            logger.debug(f"[图片压缩] 处理 str 类型数据, 长度: {len(base64_data)}")
+            
+            if base64_data.startswith('data:image'):
+                header_end = base64_data.find(',')
+                if header_end != -1:
+                    pure_base64 = base64_data[header_end + 1:]
+                else:
+                    pure_base64 = base64_data
+                logger.debug(f"[图片压缩] 提取 data URL 中的 base64: {len(pure_base64)} 字符")
+                image_data = base64.b64decode(pure_base64)
+            else:
+                logger.debug(f"[图片压缩] 直接解码 base64 字符串")
+                image_data = base64.b64decode(base64_data)
+            image = try_decode_as_image(image_data, "解码后解析")
+        
+        else:
+            logger.warning(f"[图片压缩] 不支持的输入类型: {type(base64_data)}")
+            return base64_data
+        
+        if image is None:
+            logger.warning(f"[图片压缩] 无法解析图片数据，返回 None")
+            return None
+        
+        if image.mode in ('RGBA', 'P'):
+            logger.debug(f"[图片压缩] 转换图片模式: {image.mode} -> RGB")
+            image = image.convert('RGB')
+        
+        original_width, original_height = image.size
+        if max(original_width, original_height) > max_size:
+            ratio = max_size / max(original_width, original_height)
+            new_width = int(original_width * ratio)
+            new_height = int(original_height * ratio)
+            logger.debug(f"[图片压缩] 缩放图片: {original_width}x{original_height} -> {new_width}x{new_height}")
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        
+        output_buffer = io.BytesIO()
+        image.save(output_buffer, format='JPEG', quality=quality, optimize=True)
+        compressed_base64 = base64.b64encode(output_buffer.getvalue()).decode('utf-8')
+        
+        logger.debug(f"[图片压缩] 压缩成功: 原始 {len(base64_data) if isinstance(base64_data, (str, bytes)) else 'N/A'} -> 压缩后 {len(compressed_base64)} 字符")
+        return f"data:image/jpeg;base64,{compressed_base64}"
+    
+    except Exception as e:
+        logger.warning(f"[图片压缩] 压缩过程异常: {e}")
+        try:
+            if isinstance(base64_data, bytes):
+                decoded_str = try_decode_as_base64_string(base64_data, "降级处理")
+                if decoded_str:
+                    if decoded_str.startswith('data:image'):
+                        logger.debug(f"[图片压缩] 降级: 返回原始 data URL")
+                        return decoded_str
+                    if is_valid_base64(decoded_str):
+                        logger.debug(f"[图片压缩] 降级: 返回带前缀的 base64")
+                        return f"data:image/jpeg;base64,{decoded_str}"
+                    try:
+                        image_data = base64.b64decode(decoded_str)
+                        encoded = base64.b64encode(image_data).decode('utf-8')
+                        logger.debug(f"[图片压缩] 降级: 重新编码后返回")
+                        return f"data:image/jpeg;base64,{encoded}"
+                    except Exception:
+                        pass
+                encoded = base64.b64encode(base64_data).decode('utf-8')
+                logger.debug(f"[图片压缩] 降级: 直接编码 bytes 返回")
+                return f"data:image/jpeg;base64,{encoded}"
+            elif isinstance(base64_data, str):
+                if base64_data.startswith('data:image'):
+                    logger.debug(f"[图片压缩] 降级: 返回原始 data URL 字符串")
+                    return base64_data
+                logger.debug(f"[图片压缩] 降级: 返回带前缀的原始字符串")
+                return f"data:image/jpeg;base64,{base64_data}"
+            logger.warning(f"[图片压缩] 降级处理失败: 未知类型")
+            return None
+        except Exception as e2:
+            logger.error(f"[图片压缩] 降级处理异常: {e2}")
+            return None
 
 
 def format_sql(sql_query: str, sql_params: list) -> str:
@@ -143,7 +317,19 @@ class SplitMatchService:
                 count_duration = time.time() - count_start
                 
                 offset = (page - 1) * page_size
-                select_sql = f"SELECT * FROM `{table_name}` WHERE {where_clause} LIMIT %s OFFSET %s"
+                image_fields = ['查核资料1', '查核资料2']
+                non_image_cols = []
+                cols_start = time.time()
+                cursor.execute(
+                    "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s ORDER BY ORDINAL_POSITION",
+                    (self.config.get('CHECK_DATA_DB', 'database', fallback='check_data'), table_name)
+                )
+                all_cols = [r['COLUMN_NAME'] for r in cursor.fetchall()]
+                non_image_cols = [c for c in all_cols if c not in image_fields]
+                cols_duration = time.time() - cols_start
+                
+                select_cols = ', '.join(f'`{c}`' for c in non_image_cols)
+                select_sql = f"SELECT {select_cols} FROM `{table_name}` WHERE {where_clause} LIMIT %s OFFSET %s"
                 select_params = params + [page_size, offset]
                 formatted_select_sql = format_sql(select_sql, select_params)
                 
@@ -162,7 +348,8 @@ class SplitMatchService:
                     "count_sql": formatted_count_sql,
                     "total_time": total_time,
                     "count_duration": count_duration,
-                    "select_duration": select_duration
+                    "select_duration": select_duration,
+                    "cols_duration": cols_duration
                 }
             
             return {"data": data, "columns": columns, "total": total, "debug": debug_info}
@@ -170,6 +357,69 @@ class SplitMatchService:
             total_time = time.time() - start_time
             logger.error(f"获取表数据失败: {e}", exc_info=True)
             return {"data": [], "columns": [], "total": 0, "debug": {"total_time": total_time}}
+        finally:
+            if conn:
+                conn.close()
+    
+    def get_original_image(self, table_name, pass_id, field):
+        """获取原图数据"""
+        conn = None
+        try:
+            conn = self._get_db_connection()
+            if not conn:
+                return None
+            
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                sql = f"SELECT `{field}` FROM `{table_name}` WHERE `通行标识ID` = %s"
+                cursor.execute(sql, (pass_id,))
+                result = cursor.fetchone()
+                
+                if result and field in result and result[field]:
+                    return result[field]
+                return None
+        except Exception as e:
+            logger.error(f"获取原图失败: {e}", exc_info=True)
+            return None
+        finally:
+            if conn:
+                conn.close()
+    
+    def get_table_images(self, table_name, pass_ids, fields=None):
+        """批量获取指定记录的图片缩略图"""
+        if fields is None:
+            fields = ['查核资料1', '查核资料2']
+        
+        if not pass_ids:
+            return {}
+        
+        conn = None
+        try:
+            conn = self._get_db_connection()
+            if not conn:
+                return {}
+            
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                field_list = ', '.join(f'`{f}`' for f in fields)
+                placeholders = ', '.join(['%s'] * len(pass_ids))
+                sql = f"SELECT `通行标识ID`, {field_list} FROM `{table_name}` WHERE `通行标识ID` IN ({placeholders})"
+                cursor.execute(sql, tuple(pass_ids))
+                rows = cursor.fetchall()
+                
+                result = {}
+                for row in rows:
+                    pass_id = row['通行标识ID']
+                    images = {}
+                    for field in fields:
+                        if field in row and row[field]:
+                            images[field] = compress_base64_image(row[field], max_size=200, quality=60)
+                        else:
+                            images[field] = None
+                    result[pass_id] = images
+                
+                return result
+        except Exception as e:
+            logger.error(f"批量获取图片失败: {e}", exc_info=True)
+            return {}
         finally:
             if conn:
                 conn.close()
@@ -637,11 +887,28 @@ class SplitMatchService:
                 cursor.execute(update_sql, params)
                 conn.commit()
                 return cursor.rowcount > 0
+        except pymysql.err.OperationalError as e:
+            error_code = e.args[0] if e.args else 0
+            error_msg = str(e)
+            
+            if error_code == 1114:
+                logger.error(f"[表空间不足] 无法更新 {table_name}: {error_msg}")
+                raise Exception(f"数据库表 '{table_name}' 空间不足，请联系管理员清理磁盘空间")
+            elif error_code in [1040, 1041]:
+                logger.error(f"[连接问题] 无法更新 {table_name}: {error_msg}")
+                raise Exception("数据库连接异常，请稍后重试")
+            elif error_code == 1146:
+                logger.error(f"[表不存在] 表 {table_name} 不存在: {error_msg}")
+                raise Exception(f"数据表 '{table_name}' 不存在，请检查配置")
+            else:
+                logger.error(f"[SQL错误-{error_code}] 更新 {table_name} 失败: {error_msg}", exc_info=True)
+                raise Exception(f"数据库操作失败 (错误码: {error_code}): {error_msg}")
+                
         except Exception as e:
             logger.error(f"更新表数据失败: {e}", exc_info=True)
             if conn:
                 conn.rollback()
-            return False
+            raise
         finally:
             if conn:
                 conn.close()

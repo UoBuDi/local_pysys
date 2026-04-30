@@ -286,13 +286,19 @@ class PortalClient:
             return
         
         url = f"{config.PORTAL_HOME_URL}/gateway/user-server/user/getUserInfo.json"
+        tenant_id = "1d68da3aa0a54f158fd6dab013a81d48"
+        
         headers = {
-            'Authorization': f'Bearer {self.access_token}'
+            'Accept': 'application/json, text/plain, */*',
+            'Authorization': f'Bearer {self.access_token}',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': f'{config.PORTAL_HOME_URL}/aiAuditWeb/index.html'
         }
         
         try:
             response = self.session.get(
                 url,
+                params={'tenantId': tenant_id},
                 headers=headers,
                 timeout=Timeouts.USER_INFO
             )

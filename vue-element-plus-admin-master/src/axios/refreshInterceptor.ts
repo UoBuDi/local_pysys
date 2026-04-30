@@ -1,6 +1,6 @@
 import { AxiosError, AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import { useUserStoreWithOut } from '@/store/modules/user'
-import { refreshTokenIfNeeded, isTokenExpiringSoon, hasValidToken } from '@/utils/auth'
+import { refreshTokenIfNeeded, hasValidToken, isTokenExpired } from '@/utils/auth'
 import router from '@/router'
 
 const TOKEN_REFRESH_URLS = ['/api/token/refresh', '/api/login/', '/api/register/']
@@ -25,7 +25,7 @@ export function setupTokenRefreshInterceptor(axiosInstance: AxiosInstance): void
         return config
       }
 
-      if (!hasValidToken() || isTokenExpiringSoon()) {
+      if (!hasValidToken() || isTokenExpired()) {
         try {
           const newToken = await refreshTokenIfNeeded()
           if (newToken && config.headers) {

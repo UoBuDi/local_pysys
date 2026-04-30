@@ -5,8 +5,10 @@ import { setupTokenRefreshInterceptor } from './refreshInterceptor'
 import { AxiosInstance, InternalAxiosRequestConfig, RequestConfig, AxiosResponse } from './types'
 import { ElMessage } from 'element-plus'
 import { REQUEST_TIMEOUT } from '@/constants'
+import { requestCache } from '@/utils/requestCache'
+import { requestDedup } from '@/utils/requestDedup'
 
-export const PATH_URL = import.meta.env.VITE_API_BASE_PATH
+export const PATH_URL = import.meta.env.VITE_API_BASE_PATH || ''
 
 const abortControllerMap: Map<string, AbortController> = new Map()
 
@@ -51,6 +53,13 @@ axiosInstance.interceptors.response.use(
     config.__retryCount = config.__retryCount || 0
 
     if (error.response?.status === 429) {
+      const url = config.url || ''
+
+      if (url.includes('/api/token/refresh') || url.includes('token/refresh')) {
+        console.warn('[HTTP] Token刷新请求被限流(429)，不再重试')
+        return Promise.reject(error)
+      }
+
       console.warn('[HTTP] 请求频率限制 (429)，准备重试...')
 
       if (config.__retryCount < MAX_RETRY_COUNT) {
@@ -60,10 +69,10 @@ axiosInstance.interceptors.response.use(
 
         await retryDelay(delay)
 
-        const url = config.url || ''
+        const retryUrl = config.url || ''
         const controller = new AbortController()
         config.signal = controller.signal
-        abortControllerMap.set(url, controller)
+        abortControllerMap.set(retryUrl, controller)
 
         return axiosInstance.request(config)
       } else {
@@ -83,21 +92,46 @@ axiosInstance.interceptors.response.use(defaultResponseInterceptors)
 
 setupTokenRefreshInterceptor(axiosInstance)
 
+// 缓存配置
+const CACHE_ENABLED = true
+const CACHE_METHODS = ['GET'] // 只缓存GET请求
+const DEFAULT_CACHE_TTL = 5 * 60 * 1000 // 5分钟
+
 const service = {
   request: (config: RequestConfig) => {
-    return new Promise((resolve, reject) => {
-      if (config.interceptors?.requestInterceptors) {
-        config = config.interceptors.requestInterceptors(config as any)
+    // 检查缓存
+    if (CACHE_ENABLED && CACHE_METHODS.includes(config.method?.toUpperCase() || 'GET')) {
+      const cached = requestCache.get(config.url || '', config.params)
+      if (cached) {
+        return Promise.resolve(cached)
       }
+    }
 
-      axiosInstance
-        .request(config)
-        .then((res) => {
-          resolve(res)
-        })
-        .catch((err: any) => {
-          reject(err)
-        })
+    // 请求去重
+    return requestDedup.wrap(config, async () => {
+      return new Promise((resolve, reject) => {
+        if (config.interceptors?.requestInterceptors) {
+          config = config.interceptors.requestInterceptors(config as any)
+        }
+
+        axiosInstance
+          .request(config)
+          .then((res) => {
+            // 缓存成功的GET请求
+            if (CACHE_ENABLED && config.method?.toUpperCase() === 'GET') {
+              requestCache.set(
+                config.url || '',
+                res,
+                config.params,
+                (config as any).cacheTTL || DEFAULT_CACHE_TTL
+              )
+            }
+            resolve(res)
+          })
+          .catch((err: any) => {
+            reject(err)
+          })
+      })
     })
   },
   cancelRequest: (url: string | string[]) => {
@@ -106,13 +140,28 @@ const service = {
       abortControllerMap.get(_url)?.abort()
       abortControllerMap.delete(_url)
     }
+    // 同时取消去重队列中的请求
+    urlList.forEach((url) => requestDedup.cancel(url))
   },
   cancelAllRequest() {
     for (const [_, controller] of abortControllerMap) {
       controller.abort()
     }
     abortControllerMap.clear()
-  }
+    requestDedup.cancel()
+  },
+  // 清除缓存
+  clearCache: (pattern?: string) => {
+    requestCache.clear(pattern)
+  },
+  // 获取统计信息
+  getStats: () => ({
+    cache: requestCache.getStats(),
+    pending: requestDedup.getPendingCount(),
+    pendingRequests: requestDedup.getPendingRequests()
+  }),
+  // 检查是否有待处理的请求
+  hasPending: (url: string) => requestDedup.hasPending(url)
 }
 
 export default service

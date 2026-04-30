@@ -452,6 +452,61 @@ class AIAuditClient:
             logger.error(f"稽核工单查询失败: {e}")
             return {'success': False, 'error': str(e), 'data': None}
     
+    def query_order_detail(self, order_id: str) -> Dict[str, Any]:
+        """
+        查询工单详情
+
+        Args:
+            order_id: 工单编号
+
+        Returns:
+            工单详情数据（包含labelVo、enData、exData）
+        """
+        url = f"{self.AI_AUDIT_BASE_URL}/gateway/ai-audit-server/external/audit/getOrderInfoByOrderId"
+
+        params = {
+            'order_id': order_id,
+            'with_order': 'true'
+        }
+
+        try:
+            logger.info(f"[工单详情] 开始查询 - order_id: {order_id}")
+
+            response = self.session.get(
+                url,
+                headers=self._get_headers(),
+                params=params,
+                timeout=Timeouts.QUERY
+            )
+            response.raise_for_status()
+
+            result = response.json()
+
+            if result.get('code', {}).get('ok'):
+                logger.info(f"[工单详情] 查询成功 - order_id: {order_id}")
+                return {
+                    'success': True,
+                    'data': result.get('result', {})
+                }
+            else:
+                error_msg = result.get('code', {}).get('msg', '查询失败')
+                logger.warning(f"[工单详情] 查询失败 - {error_msg}")
+                return {
+                    'success': False,
+                    'error': error_msg,
+                    'data': None
+                }
+
+        except requests.exceptions.Timeout:
+            logger.error("[工单详情] 查询超时")
+            return {'success': False, 'error': '查询超时', 'data': None}
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"[工单详情] 连接失败: {e}")
+            return {'success': False, 'error': '无法连接到AI稽核服务器', 'data': None}
+        except Exception as e:
+            logger.error(f"[工单详情] 查询异常: {e}", exc_info=True)
+            return {'success': False, 'error': str(e), 'data': None}
+
     def batch_query_all(
         self,
         plate_number: str,

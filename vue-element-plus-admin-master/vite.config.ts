@@ -42,23 +42,112 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       VueJsx(),
       ServerUrlCopy(),
       progress(),
-      env.VITE_USE_ALL_ELEMENT_PLUS_STYLE === 'false'
-        ? createStyleImportPlugin({
-            resolves: [ElementPlusResolve()],
-            libs: [
-              {
-                libraryName: 'element-plus',
-                esModule: true,
-                resolveStyle: (name) => {
-                  if (name === 'click-outside') {
-                    return ''
-                  }
-                  return `element-plus/es/components/${name.replace(/^el-/, '')}/style/css`
-                }
+      createStyleImportPlugin({
+        resolves: [ElementPlusResolve()],
+        libs: [
+          {
+            libraryName: 'element-plus',
+            esModule: true,
+            resolveStyle: (name) => {
+              const styleMap: Record<string, string> = {
+                'el-button': 'button',
+                'el-form': 'form',
+                'el-form-item': 'form-item',
+                'el-input': 'input',
+                'el-input-number': 'input-number',
+                'el-autocomplete': 'autocomplete',
+                'el-select': 'select',
+                'el-option': 'select',
+                'el-option-group': 'select',
+                'el-table': 'table',
+                'el-table-column': 'table',
+                'el-pagination': 'pagination',
+                'el-dialog': 'dialog',
+                'el-card': 'card',
+                'el-row': 'row',
+                'el-col': 'col',
+                'el-tag': 'tag',
+                'el-icon': 'icon',
+                'el-upload': 'upload',
+                'el-dropdown': 'dropdown',
+                'el-dropdown-menu': 'dropdown',
+                'el-dropdown-item': 'dropdown',
+                'el-menu': 'menu',
+                'el-menu-item': 'menu',
+                'el-sub-menu': 'menu',
+                'el-tabs': 'tabs',
+                'el-tab-pane': 'tabs',
+                'el-badge': 'badge',
+                'el-avatar': 'avatar',
+                'el-skeleton': 'skeleton',
+                'el-divider': 'divider',
+                'el-link': 'link',
+                'el-checkbox': 'checkbox',
+                'el-checkbox-group': 'checkbox',
+                'el-radio': 'radio',
+                'el-radio-group': 'radio',
+                'el-radio-button': 'radio',
+                'el-switch': 'switch',
+                'el-date-picker': 'date-picker',
+                'el-time-picker': 'time-picker',
+                'el-time-select': 'time-select',
+                'el-tooltip': 'tooltip',
+                'el-popover': 'popover',
+                'el-alert': 'alert',
+                'el-image': 'image',
+                'el-descriptions': 'descriptions',
+                'el-descriptions-item': 'descriptions',
+                'el-empty': 'empty',
+                'el-progress': 'progress',
+                'el-tree': 'tree',
+                'el-tree-select': 'tree-select',
+                'el-cascader': 'cascader',
+                'el-color-picker': 'color-picker',
+                'el-transfer': 'transfer',
+                'el-slider': 'slider',
+                'el-rate': 'rate',
+                'el-carousel': 'carousel',
+                'el-carousel-item': 'carousel',
+                'el-collapse': 'collapse',
+                'el-collapse-item': 'collapse',
+                'el-timeline': 'timeline',
+                'el-timeline-item': 'timeline',
+                'el-result': 'result',
+                'el-statistic': 'statistic',
+                'el-countdown': 'countdown',
+                'el-config-provider': 'config-provider',
+                'el-container': 'container',
+                'el-header': 'container',
+                'el-aside': 'container',
+                'el-main': 'container',
+                'el-footer': 'container',
+                'el-backtop': 'backtop',
+                'el-affix': 'affix',
+                'el-breadcrumb': 'breadcrumb',
+                'el-breadcrumb-item': 'breadcrumb',
+                'el-page-header': 'page-header',
+                'el-steps': 'steps',
+                'el-step': 'steps',
+                'el-drawer': 'drawer',
+                'el-popconfirm': 'popconfirm',
+                'el-skeleton-item': 'skeleton',
+                'el-space': 'space'
               }
-            ]
-          })
-        : undefined,
+              
+              if (name === 'click-outside') {
+                return ''
+              }
+              
+              const component = styleMap[name]
+              if (component) {
+                return `element-plus/es/components/${component}/style/css`
+              }
+              
+              return `element-plus/es/components/${name.replace(/^el-/, '')}/style/css`
+            }
+          }
+        ]
+      }),
       EslintPlugin({
         cache: false,
         failOnWarning: false,
@@ -143,20 +232,89 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       outDir: env.VITE_OUT_DIR || 'dist',
       sourcemap: env.VITE_SOURCEMAP === 'true',
       // brotliSize: false,
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: env.VITE_DROP_CONSOLE === 'true',
+          drop_debugger: env.VITE_DROP_DEBUGGER === 'true',
+          pure_funcs: env.VITE_DROP_CONSOLE === 'true' ? ['console.log'] : []
+        }
+      },
       rollupOptions: {
         plugins: env.VITE_USE_BUNDLE_ANALYZER === 'true' ? [visualizer()] : undefined,
-        // 拆包
         output: {
-          manualChunks: {
-            'vue-chunks': ['vue', 'vue-router', 'pinia', 'vue-i18n'],
-            'element-plus': ['element-plus'],
-            'wang-editor': ['@wangeditor/editor', '@wangeditor/editor-for-vue'],
-            echarts: ['echarts', 'echarts-wordcloud']
+          manualChunks: (id) => {
+            // Vue核心库
+            if (id.includes('node_modules/vue/') || 
+                id.includes('node_modules/@vue/') ||
+                id.includes('node_modules/vue-router/') ||
+                id.includes('node_modules/pinia/') ||
+                id.includes('node_modules/vue-i18n/')) {
+              return 'vue-vendor'
+            }
+            
+            // Element Plus
+            if (id.includes('node_modules/element-plus/')) {
+              return 'element-plus'
+            }
+            
+            // ECharts
+            if (id.includes('node_modules/echarts/') || 
+                id.includes('node_modules/echarts-wordcloud/') ||
+                id.includes('node_modules/zrender/')) {
+              return 'echarts'
+            }
+            
+            // 富文本编辑器
+            if (id.includes('node_modules/@wangeditor/')) {
+              return 'wang-editor'
+            }
+            
+            // 图标库
+            if (id.includes('node_modules/@element-plus/icons-vue/')) {
+              return 'element-icons'
+            }
+            
+            // 工具库
+            if (id.includes('node_modules/lodash-es/') || 
+                id.includes('node_modules/lodash/')) {
+              return 'lodash'
+            }
+            
+            // 工具库
+            if (id.includes('node_modules/axios/') || 
+                id.includes('node_modules/dayjs/') ||
+                id.includes('node_modules/crypto-js/')) {
+              return 'utils'
+            }
+            
+            // 其他第三方库
+            if (id.includes('node_modules/')) {
+              return 'vendor'
+            }
+          },
+          chunkFileNames: 'assets/js/[name]-[hash].js',
+          entryFileNames: 'assets/js/[name]-[hash].js',
+          assetFileNames: (assetInfo) => {
+            const info = assetInfo.name?.split('.') || []
+            let extType = info[info.length - 1]
+            
+            if (/\.(png|jpe?g|gif|svg|webp|ico)$/i.test(assetInfo.name || '')) {
+              return `assets/images/[name]-[hash].[ext]`
+            } else if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name || '')) {
+              return `assets/fonts/[name]-[hash].[ext]`
+            } else if (/\.css$/i.test(assetInfo.name || '')) {
+              return `assets/css/[name]-[hash].[ext]`
+            }
+            
+            return `assets/[ext]/[name]-[hash].[ext]`
           }
         }
       },
       cssCodeSplit: !(env.VITE_USE_CSS_SPLIT === 'false'),
-      cssTarget: ['chrome31']
+      cssTarget: ['chrome31'],
+      chunkSizeWarningLimit: 2000,
+      reportCompressedSize: true
     },
     server: {
       port: 4000,

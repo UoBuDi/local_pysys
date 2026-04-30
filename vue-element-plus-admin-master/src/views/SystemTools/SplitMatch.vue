@@ -182,10 +182,14 @@
                   :src="row['查核资料1']"
                   fit="cover"
                   style="width: 50px; height: 50px; cursor: pointer"
-                  :preview-src-list="[row['查核资料1']]"
+                  :preview-src-list="[]"
                   :preview-teleported="true"
                   preview-z-index="9999"
+                  @click="handleTableImagePreview(row, '查核资料1')"
                 />
+              </div>
+              <div v-else-if="imageLoading" class="image-placeholder">
+                <el-icon class="is-loading" :size="20"><Loading /></el-icon>
               </div>
               <span v-else>-</span>
             </template>
@@ -197,10 +201,14 @@
                   :src="row['查核资料2']"
                   fit="cover"
                   style="width: 50px; height: 50px; cursor: pointer"
-                  :preview-src-list="[row['查核资料2']]"
+                  :preview-src-list="[]"
                   :preview-teleported="true"
                   preview-z-index="9999"
+                  @click="handleTableImagePreview(row, '查核资料2')"
                 />
+              </div>
+              <div v-else-if="imageLoading" class="image-placeholder">
+                <el-icon class="is-loading" :size="20"><Loading /></el-icon>
               </div>
               <span v-else>-</span>
             </template>
@@ -214,6 +222,20 @@
           </el-table-column>
           <el-table-column prop="核查拆分" label="核查拆分" min-width="100" />
         </el-table>
+
+        <!-- 图片加载进度条 -->
+        <div v-if="imageLoading" class="image-loading-bar">
+          <el-progress
+            :percentage="imageLoadingTotal > 0 ? Math.round((imageLoadingProgress / imageLoadingTotal) * 100) : 0"
+            :stroke-width="16"
+            :text-inside="true"
+            status="success"
+            style="flex: 1"
+          />
+          <span class="image-loading-text">
+            图片加载中 {{ imageLoadingProgress }}/{{ imageLoadingTotal }}
+          </span>
+        </div>
 
         <div class="pagination-container">
           <el-pagination
@@ -241,34 +263,32 @@
         <div class="dialog-content" style="max-height: 600px; overflow-y: auto">
           <el-descriptions v-if="editedRow" :column="2" border style="table-layout: fixed">
             <el-descriptions-item
-              v-for="(value, key) in editedRow"
+              v-for="key in sortedDetailFields"
               :key="key"
               :label="key"
               style="word-break: break-all; overflow-wrap: break-word"
             >
-              <!-- 图片上传字段 -->
-              <template v-if="['查核资料1', '查核资料2'].includes(key)">
+              <!-- 查核资料1字段（图片上传） -->
+              <template v-if="key === '查核资料1'">
                 <div>
-                  <!-- 激活状态指示器 -->
                   <div style="margin-bottom: 5px; display: flex; align-items: center">
-                    <el-radio v-model="activeImageField" :label="key" size="small">
+                    <el-radio v-model="activeImageField" label="查核资料1" size="small">
                       当前粘贴目标
                     </el-radio>
                   </div>
-                  <!-- 已上传图片预览 -->
-                  <div v-if="editedRow[key]" style="margin-bottom: 10px; position: relative">
+                  <div v-if="editedRow['查核资料1']" style="margin-bottom: 10px; position: relative">
                     <el-image
-                      :src="editedRow[key]"
+                      :src="editedRow['查核资料1']"
                       fit="cover"
                       style="width: 200px; height: 150px; cursor: pointer"
-                      :preview-src-list="imagePreviewList[key] || []"
+                      :preview-src-list="imagePreviewList['查核资料1'] || []"
                     />
                     <el-button
                       type="danger"
                       size="small"
                       circle
                       style="position: absolute; top: 5px; right: 5px"
-                      @click.stop="handleImageDelete(key)"
+                      @click.stop="handleImageDelete('查核资料1')"
                     >
                       <template #icon>
                         <svg
@@ -289,34 +309,68 @@
                       </template>
                     </el-button>
                   </div>
-                  <!-- 上传组件 -->
                   <el-upload
                     class="upload-demo"
                     action="#"
                     :auto-upload="false"
-                    :on-change="(file) => handleImageUpload(file, key)"
+                    :on-change="(file) => handleImageUpload(file, '查核资料1')"
                     :show-file-list="false"
                     accept="image/*"
-                    @paste="
-                      (event) => {
-                        // 检查是否有图片数据
-                        const items = event.clipboardData?.items
-                        if (items) {
-                          for (let i = 0; i < items.length; i++) {
-                            if (items[i].type.indexOf('image') === 0) {
-                              // 阻止 el-upload 处理图片粘贴
-                              event.preventDefault()
-                              break
-                            }
-                          }
-                        }
-                      }
-                    "
                   >
-                    <el-button type="primary">上传图片</el-button>
-                    <span style="margin-left: 10px; color: #909399"
-                      >请先用 Win+Shift+S 截图再按 Ctrl+V 粘贴</span
+                    <el-button type="primary" size="small">上传图片</el-button>
+                  </el-upload>
+                </div>
+              </template>
+              <!-- 查核资料2字段（图片上传） -->
+              <template v-else-if="key === '查核资料2'">
+                <div>
+                  <div style="margin-bottom: 5px; display: flex; align-items: center">
+                    <el-radio v-model="activeImageField" label="查核资料2" size="small">
+                      当前粘贴目标
+                    </el-radio>
+                  </div>
+                  <div v-if="editedRow['查核资料2']" style="margin-bottom: 10px; position: relative">
+                    <el-image
+                      :src="editedRow['查核资料2']"
+                      fit="cover"
+                      style="width: 200px; height: 150px; cursor: pointer"
+                      :preview-src-list="imagePreviewList['查核资料2'] || []"
+                    />
+                    <el-button
+                      type="danger"
+                      size="small"
+                      circle
+                      style="position: absolute; top: 5px; right: 5px"
+                      @click.stop="handleImageDelete('查核资料2')"
                     >
+                      <template #icon>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M3 6h18" />
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                        </svg>
+                      </template>
+                    </el-button>
+                  </div>
+                  <el-upload
+                    class="upload-demo"
+                    action="#"
+                    :auto-upload="false"
+                    :on-change="(file) => handleImageUpload(file, '查核资料2')"
+                    :show-file-list="false"
+                    accept="image/*"
+                  >
+                    <el-button type="primary" size="small">上传图片</el-button>
                   </el-upload>
                 </div>
               </template>
@@ -392,16 +446,9 @@
               </template>
               <!-- 其他只读字段 -->
               <template v-else>
-                <!-- 图片字段不显示 blob URL -->
-                <div
-                  v-if="['查核资料1', '查核资料2'].includes(key)"
-                  style="word-break: break-all; overflow-wrap: break-word; max-width: 400px"
-                >
-                  <!-- 图片已在上方预览区域显示 -->
-                </div>
                 <!-- 通行标识ID字段（特殊处理：复制+核查） -->
                 <div
-                  v-else-if="key === '通行标识ID'"
+                  v-if="key === '通行标识ID'"
                   style="
                     display: flex;
                     align-items: center;
@@ -411,11 +458,11 @@
                     max-width: 400px;
                   "
                 >
-                  <span style="flex: 1">{{ value || '-' }}</span>
+                  <span style="flex: 1">{{ editedRow[key] || '-' }}</span>
                   <el-button
                     type="primary"
                     :icon="CopyDocument"
-                    @click="handleCopy(String(value))"
+                    @click="handleCopy(String(editedRow[key]))"
                     size="small"
                   >
                     复制
@@ -423,10 +470,10 @@
                   <el-button
                     type="success"
                     :icon="Search"
-                    @click="handleVerifyPassId(String(value), '通行标识ID')"
+                    @click="handleVerifyPassId(String(editedRow[key]), '通行标识ID')"
                     size="small"
                     :loading="verifyLoading"
-                    :disabled="!value"
+                    :disabled="!editedRow[key]"
                   >
                     核查
                   </el-button>
@@ -443,11 +490,11 @@
                     max-width: 400px;
                   "
                 >
-                  <span style="flex: 1">{{ value || '-' }}</span>
+                  <span style="flex: 1">{{ editedRow[key] || '-' }}</span>
                   <el-button
                     type="primary"
                     :icon="CopyDocument"
-                    @click="handleCopy(String(value))"
+                    @click="handleCopy(String(editedRow[key]))"
                     size="small"
                   >
                     复制
@@ -466,7 +513,7 @@
                   v-else
                   style="word-break: break-all; overflow-wrap: break-word; max-width: 400px"
                 >
-                  {{ value || '-' }}
+                  {{ editedRow[key] || '-' }}
                 </div>
               </template>
             </el-descriptions-item>
@@ -1576,14 +1623,15 @@
                         show-overflow-tooltip
                       >
                         <template #default="{ row }">
-                          <div style="display: flex; align-items: center; gap: 5px;">
+                          <div style="display: flex; align-items: center; gap: 5px">
                             <span
                               :style="
                                 isGateTimeMatched(row.transTime)
                                   ? 'font-weight: bold; color: #409EFF'
                                   : ''
                               "
-                            >{{ row.transTime }}</span>
+                              >{{ row.transTime }}</span
+                            >
                             <el-button
                               size="small"
                               type="primary"
@@ -1591,7 +1639,8 @@
                               @click="queryGantryImagesForRow(row)"
                               :loading="gantryImageLoading === row.gantryId"
                               :disabled="!row.gantryId"
-                            >查</el-button>
+                              >查</el-button
+                            >
                           </div>
                         </template>
                       </el-table-column>
@@ -2049,6 +2098,24 @@
                       stripe
                     >
                       <el-table-column
+                        prop="order_id"
+                        label="工单编号"
+                        width="200"
+                        show-overflow-tooltip
+                        fixed="left"
+                      >
+                        <template #default="{ row }">
+                          <el-button
+                            type="primary"
+                            link
+                            size="small"
+                            @click="handleViewOrderDetail(row.order_id)"
+                          >
+                            {{ row.order_id }}
+                          </el-button>
+                        </template>
+                      </el-table-column>
+                      <el-table-column
                         prop="pass_id"
                         label="通行标识ID"
                         width="305"
@@ -2165,6 +2232,17 @@
                         width="160"
                         show-overflow-tooltip
                       />
+                      <el-table-column label="操作" width="80" fixed="right">
+                        <template #default="{ row }">
+                          <el-button
+                            type="primary"
+                            size="small"
+                            @click="handleViewOrderDetail(row.order_id)"
+                          >
+                            查看
+                          </el-button>
+                        </template>
+                      </el-table-column>
                     </el-table>
                   </div>
                   <el-alert v-else type="error" :closable="false">
@@ -2308,15 +2386,17 @@
             type="primary"
             @click="saveImagesToDatabase"
             :loading="aiAuditSavingImages"
-            :disabled="!(
-              aiAuditSelectedImage1 ||
-              aiAuditSelectedImage2 ||
-              aiAuditReviewStatus ||
-              aiAuditCheckPassId ||
-              aiAuditSpecialSituation ||
-              aiAuditCheckSplit ||
-              aiAuditRemark
-            )"
+            :disabled="
+              !(
+                aiAuditSelectedImage1 ||
+                aiAuditSelectedImage2 ||
+                aiAuditReviewStatus ||
+                aiAuditCheckPassId ||
+                aiAuditSpecialSituation ||
+                aiAuditCheckSplit ||
+                aiAuditRemark
+              )
+            "
           >
             保存
           </el-button>
@@ -2353,51 +2433,60 @@
       draggable
     >
       <div v-if="gantryImagesResult">
-        <div style="margin-bottom: 15px; padding: 10px; background: #f5f7fa; border-radius: 4px;">
-          <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+        <div style="margin-bottom: 15px; padding: 10px; background: #f5f7fa; border-radius: 4px">
+          <div style="display: flex; gap: 30px; flex-wrap: wrap">
             <span><strong>门架名称:</strong> {{ gantryImagesResult.gantryName }}</span>
             <span><strong>经过时间:</strong> {{ gantryImagesResult.transTime }}</span>
-            <span><strong>查询范围:</strong> {{ gantryImagesResult.timeRange.startTime }} ~ {{ gantryImagesResult.timeRange.endTime }}</span>
+            <span
+              ><strong>查询范围:</strong> {{ gantryImagesResult.timeRange.startTime }} ~
+              {{ gantryImagesResult.timeRange.endTime }}</span
+            >
             <span><strong>共找到:</strong> {{ gantryImagesResult.total }} 张图片</span>
           </div>
         </div>
-        
-        <div v-if="gantryImagesResult.images.length > 0" style="display: flex; flex-wrap: wrap; gap: 15px;">
+
+        <div
+          v-if="gantryImagesResult.images.length > 0"
+          style="display: flex; flex-wrap: wrap; gap: 15px"
+        >
           <div
             v-for="(img, idx) in gantryImagesResult.images"
             :key="idx"
-            style="width: 260px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;"
+            style="width: 260px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden"
           >
             <el-image
               :src="getImageSrc(img.bigPositivePic)"
-              style="width: 100%; height: 150px; cursor: pointer;"
+              style="width: 100%; height: 150px; cursor: pointer"
               fit="contain"
               :preview-src-list="gantryImagesPreviewList"
               :initial-index="idx"
             />
-            <div style="padding: 8px; font-size: 12px; background: #fafafa;">
-              <div style="margin-bottom: 4px;">
+            <div style="padding: 8px; font-size: 12px; background: #fafafa">
+              <div style="margin-bottom: 4px">
                 <strong>时间:</strong> {{ formatPicTime(img.picTime) }}
               </div>
-              <div style="margin-bottom: 4px;">
+              <div style="margin-bottom: 4px">
                 <strong>车牌:</strong>
                 <el-link
                   type="primary"
                   @click="queryVehicleDetail(img.vehPlate, img.picTime)"
-                  style="cursor: pointer;"
-                >{{ img.vehPlate }}</el-link>
+                  style="cursor: pointer"
+                  >{{ img.vehPlate }}</el-link
+                >
               </div>
-              <div style="margin-bottom: 8px;">
-                <strong>门架:</strong> {{ img.stationName }}
-              </div>
-              <div style="display: flex; gap: 5px;">
-                <el-button size="small" @click="selectGantryImageAsCheck(img, 'image1')">选为资料1</el-button>
-                <el-button size="small" @click="selectGantryImageAsCheck(img, 'image2')">选为资料2</el-button>
+              <div style="margin-bottom: 8px"> <strong>门架:</strong> {{ img.stationName }} </div>
+              <div style="display: flex; gap: 5px">
+                <el-button size="small" @click="selectGantryImageAsCheck(img, 'image1')"
+                  >选为资料1</el-button
+                >
+                <el-button size="small" @click="selectGantryImageAsCheck(img, 'image2')"
+                  >选为资料2</el-button
+                >
               </div>
             </div>
           </div>
         </div>
-        
+
         <el-empty v-else description="未找到符合条件的图片" />
       </div>
     </el-dialog>
@@ -2411,15 +2500,20 @@
       destroy-on-close
       draggable
     >
-      <div v-if="vehicleDetailLoading" style="text-align: center; padding: 50px;">
-        <el-icon class="is-loading" style="font-size: 30px;"><Loading /></el-icon>
-        <div style="margin-top: 10px;">正在查询车辆信息...</div>
+      <div v-if="vehicleDetailLoading" style="text-align: center; padding: 50px">
+        <el-icon class="is-loading" style="font-size: 30px"><Loading /></el-icon>
+        <div style="margin-top: 10px">正在查询车辆信息...</div>
       </div>
-      
+
       <div v-else-if="vehicleDetailResult">
         <el-tabs v-model="vehicleDetailActiveTab">
           <el-tab-pane label="门架交易" name="gantry_trade">
-            <el-table :data="vehicleDetailResult.gantry_trade?.records || []" border size="small" max-height="400">
+            <el-table
+              :data="vehicleDetailResult.gantry_trade?.records || []"
+              border
+              size="small"
+              max-height="400"
+            >
               <el-table-column prop="transTime" label="经过时间" width="160" />
               <el-table-column prop="gantryName" label="门架名称" show-overflow-tooltip />
               <el-table-column prop="fee" label="金额" width="100">
@@ -2428,25 +2522,35 @@
               <el-table-column prop="vehiclePlateColorName" label="车牌颜色" width="100" />
               <el-table-column prop="feeVehicleTypeName" label="计费车型" width="120" />
             </el-table>
-            <div style="margin-top: 10px; color: #909399;">
+            <div style="margin-top: 10px; color: #909399">
               共 {{ vehicleDetailResult.gantry_trade?.total || 0 }} 条记录
             </div>
           </el-tab-pane>
-          
+
           <el-tab-pane label="门架牌识" name="gantry_plate">
-            <el-table :data="vehicleDetailResult.gantry_plate?.records || []" border size="small" max-height="400">
+            <el-table
+              :data="vehicleDetailResult.gantry_plate?.records || []"
+              border
+              size="small"
+              max-height="400"
+            >
               <el-table-column prop="picTime" label="拍摄时间" width="160" />
               <el-table-column prop="gantryName" label="门架名称" show-overflow-tooltip />
               <el-table-column prop="vehicleTypeName" label="车型" width="120" />
               <el-table-column prop="vehicleSpeed" label="车速" width="80" />
             </el-table>
-            <div style="margin-top: 10px; color: #909399;">
+            <div style="margin-top: 10px; color: #909399">
               共 {{ vehicleDetailResult.gantry_plate?.total || 0 }} 条记录
             </div>
           </el-tab-pane>
-          
+
           <el-tab-pane label="出口交易(ETC)" name="exit_trade_etc">
-            <el-table :data="vehicleDetailResult.exit_trade_etc?.records || []" border size="small" max-height="400">
+            <el-table
+              :data="vehicleDetailResult.exit_trade_etc?.records || []"
+              border
+              size="small"
+              max-height="400"
+            >
               <el-table-column prop="enTime" label="入口时间" width="160" />
               <el-table-column prop="exTime" label="出口时间" width="160" />
               <el-table-column prop="enStationName" label="入口站" show-overflow-tooltip />
@@ -2455,13 +2559,18 @@
                 <template #default="{ row }">{{ formatFee(row.fee) }}</template>
               </el-table-column>
             </el-table>
-            <div style="margin-top: 10px; color: #909399;">
+            <div style="margin-top: 10px; color: #909399">
               共 {{ vehicleDetailResult.exit_trade_etc?.total || 0 }} 条记录
             </div>
           </el-tab-pane>
-          
+
           <el-tab-pane label="出口交易(其它)" name="exit_trade_other">
-            <el-table :data="vehicleDetailResult.exit_trade_other?.records || []" border size="small" max-height="400">
+            <el-table
+              :data="vehicleDetailResult.exit_trade_other?.records || []"
+              border
+              size="small"
+              max-height="400"
+            >
               <el-table-column prop="enTime" label="入口时间" width="160" />
               <el-table-column prop="exTime" label="出口时间" width="160" />
               <el-table-column prop="enStationName" label="入口站" show-overflow-tooltip />
@@ -2470,27 +2579,326 @@
                 <template #default="{ row }">{{ formatFee(row.fee) }}</template>
               </el-table-column>
             </el-table>
-            <div style="margin-top: 10px; color: #909399;">
+            <div style="margin-top: 10px; color: #909399">
               共 {{ vehicleDetailResult.exit_trade_other?.total || 0 }} 条记录
             </div>
           </el-tab-pane>
-          
+
           <el-tab-pane label="稽核工单" name="audit_order">
-            <el-table :data="vehicleDetailResult.audit_order?.records || []" border size="small" max-height="400">
+            <el-table
+              :data="vehicleDetailResult.audit_order?.records || []"
+              border
+              size="small"
+              max-height="400"
+            >
               <el-table-column prop="orderId" label="工单编号" show-overflow-tooltip />
               <el-table-column prop="orderTypeName" label="工单类型" width="120" />
               <el-table-column prop="createTime" label="创建时间" width="160" />
               <el-table-column prop="orderStatusName" label="状态" width="100" />
             </el-table>
-            <div style="margin-top: 10px; color: #909399;">
+            <div style="margin-top: 10px; color: #909399">
               共 {{ vehicleDetailResult.audit_order?.total || 0 }} 条记录
             </div>
           </el-tab-pane>
         </el-tabs>
-        
-        <div v-if="vehicleDetailResult.errors?.length > 0" style="margin-top: 10px; color: #E6A23C;">
+
+        <div v-if="vehicleDetailResult.errors?.length > 0" style="margin-top: 10px; color: #e6a23c">
           部分查询失败: {{ vehicleDetailResult.errors.join('; ') }}
         </div>
+      </div>
+    </el-dialog>
+
+    <!-- 工单详情对话框 -->
+    <el-dialog
+      v-model="showOrderDetailDialog"
+      title="工单处理详情"
+      width="92%"
+      :close-on-click-modal="false"
+      destroy-on-close
+      draggable
+      top="3vh"
+    >
+
+      <div v-if="orderDetailLoading" style="text-align: center; padding: 100px">
+        <el-icon class="is-loading" :size="50"><Loading /></el-icon>
+        <div style="margin-top: 20px; font-size: 16px">正在加载工单详情...</div>
+      </div>
+
+      <div v-else-if="currentOrderDetail" style="display: flex; gap: 16px; height: 82vh; overflow: hidden">
+        <!-- 左侧：基本信息区域 -->
+        <div style="width: 320px; flex-shrink: 0; overflow-y: auto; border: 1px solid #e4e7ed; border-radius: 4px; background: #fff">
+          <!-- 工单基本信息 -->
+          <div style="padding: 12px; border-bottom: 1px solid #ebeef5; background: #f5f7fa">
+            <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px">📋 基本信息</div>
+            <el-descriptions :column="1" size="small" :labelStyle="{ width: '90px', color: '#909399' }">
+              <el-descriptions-item label="车牌号码">{{ currentOrderDetail.labelVo?.vehicle_no || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="入口收费站">{{ currentOrderDetail.labelVo?.en_station_name || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="入口时间">{{ currentOrderDetail.labelVo?.en_time || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="出口收费站">{{ currentOrderDetail.labelVo?.ex_station_name || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="出口时间">{{ currentOrderDetail.labelVo?.ex_time || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="出口收费总额">
+                <span style="color: #e6a23c; font-weight: bold">¥ {{ currentOrderDetail.pay_amount ? (currentOrderDetail.pay_amount / 100).toFixed(2) : '0.00' }} 元</span>
+              </el-descriptions-item>
+            </el-descriptions>
+          </div>
+
+          <!-- 标签信息 -->
+          <div v-if="currentOrderDetail.labelCodeList && currentOrderDetail.labelCodeList.length > 0" style="padding: 12px; border-bottom: 1px solid #ebeef5">
+            <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px">🏷️ 标签信息</div>
+            <div
+              v-for="(label, idx) in currentOrderDetail.labelCodeList"
+              :key="idx"
+              style="margin-bottom: 8px; padding: 8px; background: #f5f7fa; border-radius: 4px"
+            >
+              <div style="display: flex; align-items: center; margin-bottom: 4px">
+                <el-tag size="small" type="warning" style="margin-right: 8px">{{ label.labelCode }}</el-tag>
+                <span style="font-weight: 500; font-size: 13px">{{ label.labelName }}</span>
+              </div>
+              <div v-if="label.auditMethod" style="font-size: 12px; color: #606266; line-height: 1.5; margin-top: 4px">
+                {{ label.auditMethod }}
+              </div>
+            </div>
+          </div>
+
+          <!-- 稽核步骤配置 -->
+          <div v-if="currentOrderDetail.auditCheckdescConfigs && currentOrderDetail.auditCheckdescConfigs.length > 0" style="padding: 12px; border-bottom: 1px solid #ebeef5">
+            <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px">✅ 稽核步骤</div>
+            <div
+              v-for="(config, idx) in currentOrderDetail.auditCheckdescConfigs"
+              :key="idx"
+              style="margin-bottom: 10px"
+            >
+              <div style="display: flex; align-items: center; margin-bottom: 6px">
+                <span style="width: 18px; height: 18px; border-radius: 50%; background: #409eff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; margin-right: 6px">{{ idx + 1 }}</span>
+                <span style="font-weight: 500; font-size: 13px">{{ config.checkStep1Name || config.checkStep2Name || config.checkStep3Name }}</span>
+              </div>
+              <div style="font-size: 12px; color: #606266; line-height: 1.5; padding-left: 24px">
+                {{ config.checkStep1Desc || config.checkStep2Desc || config.checkStep3Desc }}
+              </div>
+            </div>
+          </div>
+
+          <!-- 图片列表 -->
+          <div v-if="currentOrderDetail.picBeanVo?.picBeanList" style="padding: 12px">
+            <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px">
+              📷 查看图片 ({{ currentOrderDetail.picBeanVo.total || currentOrderDetail.picBeanVo.picBeanList.length }})
+            </div>
+            <div style="max-height: 400px; overflow-y: auto">
+              <div
+                v-for="(pic, idx) in currentOrderDetail.picBeanVo.picBeanList"
+                :key="idx"
+                @click="selectedPicture = pic"
+                style="
+                  display: flex;
+                  align-items: center;
+                  padding: 6px;
+                  margin-bottom: 4px;
+                  cursor: pointer;
+                  border-radius: 4px;
+                  transition: all 0.2s;
+                  background: ${selectedPicture?.picId === pic.picId ? '#ecf5ff' : '#fff'};
+                  border: 1px solid ${selectedPicture?.picId === pic.picId ? '#409eff' : '#ebeef5'};
+                "
+                :style="{
+                  background: selectedPicture?.picId === pic.picId ? '#ecf5ff' : '#fff',
+                  border: selectedPicture?.picId === pic.picId ? '1px solid #409eff' : '1px solid #ebeef5'
+                }"
+              >
+                <img
+                  v-if="pic.smallPositivePic"
+                  :src="pic.smallPositivePic"
+                  style="width: 48px; height: 36px; object-fit: cover; border-radius: 2px; margin-right: 8px; flex-shrink: 0"
+                />
+                <div style="flex: 1; min-width: 0">
+                  <div style="font-size: 12px; font-weight: 500; color: #303133; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">
+                    {{ pic.stationName || ('图片 ' + (idx + 1)) }}
+                  </div>
+                  <div style="font-size: 11px; color: #909399; margin-top: 2px">{{ pic.picTime || '-' }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧：详细信息展示区域 -->
+        <div style="flex: 1; overflow-y: auto; border: 1px solid #e4e7ed; border-radius: 4px; background: #fff; padding: 16px">
+          <!-- 稽核信息 -->
+          <div style="margin-bottom: 20px">
+            <div style="display: flex; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #409eff">
+              <span style="font-size: 16px; font-weight: bold; color: #303133">📊 稽核信息</span>
+            </div>
+            <el-alert
+              type="info"
+              :closable="false"
+              show-icon
+              style="margin-bottom: 12px"
+            >
+              <template #title>
+                <span style="font-size: 13px">【{{ currentOrderDetail.labelVo?.vehicle_no }}】稽核模型利用交易流水中"收费车型与真实车型不符"的特征值进行敏感性筛查，须稽查人员通过门架图片、监控录像等方式确认车辆车型信息。</span>
+              </template>
+            </el-alert>
+
+            <!-- 处理结论展示 -->
+            <div v-if="currentOrderDetail.labelVo?.audit_remark" style="background: linear-gradient(135deg, #f0f9eb 0%, #f5f7fa 100%); padding: 16px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #67c23a; box-shadow: 0 2px 8px rgba(103, 194, 58, 0.1)">
+              <div style="font-size: 14px; font-weight: bold; color: #67c23a; margin-bottom: 10px; display: flex; align-items: center">
+                <el-icon :size="18" style="margin-right: 6px"><CircleCheck /></el-icon>
+                处理结论
+              </div>
+              <div style="color: #606266; line-height: 1.8; font-size: 13px">
+                {{ currentOrderDetail.labelVo.audit_remark }}
+              </div>
+            </div>
+
+            <!-- 标签详情展示 -->
+            <div v-if="currentOrderDetail.labelCodeList && currentOrderDetail.labelCodeList.length > 0" style="background: #fafafa; padding: 12px; border-radius: 4px; margin-bottom: 12px">
+              <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px">【主标签】</div>
+              <div
+                v-for="(label, idx) in currentOrderDetail.labelCodeList"
+                :key="idx"
+                style="display: inline-flex; align-items: center; margin: 4px 8px 4px 0"
+              >
+                <el-tag type="warning" effect="dark" size="large">{{ label.labelName }}</el-tag>
+              </div>
+            </div>
+
+            <!-- 稽核流程步骤卡片 -->
+            <div v-if="currentOrderDetail.auditCheckdescConfigs && currentOrderDetail.auditCheckdescConfigs.length > 0">
+              <el-steps :active="3" finish-status="success" simple style="margin-bottom: 16px">
+                <el-step title="车型确认" />
+                <el-step title="费用测算" />
+                <el-step title="稽核取证" />
+              </el-steps>
+
+              <div
+                v-for="(config, idx) in currentOrderDetail.auditCheckdescConfigs"
+                :key="idx"
+                style="display: flex; gap: 16px; margin-bottom: 16px"
+              >
+                <!-- 步骤1：车型确认 -->
+                <div style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px; border-radius: 8px; color: #fff">
+                  <div style="display: flex; align-items: center; margin-bottom: 8px">
+                    <el-icon :size="24" style="margin-right: 8px"><CircleCheck /></el-icon>
+                    <span style="font-weight: bold; font-size: 15px">{{ config.checkStep1Name || '车型确认' }}</span>
+                  </div>
+                  <div style="font-size: 13px; line-height: 1.6; opacity: 0.95">{{ config.checkStep1Desc || '通过图片和监控录像核实实际车型' }}</div>
+                </div>
+
+                <!-- 步骤2：费用测算 -->
+                <div style="flex: 1; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 16px; border-radius: 8px; color: #fff">
+                  <div style="display: flex; align-items: center; margin-bottom: 8px">
+                    <el-icon :size="24" style="margin-right: 8px"><Money /></el-icon>
+                    <span style="font-weight: bold; font-size: 15px">{{ config.checkStep2Name || '费用测算' }}</span>
+                  </div>
+                  <div style="font-size: 13px; line-height: 1.6; opacity: 0.95">{{ config.checkStep2Desc || '测算实际行驶路径应收费额，与出口实收或省域拆分金额校核是否一致' }}</div>
+                </div>
+
+                <!-- 步骤3：稽核取证 -->
+                <div style="flex: 1; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 16px; border-radius: 8px; color: #fff">
+                  <div style="display: flex; align-items: center; margin-bottom: 8px">
+                    <el-icon :size="24" style="margin-right: 8px"><Camera /></el-icon>
+                    <span style="font-weight: bold; font-size: 15px">{{ config.checkStep3Name || '稽核取证' }}</span>
+                  </div>
+                  <div style="font-size: 13px; line-height: 1.6; opacity: 0.95">{{ config.checkStep3Desc || '车型截图：门架图片或出入口录像\n金额截图：实际应收金额、出口实收金额' }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 门架图片展示 -->
+          <div v-if="selectedPicture">
+            <div style="display: flex; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #67c23a">
+              <span style="font-size: 16px; font-weight: bold; color: #303133">🖼️ 门架图片</span>
+              <el-tag style="margin-left: 12px" type="success">{{ selectedPicture.stationName || '图片详情' }}</el-tag>
+            </div>
+
+            <!-- 图片信息 -->
+            <el-descriptions :column="4" border size="small" style="margin-bottom: 16px">
+              <el-descriptions-item label="拍摄时间">{{ selectedPicture.picTime || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="车牌号码">{{ selectedPicture.vehPlate || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="站ID">{{ selectedPicture.stationId || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="拍摄位置">{{ selectedPicture.shootPosition === '1' ? '车头' : (selectedPicture.shootPosition === '2' ? '车尾' : '-') }}</el-descriptions-item>
+            </el-descriptions>
+
+            <!-- 大图展示 -->
+            <div style="text-align: center; background: #f5f7fa; padding: 20px; border-radius: 8px; margin-bottom: 16px">
+              <el-image
+                v-if="selectedPicture.bigPositivePic"
+                :src="selectedPicture.bigPositivePic"
+                fit="contain"
+                style="max-width: 100%; max-height: 500px; border-radius: 4px"
+                :preview-src-list="[selectedPicture.bigPositivePic]"
+                preview-teleported
+                :z-index="9999"
+              >
+                <template #error>
+                  <div class="image-slot" style="display: flex; justify-content: center; align-items: center; width: 100%; height: 300px; background: #f5f7fa; color: #909399">
+                    <el-icon :size="48"><PictureFilled /></el-icon>
+                  </div>
+                </template>
+              </el-image>
+              <div v-else style="color: #909399; padding: 40px">
+                <el-icon :size="64"><WarningFilled /></el-icon>
+                <div style="margin-top: 12px; font-size: 14px">暂无大图</div>
+              </div>
+            </div>
+
+            <!-- 小图对比展示 -->
+            <div v-if="selectedPicture.smallPositivePic || selectedPicture.smallBackPic" style="display: flex; gap: 12px; margin-bottom: 16px">
+              <div v-if="selectedPicture.smallPositivePic" style="flex: 1; text-align: center">
+                <div style="font-size: 12px; color: #606266; margin-bottom: 6px">车头小图</div>
+                <el-image
+                  :src="selectedPicture.smallPositivePic"
+                  fit="cover"
+                  style="width: 100%; height: 180px; border-radius: 4px"
+                  :preview-src-list="[selectedPicture.smallPositivePic]"
+                  preview-teleported
+                />
+              </div>
+              <div v-if="selectedPicture.smallBackPic" style="flex: 1; text-align: center">
+                <div style="font-size: 12px; color: #606266; margin-bottom: 6px">车尾小图</div>
+                <el-image
+                  :src="selectedPicture.smallBackPic"
+                  fit="cover"
+                  style="width: 100%; height: 180px; border-radius: 4px"
+                  :preview-src-list="[selectedPicture.smallBackPic]"
+                  preview-teleported
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 无选中图片时的提示 -->
+          <div v-else style="text-align: center; padding: 80px 20px; color: #909399">
+            <el-icon :size="80"><PictureFilled /></el-icon>
+            <div style="margin-top: 16px; font-size: 16px">请从左侧列表选择图片查看</div>
+            <div style="margin-top: 8px; font-size: 13px">共 {{ currentOrderDetail.picBeanVo?.total || currentOrderDetail.picBeanVo?.picBeanList?.length || 0 }} 张图片</div>
+          </div>
+
+          <!-- 完整原始数据（可折叠） -->
+          <el-collapse style="margin-top: 20px">
+            <el-collapse-item name="raw_data">
+              <template #title>
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding-right: 16px">
+                  <span>🔧 查看完整原始JSON数据</span>
+                  <el-button
+                    type="primary"
+                    size="small"
+                    :icon="CopyDocument"
+                    @click.stop="copyRawJsonData"
+                  >
+                    一键复制
+                  </el-button>
+                </div>
+              </template>
+              <pre style="background: #f5f7fa; padding: 16px; border-radius: 4px; overflow-x: auto; font-size: 12px; line-height: 1.5; max-height: 400px; overflow-y: auto">{{ JSON.stringify(currentOrderDetail, null, 2) }}</pre>
+            </el-collapse-item>
+          </el-collapse>
+        </div>
+      </div>
+
+      <div v-else style="text-align: center; padding: 100px; color: #909399">
+        <el-icon :size="60"><WarningFilled /></el-icon>
+        <div style="margin-top: 20px; font-size: 16px">暂无工单数据</div>
       </div>
     </el-dialog>
 
@@ -2520,6 +2928,32 @@
         >
           共 {{ exportTotalCount }} 条数据
         </div>
+      </div>
+    </el-dialog>
+
+    <!-- 原图预览对话框 -->
+    <el-dialog
+      v-model="tableImagePreviewVisible"
+      title="原图预览"
+      width="800px"
+      :close-on-click-modal="true"
+      destroy-on-close
+    >
+      <div v-if="tableImagePreviewLoading" style="text-align: center; padding: 40px">
+        <el-icon class="is-loading" :size="40">
+          <Loading />
+        </el-icon>
+        <div style="margin-top: 10px; color: #909399">正在加载原图...</div>
+      </div>
+      <div v-else-if="tableImagePreviewUrl" style="text-align: center">
+        <el-image
+          :src="tableImagePreviewUrl"
+          fit="contain"
+          style="max-width: 100%; max-height: 600px"
+          :preview-src-list="[tableImagePreviewUrl]"
+          :preview-teleported="true"
+          preview-z-index="9999"
+        />
       </div>
     </el-dialog>
   </div>
@@ -2560,7 +2994,7 @@ import {
   ElTabPane,
   ElProgress
 } from 'element-plus'
-import { CopyDocument, Picture, Search, Loading } from '@element-plus/icons-vue'
+import { CopyDocument, Picture, Search, Loading, WarningFilled, CircleCheck, Money, Camera, PictureFilled } from '@element-plus/icons-vue'
 import {
   getSplitMatchTables,
   getSplitMatchData,
@@ -2574,18 +3008,23 @@ import {
   getCloudPortalStatus,
   cloudPortalLogout,
   aiAuditBatchQuery,
+  aiAuditOrderDetail,
   aiAuditSaveImages,
   aiAuditOriginalImage,
   aiAuditVehicleImages,
   aiAuditGantryImages,
   fetchPicture,
+  getOriginalImage,
+  getTableImages,
   type AIAuditVehicleImage,
   type AIAuditGantryImage,
   type AIAuditBatchQueryResult,
   type AIAuditGantryTrade,
+  type OrderDetailData,
   getCloudPortalCredentials,
   updateCloudPortalSession
 } from '@/api/split-match'
+import request from '@/axios'
 import { useUserStore } from '@/store/modules/user'
 
 const userStore = useUserStore()
@@ -2653,11 +3092,71 @@ const selectedRow = ref<Record<string, unknown> | null>(null)
 const dialogVisible = ref(false)
 const editedRow = ref<Record<string, any> | null>(null)
 
+// 详细信息窗口字段显示顺序
+const detailFieldOrder = [
+  '通行标识ID',
+  '车牌号码',
+  '车牌',
+  '核查通行标识',
+  '复核情况',
+  '核查拆分',
+  '备注',
+  '特情',
+  '查核资料1',
+  '查核资料2',
+  '门架通行时间',
+  '入口时间',
+  '收费车型',
+  '车种',
+  '通行介质',
+  '门架应收金额',
+  '门架交易金额',
+  '收费入口名称',
+  '通行门架组合',
+  '通行门架名称组合',
+  '通行日期'
+]
+
+// 计算属性：按顺序返回字段
+const sortedDetailFields = computed(() => {
+  if (!editedRow.value) return []
+  
+  const allFields = Object.keys(editedRow.value)
+  const sortedFields: string[] = []
+  
+  // 首先添加预定义顺序中存在的字段
+  detailFieldOrder.forEach((field) => {
+    if (allFields.includes(field)) {
+      sortedFields.push(field)
+    }
+  })
+  
+  // 然后添加其他未在预定义顺序中的字段
+  allFields.forEach((field) => {
+    if (!sortedFields.includes(field)) {
+      sortedFields.push(field)
+    }
+  })
+  
+  return sortedFields
+})
+
 // 图片预览列表
 const imagePreviewList = ref<Record<string, string[]>>({})
 // 存储图片的二进制数据，用于上传到后端
 const imageBinaryData = ref<Record<string, Blob>>({})
 const activeImageField = ref<string>('查核资料1')
+
+// 表格图片预览相关
+const tableImagePreviewVisible = ref(false)
+const tableImagePreviewUrl = ref('')
+const tableImagePreviewLoading = ref(false)
+
+// 两阶段加载：图片加载状态
+const imageLoading = ref(false)
+const imageLoadingProgress = ref(0)
+const imageLoadingTotal = ref(0)
+const imageAbortController = ref<AbortController | null>(null)
 
 // 导入数据相关状态
 const importData = ref<any[]>([])
@@ -2790,6 +3289,12 @@ const loadTableData = async () => {
     return
   }
 
+  // 取消上一次未完成的图片加载请求
+  if (imageAbortController.value) {
+    imageAbortController.value.abort()
+    imageAbortController.value = null
+  }
+
   tableLoading.value = true
   try {
     const params = {
@@ -2802,6 +3307,7 @@ const loadTableData = async () => {
     requestParams.value = JSON.stringify(params, null, 2)
     debugInfo.value = null
 
+    // 第一阶段：加载文本数据（不含图片字段）
     const response = await getSplitMatchData(params)
 
     let tableDataArray: any[] = []
@@ -2823,47 +3329,39 @@ const loadTableData = async () => {
       }
     }
 
-    tableData.value = tableDataArray
+    // 确保图片字段列存在于显示列中
+    const imageFields = ['查核资料1', '查核资料2']
+    for (const imgField of imageFields) {
+      if (!columnsArray.includes(imgField)) {
+        columnsArray.push(imgField)
+      }
+    }
+
+    // 初始化图片字段为空，先展示文本数据
+    const processedData = tableDataArray.map((row: any) => ({
+      ...row,
+      '查核资料1': null,
+      '查核资料2': null
+    }))
+
+    tableData.value = processedData
     displayColumns.value = columnsArray
     total.value = totalCount
 
-    // 处理图片字段，转换为 data URL 格式
-    const processedData = tableDataArray.map((row: any) => {
-      const processedRow: any = { ...row }
-      // 处理查核资料1和查核资料2字段，转换为 data URL
-      if (processedRow['查核资料1'] && typeof processedRow['查核资料1'] === 'string') {
-        const imageData = processedRow['查核资料1']
-        if (!imageData.startsWith('data:') && !imageData.startsWith('blob:')) {
-          // 如果是纯 Base64 字符串，转换为 data URL
-          processedRow['查核资料1'] = `data:image/webp;base64,${imageData}`
-        }
-      }
-      if (processedRow['查核资料2'] && typeof processedRow['查核资料2'] === 'string') {
-        const imageData = processedRow['查核资料2']
-        if (!imageData.startsWith('data:') && !imageData.startsWith('blob:')) {
-          // 如果是纯 Base64 字符串，转换为 data URL
-          processedRow['查核资料2'] = `data:image/webp;base64,${imageData}`
-        }
-      }
-      return processedRow
-    })
-
-    tableData.value = processedData
-
-    // 提取核查拆分字段的唯一值，用于填充下拉选择框
+    // 提取核查拆分字段的唯一值
     const splitValues = new Set<string>()
+    splitValues.add('已拆')
+    splitValues.add('未拆')
     processedData.forEach((row) => {
       const value = row['核查拆分']
       if (value && typeof value === 'string') {
         splitValues.add(value)
       }
     })
-
-    // 确保至少包含'已拆'和'未拆'选项
-    splitValues.add('已拆')
-    splitValues.add('未拆')
-
     checkSplitOptions.value = Array.from(splitValues)
+
+    // 第二阶段：异步加载图片缩略图
+    await loadImagesAsync(tableDataArray)
   } catch (error) {
     console.error('获取表数据失败:', error)
     ElMessage.error('获取表数据失败，请检查后端服务')
@@ -2872,6 +3370,85 @@ const loadTableData = async () => {
     total.value = 0
   } finally {
     tableLoading.value = false
+  }
+}
+
+const loadImagesAsync = async (dataRows: any[]) => {
+  // 收集所有通行标识ID
+  const passIds = dataRows
+    .map((row) => row['通行标识ID'])
+    .filter((id): id is string => !!id && typeof id === 'string')
+
+  if (passIds.length === 0) {
+    return
+  }
+
+  // 创建新的 AbortController 用于本次图片加载
+  const controller = new AbortController()
+  imageAbortController.value = controller
+
+  imageLoading.value = true
+  imageLoadingProgress.value = 0
+  imageLoadingTotal.value = passIds.length
+
+  try {
+    // 分批加载图片，每批最多 10 条，避免单次请求数据量过大
+    const batchSize = 10
+    const totalBatches = Math.ceil(passIds.length / batchSize)
+    let loadedCount = 0
+
+    for (let i = 0; i < totalBatches; i++) {
+      // 检查是否已被取消
+      if (controller.signal.aborted) {
+        break
+      }
+
+      const batchIds = passIds.slice(i * batchSize, (i + 1) * batchSize)
+      const passIdsStr = batchIds.join(',')
+
+      const imageResponse = await getTableImages({
+        table_name: selectedTable.value,
+        pass_ids: passIdsStr
+      })
+
+      if (controller.signal.aborted) {
+        break
+      }
+
+      if (imageResponse && imageResponse.code === 200 && imageResponse.data) {
+        const imagesMap = imageResponse.data
+
+        // 将图片数据合并到表格数据中
+        tableData.value = tableData.value.map((row: any) => {
+          const passId = row['通行标识ID']
+          if (passId && imagesMap[passId]) {
+            const images = imagesMap[passId]
+            return {
+              ...row,
+              '查核资料1': images['查核资料1'] || null,
+              '查核资料2': images['查核资料2'] || null
+            }
+          }
+          return row
+        })
+      }
+
+      loadedCount += batchIds.length
+      imageLoadingProgress.value = loadedCount
+    }
+  } catch (error) {
+    // 忽略取消导致的错误
+    if (controller.signal.aborted) {
+      return
+    }
+    console.error('加载图片失败:', error)
+  } finally {
+    imageLoading.value = false
+    imageLoadingProgress.value = 0
+    imageLoadingTotal.value = 0
+    if (imageAbortController.value === controller) {
+      imageAbortController.value = null
+    }
   }
 }
 
@@ -3125,6 +3702,42 @@ const handleImageDelete = (field: string) => {
   ElMessage.success('图片已删除')
 }
 
+const handleTableImagePreview = async (row: any, field: string) => {
+  if (!selectedTable.value || !row['通行标识ID']) {
+    ElMessage.warning('无法获取原图：缺少必要参数')
+    return
+  }
+
+  tableImagePreviewLoading.value = true
+  tableImagePreviewVisible.value = true
+  tableImagePreviewUrl.value = ''
+
+  try {
+    const response = await getOriginalImage({
+      table_name: selectedTable.value,
+      pass_id: row['通行标识ID'],
+      field: field
+    })
+
+    if (response && response.code === 200 && response.data) {
+      let imageData = response.data
+      if (typeof imageData === 'string' && !imageData.startsWith('data:')) {
+        imageData = `data:image/jpeg;base64,${imageData}`
+      }
+      tableImagePreviewUrl.value = imageData
+    } else {
+      ElMessage.error('获取原图失败')
+      tableImagePreviewVisible.value = false
+    }
+  } catch (error) {
+    console.error('获取原图失败:', error)
+    ElMessage.error('获取原图失败')
+    tableImagePreviewVisible.value = false
+  } finally {
+    tableImagePreviewLoading.value = false
+  }
+}
+
 const handleFilter = () => {
   // 保存最近输入的通行标识ID，最多保留10条
   const checkId = filters.value['通行标识ID']
@@ -3236,6 +3849,109 @@ const vehicleDetailActiveTab = ref('gantry_trade')
 const STORAGE_KEY_SPECIAL_SITUATION = 'split_match_special_situation_history'
 const STORAGE_KEY_REMARK = 'split_match_remark_history'
 const MAX_HISTORY = 10
+
+const showOrderDetailDialog = ref(false)
+const orderDetailLoading = ref(false)
+const currentOrderDetail = ref<any>(null)
+const orderDetailActiveTab = ref('basic')
+const selectedPicture = ref<any>(null)
+
+const copyRawJsonData = async () => {
+  try {
+    const jsonString = JSON.stringify(currentOrderDetail.value, null, 2)
+    await navigator.clipboard.writeText(jsonString)
+    ElMessage.success('JSON数据已复制到剪贴板')
+  } catch (error) {
+    const textArea = document.createElement('textarea')
+    textArea.value = JSON.stringify(currentOrderDetail.value, null, 2)
+    textArea.style.position = 'fixed'
+    textArea.style.left = '-9999px'
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+    ElMessage.success('JSON数据已复制到剪贴板')
+  }
+}
+
+interface OrderDetailData {
+  labelVo: any
+  enData: any
+  exData: any
+}
+
+const handleViewOrderDetail = async (orderId: string) => {
+  console.log('[工单详情] ========== 开始执行 ==========')
+  console.log('[工单详情] 参数 orderId:', orderId)
+  console.log('[工单详情] 当前 session_id:', cloudPortalSessionId.value)
+
+  if (!orderId) {
+    console.warn('[工单详情] ❌ orderId为空，终止执行')
+    ElMessage.warning('工单编号不能为空')
+    return
+  }
+
+  console.log('[工单详情] ✅ 打开弹窗并设置Loading状态')
+  showOrderDetailDialog.value = true
+  orderDetailLoading.value = true
+  currentOrderDetail.value = null
+  selectedPicture.value = null
+
+  try {
+    const sessionId = cloudPortalSessionId.value || undefined
+
+    console.log('[工单详情] 📤 准备发送请求 (使用封装API):')
+    console.log('  - URL: /api/cloud-portal/ai-audit/order-detail')
+    console.log('  - Method: GET')
+    console.log('  - Params:', { order_id: orderId, session_id: sessionId })
+
+    const response = await aiAuditOrderDetail({
+      order_id: orderId,
+      session_id: sessionId
+    })
+
+    console.log('[工单详情] 📥 收到响应:', response)
+
+    if (response && response.code === 200) {
+      console.log('[工单详情] ✅ 成功获取数据')
+      currentOrderDetail.value = response.data as OrderDetailData
+      if (currentOrderDetail.value?.picBeanVo?.picBeanList?.length > 0) {
+        selectedPicture.value = currentOrderDetail.value.picBeanVo.picBeanList[0]
+      }
+      ElMessage.success('获取工单详情成功')
+    } else {
+      console.error('[工单详情] ❌ 业务错误:')
+      console.error('  - code:', response?.code)
+      console.error('  - message:', response?.message)
+      console.error('  - 完整响应:', response)
+      ElMessage.error(response?.message || '获取工单详情失败')
+    }
+  } catch (error: any) {
+    console.error('[工单详情] 💥 异常捕获:')
+    console.error('  - error对象:', error)
+    console.error('  - message:', error?.message)
+    console.error('  - code:', error?.code)
+    console.error('  - response:', error?.response)
+    console.error('  - stack:', error?.stack)
+
+    let errorMessage = '获取工单详情失败'
+
+    if (error?.code === 'ERR_NETWORK' || error?.code === 'ECONNREFUSED') {
+      errorMessage = '无法连接到后端服务，请检查网络连接'
+    } else if (error?.code === 'ETIMEDOUT' || error?.code === 'ECONNABORTED') {
+      errorMessage = '请求超时，请稍后重试'
+    } else if (error?.response) {
+      errorMessage = `服务器错误 (${error.response.status}): ${error.response.data?.message || '未知错误'}`
+    } else if (error?.message) {
+      errorMessage += `: ${error.message}`
+    }
+
+    ElMessage.error(errorMessage)
+  } finally {
+    orderDetailLoading.value = false
+    console.log('[工单详情] ========== 执行结束 ==========')
+  }
+}
 
 const specialSituationHistory = ref<string[]>([])
 const remarkHistory = ref<string[]>([])
@@ -3538,7 +4254,7 @@ const handleCloudPortalLogin = async () => {
     ElMessage.warning('请填写用户名和密码')
     return
   }
-  
+
   if (needManualCaptcha.value && !cloudPortalForm.value.captcha) {
     ElMessage.warning('请填写验证码')
     return
@@ -3552,22 +4268,22 @@ const handleCloudPortalLogin = async () => {
         password: cloudPortalForm.value.password,
         session_id: cloudPortalSessionId.value || undefined
       })
-      
+
       if (autoResponse && autoResponse.code === 200) {
         ElMessage.success('登录成功')
         cloudPortalLoggedIn.value = true
         cloudPortalUserInfo.value = (autoResponse.data as any)?.user_info
-        
+
         if ((autoResponse.data as any)?.session_id) {
           cloudPortalSessionId.value = (autoResponse.data as any).session_id
         }
-        
+
         try {
           await updateCloudPortalSession(cloudPortalSessionId.value)
         } catch (e) {
           console.error('保存会话ID失败:', e)
         }
-        
+
         console.log('========== 云门户自动登录响应数据 ==========')
         console.log('access_token:', (autoResponse.data as any)?.access_token)
         console.log('user_info:', (autoResponse.data as any)?.user_info)
@@ -3588,7 +4304,7 @@ const handleCloudPortalLogin = async () => {
         return
       }
     }
-    
+
     const response = await cloudPortalLogin({
       session_id: cloudPortalSessionId.value,
       username: cloudPortalForm.value.username,
@@ -3981,7 +4697,9 @@ const queryGantryImagesForRow = async (row: AIAuditGantryTrade) => {
         images: images,
         total: response.data.total || 0
       }
-      gantryImagesPreviewList.value = images.map((img: AIAuditGantryImage) => getImageSrc(img.bigPositivePic))
+      gantryImagesPreviewList.value = images.map((img: AIAuditGantryImage) =>
+        getImageSrc(img.bigPositivePic)
+      )
       gantryImagesDialogVisible.value = true
     } else {
       ElMessage.error(response?.message || '查询门架图库失败')
@@ -4175,6 +4893,8 @@ const saveImagesToDatabase = async () => {
     if (response && response.code === 200) {
       ElMessage.success(`成功保存 ${(response.data as any)?.affected_rows || 0} 条记录`)
 
+      request.clearCache('/api/split-match/data')
+
       await loadTableData()
 
       if (editedRow.value) {
@@ -4183,6 +4903,17 @@ const saveImagesToDatabase = async () => {
         )
         if (updatedRow) {
           editedRow.value = { ...updatedRow }
+          
+          // 保留用户选择的图片值，不重新从 tableData 获取
+          // 因为图片是异步加载的，此时 tableData 中的图片字段还是 null
+          // aiAuditSelectedImage1 和 aiAuditSelectedImage2 保持用户选择的值
+          // 更新 editedRow 中的图片字段为用户选择的值
+          if (aiAuditSelectedImage1.value) {
+            editedRow.value['查核资料1'] = aiAuditSelectedImage1.value
+          }
+          if (aiAuditSelectedImage2.value) {
+            editedRow.value['查核资料2'] = aiAuditSelectedImage2.value
+          }
         }
       }
     } else {
@@ -6139,15 +6870,29 @@ const handleSave = async () => {
       // 直接使用 axios 发起请求
       axios
         .post(import.meta.env.VITE_API_BASE_PATH + '/api/split-match/update/', apiParams)
-        .then((response) => {
+        .then(async (response) => {
           if (
             response &&
             response.data &&
             (response.data.code === 200 || response.data.data?.updated)
           ) {
             ElMessage.success('保存成功')
-            loadTableData()
-            dialogVisible.value = false
+
+            request.clearCache('/api/split-match/data')
+
+            loadTableData().catch((err) => console.error('后台刷新表格数据失败:', err))
+
+            if (editedRow.value) {
+              const currentImage1 = editedRow.value['查核资料1']
+              const currentImage2 = editedRow.value['查核资料2']
+
+              imagePreviewList.value = {
+                查核资料1: currentImage1 ? [String(currentImage1)] : [],
+                查核资料2: currentImage2 ? [String(currentImage2)] : []
+              }
+
+              imageBinaryData.value = {}
+            }
           } else {
             console.error('保存失败，响应数据:', response)
             ElMessage.error('保存失败，请检查后端服务')
@@ -6237,6 +6982,35 @@ onMounted(() => {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+}
+
+.image-loading-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: #f0f9eb;
+  border-radius: 4px;
+  border: 1px solid #e1f3d8;
+}
+
+.image-loading-text {
+  white-space: nowrap;
+  font-size: 13px;
+  color: #67c23a;
+  min-width: 140px;
+}
+
+.image-placeholder {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f7fa;
+  border-radius: 4px;
+  color: #c0c4cc;
 }
 
 .loading-container,
