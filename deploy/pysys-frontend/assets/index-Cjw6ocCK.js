@@ -1,1 +1,0 @@
-import{r as s}from"./index-JMCkvZOi.js";const t=()=>s.get({url:"/api/menus/"}),i=e=>e.id?s.put({url:`/api/menus/${e.id}`,data:e}):s.post({url:"/api/menus/",data:e}),p=e=>{const r=e.map(u=>s.delete({url:`/api/menus/${u}`}));return Promise.all(r)};export{p as d,t as g,i as s};

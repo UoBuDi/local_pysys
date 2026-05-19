@@ -1,1 +1,0 @@
-import{_ as e}from"./Error.vue_vue_type_script_setup_true_lang-KWKkkSFp.js";import{v as s,y as t,z as n,u as a,aw as c}from"./vue-chunks-DaY6NRul.js";import"./index-JMCkvZOi.js";import"./element-plus-CexeVgVE.js";const k=s({__name:"404",setup(p){const{push:o}=c(),r=()=>{o("/login")};return(_,i)=>(t(),n(a(e),{onErrorClick:r}))}});export{k as default};
