@@ -1,0 +1,20 @@
+{
+  "database": {
+    "host": "172.32.48.238",
+    "port": 3306,
+    "user": "root",
+    "password": "9a1d4e4ae72d2eaa",
+    "database": "branchdb",
+    "charset": "utf8mb4",
+    "connect_timeout": 30,
+    "read_timeout": 30,
+    "write_timeout": 30
+  },
+  "mcp": {
+    "server_host": "localhost",
+    "server_port": 8080,
+    "log_level": "INFO",
+    "connection_retry_count": 3,
+    "connection_retry_delay": 5
+  }
+}
