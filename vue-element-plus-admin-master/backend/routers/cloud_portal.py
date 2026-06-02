@@ -12,7 +12,6 @@
 """
 
 import logging
-import threading
 import base64
 from typing import Dict, Any, Optional, List
 from datetime import datetime
@@ -251,111 +250,49 @@ class AccountSaveRequest(BaseModel):
     portal_password: str
 
 
-# ==================== 云门户账号存储（SQLite） ====================
-
-_ACCOUNT_DB_LOCK = threading.Lock()
+# ==================== 云门户账号存储（MySQL system_db.portal_accounts） ====================
 
 
-def _get_account_db():
-    import sqlite3
-    db_path = "cloud_portal_accounts.db"
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-
-    conn.execute(
-        """CREATE TABLE IF NOT EXISTS portal_accounts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            portal_username TEXT NOT NULL,
-            portal_password TEXT NOT NULL,
-            access_token TEXT,
-            refresh_token TEXT,
-            redirect_uri TEXT,
-            token_expires_at REAL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )"""
-    )
-
-    try:
-        columns = [info[1] for info in conn.execute("PRAGMA table_info(portal_accounts)").fetchall()]
-
-        if 'portal_session_id' in columns and 'access_token' not in columns:
-            logger.info("[数据库迁移] 检测到旧表结构，执行迁移...")
-            conn.execute("ALTER TABLE portal_accounts RENAME TO portal_accounts_old")
-            conn.commit()
-
-            conn.execute(
-                """CREATE TABLE portal_accounts (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER,
-                    portal_username TEXT NOT NULL,
-                    portal_password TEXT NOT NULL,
-                    access_token TEXT,
-                    refresh_token TEXT,
-                    redirect_uri TEXT,
-                    token_expires_at REAL,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-                )"""
-            )
-            conn.commit()
-
-            conn.execute(
-                """INSERT INTO portal_accounts (user_id, portal_username, portal_password, created_at, updated_at)
-                SELECT user_id, portal_username, portal_password, created_at, updated_at FROM portal_accounts_old"""
-            )
-            conn.commit()
-
-            conn.execute("DROP TABLE portal_accounts_old")
-            conn.commit()
-            logger.info("[数据库迁移] 迁移完成：移除portal_session_id字段，添加token相关字段")
-    except Exception as e:
-        logger.warning(f"[数据库迁移] 迁移跳过或已执行: {e}")
-
-    conn.commit()
-    return conn
+def _get_mysql_conn():
+    config = get_app_config()
+    from database import get_db_connection
+    return get_db_connection("USER_DB", config)
 
 
 def _save_account(user_id: int, username: str, password: str):
-    with _ACCOUNT_DB_LOCK:
-        conn = _get_account_db()
-        try:
-            existing = conn.execute("SELECT id FROM portal_accounts WHERE user_id = ?", (user_id,)).fetchone()
-            now = datetime.now().isoformat()
+    with _get_mysql_conn() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM portal_accounts WHERE user_id = %s", (user_id,))
+            existing = cursor.fetchone()
             if existing:
-                conn.execute(
-                    "UPDATE portal_accounts SET portal_username=?, portal_password=?, updated_at=? WHERE user_id=?",
-                    (username, password, now, user_id),
+                cursor.execute(
+                    "UPDATE portal_accounts SET portal_username=%s, portal_password=%s, updated_at=NOW() WHERE user_id=%s",
+                    (username, password, user_id),
                 )
             else:
-                conn.execute(
-                    "INSERT INTO portal_accounts (user_id, portal_username, portal_password, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-                    (user_id, username, password, now, now),
+                cursor.execute(
+                    "INSERT INTO portal_accounts (user_id, portal_username, portal_password, created_at, updated_at) VALUES (%s, %s, %s, NOW(), NOW())",
+                    (user_id, username, password),
                 )
             conn.commit()
-        finally:
-            conn.close()
 
 
-def _get_account(user_id: int = 1) -> Optional[Dict[str, Any]]:
-    with _ACCOUNT_DB_LOCK:
-        conn = _get_account_db()
-        try:
-            row = conn.execute("SELECT * FROM portal_accounts WHERE user_id = ?", (user_id,)).fetchone()
-            return dict(row) if row else None
-        finally:
-            conn.close()
+def _get_account(user_id: int) -> Optional[Dict[str, Any]]:
+    with _get_mysql_conn() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM portal_accounts WHERE user_id = %s", (user_id,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            columns = [desc[0] for desc in cursor.description]
+            return dict(zip(columns, row))
 
 
-def _delete_account(user_id: int = 1):
-    with _ACCOUNT_DB_LOCK:
-        conn = _get_account_db()
-        try:
-            conn.execute("DELETE FROM portal_accounts WHERE user_id = ?", (user_id,))
+def _delete_account(user_id: int):
+    with _get_mysql_conn() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM portal_accounts WHERE user_id = %s", (user_id,))
             conn.commit()
-        finally:
-            conn.close()
 
 
 def _update_account_tokens(
@@ -365,41 +302,37 @@ def _update_account_tokens(
     redirect_uri: Optional[str] = None,
     token_expires_at: Optional[float] = None
 ):
-    with _ACCOUNT_DB_LOCK:
-        conn = _get_account_db()
-        try:
+    with _get_mysql_conn() as conn:
+        with conn.cursor() as cursor:
             update_fields = []
             update_values = []
 
             if access_token is not None:
-                update_fields.append("access_token=?")
+                update_fields.append("access_token=%s")
                 update_values.append(access_token)
 
             if refresh_token is not None:
-                update_fields.append("refresh_token=?")
+                update_fields.append("refresh_token=%s")
                 update_values.append(refresh_token)
 
             if redirect_uri is not None:
-                update_fields.append("redirect_uri=?")
+                update_fields.append("redirect_uri=%s")
                 update_values.append(redirect_uri)
 
             if token_expires_at is not None:
-                update_fields.append("token_expires_at=?")
+                update_fields.append("token_expires_at=%s")
                 update_values.append(token_expires_at)
 
-            update_fields.append("updated_at=?")
-            update_values.append(datetime.now().isoformat())
+            update_fields.append("updated_at=NOW()")
             update_values.append(user_id)
 
-            conn.execute(
-                f"UPDATE portal_accounts SET {', '.join(update_fields)} WHERE user_id=?",
+            cursor.execute(
+                f"UPDATE portal_accounts SET {', '.join(update_fields)} WHERE user_id=%s",
                 tuple(update_values)
             )
             conn.commit()
 
             logger.info(f"[Token更新] 用户{user_id}的Token信息已更新")
-        finally:
-            conn.close()
 
 
 def _is_token_valid(account: Dict[str, Any]) -> bool:
@@ -417,24 +350,22 @@ def _is_token_valid(account: Dict[str, Any]) -> bool:
     return time.time() < token_expires_at
 
 
-def _get_access_token() -> str:
-    """从本地 SQLite 获取当前有效的 access_token"""
-    account = _get_account(1)
+def _get_access_token(user_id: int) -> str:
+    account = _get_account(user_id)
     if account and _is_token_valid(account):
         return account.get("access_token", "")
     return ""
 
 
-def _auto_relogin() -> Dict[str, Any]:
+def _auto_relogin(user_id: int) -> Dict[str, Any]:
     """
     自动重登录云门户（内部函数）
     使用数据库中保存的账号密码进行自动登录，更新Token
-    返回: {"success": bool, "message": str, "data": dict}
     """
     import base64 as _base64
     import json as _json
 
-    account = _get_account(1)
+    account = _get_account(user_id)
     if not account:
         return {
             "success": False,
@@ -517,14 +448,14 @@ def _auto_relogin() -> Dict[str, Any]:
                         logger.warning(f"[Token解析] 解析过期时间失败: {e}")
 
                 _update_account_tokens(
-                    user_id=1,
+                    user_id=user_id,
                     access_token=access_token,
                     refresh_token=refresh_token,
                     redirect_uri=redirect_uri,
                     token_expires_at=token_expires_at
                 )
 
-                logger.info(f"[自动重登录] ✅ 登录成功！Token已更新")
+                logger.info(f"[自动重登录] ✅ 用户{user_id}登录成功！Token已更新")
                 return {
                     "success": True,
                     "message": "自动重登录成功",
@@ -567,12 +498,13 @@ async def get_captcha():
 @router.post("/api/cloud-portal/login")
 async def cloud_portal_login(req: LoginRequest):
     """云门户登录 — 转发至 GUI 服务"""
-    return _forward_post("/api/portal/login", data=req.dict(), timeout=60)
+    return _forward_post("/api/portal/login", data=req.model_dump(), timeout=60)
 
 
 @router.post("/api/cloud-portal/auto-login")
-async def cloud_portal_auto_login(req: AutoLoginRequest):
+async def cloud_portal_auto_login(req: AutoLoginRequest, user_id: Optional[int] = Query(None)):
     """云门户自动登录 — 通过 GUI 服务 OCR 识别验证码后自动登录"""
+    effective_user_id = user_id or 1
     username = req.username
     password = req.password
     max_retries = 5
@@ -641,7 +573,7 @@ async def cloud_portal_auto_login(req: AutoLoginRequest):
                         logger.warning(f"[Token解析] 解析过期时间失败: {e}")
 
                 _update_account_tokens(
-                    user_id=1,
+                    user_id=effective_user_id,
                     access_token=access_token,
                     refresh_token=refresh_token,
                     redirect_uri=redirect_uri,
@@ -679,14 +611,15 @@ async def check_cloud_portal_health():
 
 
 @router.post("/api/cloud-portal/logout")
-async def cloud_portal_logout(req: Optional[LogoutRequest] = Body(default=None)):
+async def cloud_portal_logout(req: Optional[LogoutRequest] = Body(default=None), user_id: Optional[int] = Query(None)):
     """云门户登出 — 清除本地Token并通知GUI服务（保证成功）"""
+    effective_user_id = user_id or 1
 
-    logger.info("[logout] 开始执行登出操作...")
+    logger.info(f"[logout] 开始执行登出操作... 用户ID: {effective_user_id}")
 
     try:
         _update_account_tokens(
-            user_id=1,
+            user_id=effective_user_id,
             access_token=None,
             refresh_token=None,
             redirect_uri=None,
@@ -723,9 +656,10 @@ async def cloud_portal_logout(req: Optional[LogoutRequest] = Body(default=None))
 
 
 @router.post("/api/cloud-portal/keep-alive")
-async def cloud_portal_keep_alive(req: KeepAliveRequest):
+async def cloud_portal_keep_alive(req: KeepAliveRequest, user_id: Optional[int] = Query(None)):
     """保持会话活跃 — 从数据库读取Token并转发至GUI服务进行JWT有效性检查"""
-    account = _get_account(1)
+    effective_user_id = user_id or 1
+    account = _get_account(effective_user_id)
     if not account or not account.get('access_token'):
         return {
             "code": 200,
@@ -743,54 +677,53 @@ async def get_cloud_portal_sessions():
 
 
 @router.post("/api/cloud-portal/query")
-async def cloud_portal_query(req: QueryRequest):
+async def cloud_portal_query(req: QueryRequest, user_id: Optional[int] = Query(None)):
     """云门户通用查询 — 直接转发至 GUI 服务"""
-    payload = req.dict()
-    payload["access_token"] = _get_access_token()
+    payload = req.model_dump()
+    payload["access_token"] = _get_access_token(user_id or 1)
     return _forward_post("/api/portal/query", data=payload, timeout=60)
 
 
 @router.post("/api/cloud-portal/ai-audit/vehicle-images")
-async def ai_audit_vehicle_images(req: VehicleImagesRequest):
+async def ai_audit_vehicle_images(req: VehicleImagesRequest, user_id: Optional[int] = Query(None)):
     """AI稽核-车辆图库查询 — 直接转发至 GUI 服务"""
-    payload = req.dict()
-    payload["access_token"] = _get_access_token()
+    payload = req.model_dump()
+    payload["access_token"] = _get_access_token(user_id or 1)
     return _forward_post("/api/portal/ai-audit/vehicle-images", data=payload, timeout=60)
 
 
 @router.post("/api/cloud-portal/ai-audit/gantry-images")
-async def ai_audit_gantry_images(req: GantryImagesRequest):
+async def ai_audit_gantry_images(req: GantryImagesRequest, user_id: Optional[int] = Query(None)):
     """AI稽核-门架图库查询 — 直接转发至 GUI 服务"""
-    payload = req.dict()
-    payload["access_token"] = _get_access_token()
+    payload = req.model_dump()
+    payload["access_token"] = _get_access_token(user_id or 1)
     return _forward_post("/api/portal/ai-audit/gantry-images", data=payload, timeout=60)
 
 
 @router.post("/api/cloud-portal/ai-audit/batch-query")
-async def ai_audit_batch_query(req: AIBatchQueryRequest):
+async def ai_audit_batch_query(req: AIBatchQueryRequest, user_id: Optional[int] = Query(None)):
     """AI稽核-批量查询 — 含自动重登录机制（Token失效时自动重新登录并重试）"""
+    effective_user_id = user_id or 1
 
     def _do_query(token: str) -> Dict[str, Any]:
-        """执行实际的批量查询"""
-        payload = req.dict()
+        payload = req.model_dump()
         payload["access_token"] = token
         return _forward_post("/api/portal/ai-audit/batch-query", data=payload, timeout=120)
 
     def _check_401_error(result: Dict[str, Any]) -> bool:
-        """检查结果中是否包含401错误"""
         if not result or not isinstance(result, dict):
             return False
         errors = result.get("errors", [])
         return any("401" in str(err) or "Unauthorized" in str(err) for err in errors)
 
-    access_token = _get_access_token()
+    access_token = _get_access_token(effective_user_id)
 
     if not access_token:
-        logger.info("[batch-query] 无Token，尝试自动重登录...")
-        relogin_result = _auto_relogin()
+        logger.info(f"[batch-query] 用户{effective_user_id}无Token，尝试自动重登录...")
+        relogin_result = _auto_relogin(effective_user_id)
         if relogin_result.get("success"):
             access_token = relogin_result["data"].get("access_token", "")
-            logger.info("[batch-query] 自动重登录成功，使用新Token查询")
+            logger.info(f"[batch-query] 用户{effective_user_id}自动重登录成功，使用新Token查询")
         else:
             return {
                 "code": 401,
@@ -805,13 +738,13 @@ async def ai_audit_batch_query(req: AIBatchQueryRequest):
     result = _do_query(access_token)
 
     if _check_401_error(result):
-        logger.warning("[batch-query] 检测到401错误，Token可能已过期，尝试自动重登录...")
+        logger.warning(f"[batch-query] 用户{effective_user_id}检测到401错误，Token可能已过期，尝试自动重登录...")
 
-        relogin_result = _auto_relogin()
+        relogin_result = _auto_relogin(effective_user_id)
 
         if relogin_result.get("success"):
             new_token = relogin_result["data"].get("access_token", "")
-            logger.info(f"[batch-query] ✅ 自动重登录成功！使用新Token重新查询...")
+            logger.info(f"[batch-query] ✅ 用户{effective_user_id}自动重登录成功！使用新Token重新查询...")
 
             result = _do_query(new_token)
 
@@ -825,7 +758,7 @@ async def ai_audit_batch_query(req: AIBatchQueryRequest):
                     "relogin_status": "success_but_query_failed"
                 }
 
-            logger.info("[batch-query] ✅ 使用新Token查询成功！")
+            logger.info(f"[batch-query] ✅ 用户{effective_user_id}使用新Token查询成功！")
             return {
                 "code": 200,
                 "message": "查询成功（已自动重登录并重试）",
@@ -836,7 +769,7 @@ async def ai_audit_batch_query(req: AIBatchQueryRequest):
                 }
             }
         else:
-            logger.error(f"[batch-query] ❌ 自动重登录失败: {relogin_result.get('message')}")
+            logger.error(f"[batch-query] ❌ 用户{effective_user_id}自动重登录失败: {relogin_result.get('message')}")
             return {
                 "code": 401,
                 "message": f"Token已过期且自动重登录失败: {relogin_result.get('message', '未知错误')}",
@@ -849,42 +782,42 @@ async def ai_audit_batch_query(req: AIBatchQueryRequest):
 
 
 @router.post("/api/cloud-portal/ai-audit/gantry-trade")
-async def ai_audit_gantry_trade(req: GantryTradeRequest):
+async def ai_audit_gantry_trade(req: GantryTradeRequest, user_id: Optional[int] = Query(None)):
     """AI稽核-门架交易查询 — 直接转发至 GUI 服务"""
-    payload = req.dict()
-    payload["access_token"] = _get_access_token()
+    payload = req.model_dump()
+    payload["access_token"] = _get_access_token(user_id or 1)
     return _forward_post("/api/portal/ai-audit/gantry-trade", data=payload, timeout=60)
 
 
 @router.post("/api/cloud-portal/ai-audit/gantry-plate")
-async def ai_audit_gantry_plate(req: GantryPlateRequest):
+async def ai_audit_gantry_plate(req: GantryPlateRequest, user_id: Optional[int] = Query(None)):
     """AI稽核-门架牌识查询 — 直接转发至 GUI 服务"""
-    payload = req.dict()
-    payload["access_token"] = _get_access_token()
+    payload = req.model_dump()
+    payload["access_token"] = _get_access_token(user_id or 1)
     return _forward_post("/api/portal/ai-audit/gantry-plate", data=payload, timeout=60)
 
 
 @router.post("/api/cloud-portal/ai-audit/exit-trade")
-async def ai_audit_exit_trade(req: ExitTradeRequest):
+async def ai_audit_exit_trade(req: ExitTradeRequest, user_id: Optional[int] = Query(None)):
     """AI稽核-出口交易查询 — 直接转发至 GUI 服务"""
-    payload = req.dict()
-    payload["access_token"] = _get_access_token()
+    payload = req.model_dump()
+    payload["access_token"] = _get_access_token(user_id or 1)
     return _forward_post("/api/portal/ai-audit/exit-trade", data=payload, timeout=60)
 
 
 @router.post("/api/cloud-portal/ai-audit/suspected-car")
-async def ai_audit_suspected_car(req: SuspectedCarRequest):
+async def ai_audit_suspected_car(req: SuspectedCarRequest, user_id: Optional[int] = Query(None)):
     """AI稽核-嫌疑车查询 — 直接转发至 GUI 服务"""
-    payload = req.dict()
-    payload["access_token"] = _get_access_token()
+    payload = req.model_dump()
+    payload["access_token"] = _get_access_token(user_id or 1)
     return _forward_post("/api/portal/ai-audit/suspected-car", data=payload, timeout=60)
 
 
 @router.post("/api/cloud-portal/ai-audit/audit-order")
-async def ai_audit_audit_order(req: AuditOrderRequest):
+async def ai_audit_audit_order(req: AuditOrderRequest, user_id: Optional[int] = Query(None)):
     """AI稽核-稽核工单查询 — 直接转发至 GUI 服务"""
-    payload = req.dict()
-    payload["access_token"] = _get_access_token()
+    payload = req.model_dump()
+    payload["access_token"] = _get_access_token(user_id or 1)
     return _forward_post("/api/portal/ai-audit/audit-order", data=payload, timeout=60)
 
 
@@ -938,17 +871,17 @@ async def captcha_ocr_status():
 
 
 @router.post("/api/cloud-portal/ai-audit/original-image")
-async def ai_audit_original_image(req: OriginalImageRequest):
+async def ai_audit_original_image(req: OriginalImageRequest, user_id: Optional[int] = Query(None)):
     """获取高清原图 — 直接转发至 GUI 服务"""
-    payload = req.dict()
-    payload["access_token"] = _get_access_token()
+    payload = req.model_dump()
+    payload["access_token"] = _get_access_token(user_id or 1)
     return _forward_post("/api/portal/ai-audit/original-image", data=payload, timeout=60)
 
 
 @router.post("/api/cloud-portal/ai-audit/select-images")
 async def ai_audit_select_images(req: SelectImagesRequest):
     """根据门架ID筛选图片 — 转发至 GUI 服务"""
-    return _forward_post("/api/portal/ai-audit/select-images", data=req.dict(), timeout=15)
+    return _forward_post("/api/portal/ai-audit/select-images", data=req.model_dump(), timeout=15)
 
 
 @router.post("/api/cloud-portal/ai-audit/save-images")
@@ -1019,10 +952,10 @@ async def ai_audit_save_images(req: SaveImagesRequest):
 
 
 @router.post("/api/cloud-portal/fetch-picture")
-async def fetch_picture(req: FetchPictureRequest):
+async def fetch_picture(req: FetchPictureRequest, user_id: Optional[int] = Query(None)):
     """代理获取云门户图片 — 转发至 GUI 服务"""
-    payload = req.dict()
-    payload["access_token"] = _get_access_token()
+    payload = req.model_dump()
+    payload["access_token"] = _get_access_token(user_id or 1)
     return _forward_post("/api/portal/fetch-picture", data=payload, timeout=60)
 
 
@@ -1045,16 +978,16 @@ async def ai_audit_gantry_list():
 
 
 @router.get("/api/cloud-portal/ai-audit/order-detail")
-async def ai_audit_order_detail(order_id: str):
+async def ai_audit_order_detail(order_id: str, user_id: Optional[int] = Query(None)):
     """AI稽核-工单详情 — 转发至 GUI 服务"""
-    params = {"order_id": order_id, "access_token": _get_access_token()}
+    params = {"order_id": order_id, "access_token": _get_access_token(user_id or 1)}
     return _forward_get("/api/portal/order-detail", params=params, timeout=60)
 
 
 @router.get("/api/cloud-portal/order-detail")
-async def get_order_detail(order_id: str):
+async def get_order_detail(order_id: str, user_id: Optional[int] = Query(None)):
     """获取工单详情 — 转发至 GUI 服务"""
-    params = {"order_id": order_id, "access_token": _get_access_token()}
+    params = {"order_id": order_id, "access_token": _get_access_token(user_id or 1)}
     return _forward_get("/api/portal/order-detail", params=params, timeout=60)
 
 
@@ -1076,14 +1009,14 @@ async def get_latest_response():
     return _forward_get("/api/portal/latest-response", timeout=10)
 
 
-# ==================== 云门户账号管理（本地SQLite） ====================
+# ==================== 云门户账号管理（MySQL system_db.portal_accounts） ====================
 
 
 @router.post("/api/cloud-portal/account/save")
-async def save_cloud_portal_account(req: AccountSaveRequest):
+async def save_cloud_portal_account(req: AccountSaveRequest, user_id: Optional[int] = Query(None)):
     """保存云门户账号"""
     try:
-        _save_account(1, req.portal_username, req.portal_password)
+        _save_account(user_id or 1, req.portal_username, req.portal_password)
         return {"code": 200, "message": "账号保存成功", "data": None}
     except Exception as e:
         logger.error(f"保存账号失败: {e}")
@@ -1091,9 +1024,9 @@ async def save_cloud_portal_account(req: AccountSaveRequest):
 
 
 @router.get("/api/cloud-portal/account")
-async def get_cloud_portal_account():
+async def get_cloud_portal_account(user_id: Optional[int] = Query(None)):
     """获取云门户账号"""
-    account = _get_account(1)
+    account = _get_account(user_id or 1)
     if account:
         return {
             "code": 200,
@@ -1112,9 +1045,9 @@ async def get_cloud_portal_account():
 
 
 @router.delete("/api/cloud-portal/account")
-async def delete_cloud_portal_account():
+async def delete_cloud_portal_account(user_id: Optional[int] = Query(None)):
     """删除云门户账号"""
-    _delete_account(1)
+    _delete_account(user_id or 1)
     return {"code": 200, "message": "账号已删除", "data": None}
 
 
@@ -1122,9 +1055,10 @@ async def delete_cloud_portal_account():
 
 
 @router.get("/api/cloud-portal-account/")
-async def get_cloud_portal_account_v2():
+async def get_cloud_portal_account_v2(user_id: Optional[int] = Query(None)):
     """获取云门户账号（前端兼容路径）"""
-    account = _get_account(1)
+    effective_user_id = user_id or 1
+    account = _get_account(effective_user_id)
     if account:
         return {
             "code": 200,
@@ -1134,18 +1068,18 @@ async def get_cloud_portal_account_v2():
                 "user_id": account["user_id"],
                 "portal_username": account["portal_username"],
                 "has_password": bool(account["portal_password"]),
-                "created_at": account["created_at"],
-                "updated_at": account["updated_at"],
+                "created_at": str(account["created_at"]) if account.get("created_at") else None,
+                "updated_at": str(account["updated_at"]) if account.get("updated_at") else None,
             },
         }
     return {"code": 200, "message": "未保存账号", "data": None}
 
 
 @router.post("/api/cloud-portal-account/")
-async def save_cloud_portal_account_v2(req: AccountSaveRequest):
+async def save_cloud_portal_account_v2(req: AccountSaveRequest, user_id: Optional[int] = Query(None)):
     """保存云门户账号（前端兼容路径）"""
     try:
-        _save_account(1, req.portal_username, req.portal_password)
+        _save_account(user_id or 1, req.portal_username, req.portal_password)
         return {"code": 200, "message": "账号保存成功", "data": None}
     except Exception as e:
         logger.error(f"保存账号失败: {e}")
@@ -1153,16 +1087,17 @@ async def save_cloud_portal_account_v2(req: AccountSaveRequest):
 
 
 @router.delete("/api/cloud-portal-account/")
-async def delete_cloud_portal_account_v2():
+async def delete_cloud_portal_account_v2(user_id: Optional[int] = Query(None)):
     """删除云门户账号（前端兼容路径）"""
-    _delete_account(1)
+    _delete_account(user_id or 1)
     return {"code": 200, "message": "账号已删除", "data": None}
 
 
 @router.get("/api/cloud-portal-account/credentials")
-async def get_cloud_portal_credentials():
+async def get_cloud_portal_credentials(user_id: Optional[int] = Query(None)):
     """获取云门户凭证（含密码和Token信息）"""
-    account = _get_account(1)
+    effective_user_id = user_id or 1
+    account = _get_account(effective_user_id)
     if account:
         is_valid = _is_token_valid(account)
 

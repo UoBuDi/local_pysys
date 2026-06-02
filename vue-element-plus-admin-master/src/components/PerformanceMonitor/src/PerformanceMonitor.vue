@@ -84,7 +84,7 @@ onBeforeUnmount(() => {
     <div class="monitor-toggle" @click="togglePanel">
       <span class="toggle-icon">📊</span>
     </div>
-    
+
     <div v-if="showPanel" class="monitor-panel">
       <ElCard class="panel-card">
         <template #header>
@@ -97,13 +97,13 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </template>
-        
+
         <ElRow :gutter="20">
           <ElCol :span="24">
             <h3>Web Vitals</h3>
           </ElCol>
         </ElRow>
-        
+
         <ElRow :gutter="20" class="vitals-row">
           <ElCol :span="6">
             <ElCard shadow="hover">
@@ -114,10 +114,19 @@ onBeforeUnmount(() => {
                   </div>
                 </template>
               </ElStatistic>
-              <ElProgress :percentage="fcpScore.score" :status="fcpScore.status === 'good' ? 'success' : fcpScore.status === 'poor' ? 'exception' : 'warning'" />
+              <ElProgress
+                :percentage="fcpScore.score"
+                :status="
+                  fcpScore.status === 'good'
+                    ? 'success'
+                    : fcpScore.status === 'poor'
+                      ? 'exception'
+                      : 'warning'
+                "
+              />
             </ElCard>
           </ElCol>
-          
+
           <ElCol :span="6">
             <ElCard shadow="hover">
               <ElStatistic title="首字节时间 (TTFB)" :value="formatTime(webVitals.TTFB || 0)">
@@ -127,10 +136,19 @@ onBeforeUnmount(() => {
                   </div>
                 </template>
               </ElStatistic>
-              <ElProgress :percentage="ttfbScore.score" :status="ttfbScore.status === 'good' ? 'success' : ttfbScore.status === 'poor' ? 'exception' : 'warning'" />
+              <ElProgress
+                :percentage="ttfbScore.score"
+                :status="
+                  ttfbScore.status === 'good'
+                    ? 'success'
+                    : ttfbScore.status === 'poor'
+                      ? 'exception'
+                      : 'warning'
+                "
+              />
             </ElCard>
           </ElCol>
-          
+
           <ElCol :span="6">
             <ElCard shadow="hover">
               <ElStatistic title="页面加载时间" :value="formatTime(webVitals.Load || 0)">
@@ -140,24 +158,37 @@ onBeforeUnmount(() => {
                   </div>
                 </template>
               </ElStatistic>
-              <ElProgress :percentage="loadScore.score" :status="loadScore.status === 'good' ? 'success' : loadScore.status === 'poor' ? 'exception' : 'warning'" />
+              <ElProgress
+                :percentage="loadScore.score"
+                :status="
+                  loadScore.status === 'good'
+                    ? 'success'
+                    : loadScore.status === 'poor'
+                      ? 'exception'
+                      : 'warning'
+                "
+              />
             </ElCard>
           </ElCol>
-          
+
           <ElCol :span="6">
             <ElCard shadow="hover">
               <ElStatistic title="DOM内容加载" :value="formatTime(webVitals.DCL || 0)" />
             </ElCard>
           </ElCol>
         </ElRow>
-        
+
         <ElRow :gutter="20" class="stats-row">
           <ElCol :span="12">
             <h3>资源统计</h3>
             <ElCard shadow="hover">
               <ElStatistic title="资源总数" :value="resourceStats.total || 0" />
               <div class="resource-types">
-                <div v-for="(stats, type) in resourceStats.byType" :key="type" class="resource-type">
+                <div
+                  v-for="(stats, type) in resourceStats.byType"
+                  :key="type"
+                  class="resource-type"
+                >
                   <span class="type-name">{{ type }}</span>
                   <span class="type-count">{{ stats.count }}个</span>
                   <span class="type-size">{{ formatBytes(stats.size) }}</span>
@@ -165,10 +196,14 @@ onBeforeUnmount(() => {
               </div>
             </ElCard>
           </ElCol>
-          
+
           <ElCol :span="12">
             <h3>最慢资源 (Top 5)</h3>
-            <ElTable :data="resourceStats.slowest?.slice(0, 5) || []" style="width: 100%" max-height="300">
+            <ElTable
+              :data="resourceStats.slowest?.slice(0, 5) || []"
+              style="width: 100%"
+              max-height="300"
+            >
               <ElTableColumn prop="name" label="资源" width="200" show-overflow-tooltip />
               <ElTableColumn prop="duration" label="耗时" width="100">
                 <template #default="{ row }">
@@ -183,7 +218,7 @@ onBeforeUnmount(() => {
             </ElTable>
           </ElCol>
         </ElRow>
-        
+
         <ElRow :gutter="20" class="metrics-row">
           <ElCol :span="24">
             <h3>自定义指标</h3>
@@ -227,12 +262,12 @@ onBeforeUnmount(() => {
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: scale(1.1);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
   }
-  
+
   .toggle-icon {
     font-size: 24px;
   }
@@ -258,7 +293,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  
+
   span {
     font-size: 18px;
     font-weight: bold;
@@ -289,17 +324,17 @@ h3 {
   border-radius: 4px;
   font-size: 12px;
   font-weight: bold;
-  
+
   &.good {
     background-color: #52c41a;
     color: white;
   }
-  
+
   &.needs-improvement {
     background-color: #faad14;
     color: white;
   }
-  
+
   &.poor {
     background-color: #ff4d4f;
     color: white;
@@ -315,16 +350,16 @@ h3 {
   justify-content: space-between;
   padding: 8px 0;
   border-bottom: 1px solid #f0f0f0;
-  
+
   &:last-child {
     border-bottom: none;
   }
-  
+
   .type-name {
     font-weight: bold;
     color: #333;
   }
-  
+
   .type-count,
   .type-size {
     color: #666;

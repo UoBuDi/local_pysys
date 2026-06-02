@@ -3,6 +3,7 @@
 包含用户的增删改查以及菜单和权限获取接口
 """
 
+import json
 import logging
 
 import pymysql
@@ -37,9 +38,9 @@ async def get_users(
                 where_clause = "WHERE u.department_id = %s"
                 params.append(dept_id)
 
-            count_sql = f"SELECT COUNT(*) FROM users u {where_clause}"
+            count_sql = f"SELECT COUNT(*) as total FROM users u {where_clause}"
             cursor.execute(count_sql, params)
-            total = cursor.fetchone()[0]
+            total = cursor.fetchone()['total']
 
             offset = (pageIndex - 1) * pageSize
             data_sql = f"""
@@ -186,6 +187,37 @@ async def get_user_menus(credentials=Depends(get_current_user)):
                 if not menus:
                     return {"code": 200, "message": "success", "data": []}
 
+                # 过滤掉按钮/操作级菜单(type=2)，只保留目录(type=0)和页面(type=1)
+                menus = [m for m in menus if m.get('type', 1) != 2]
+
+                # 自动补全缺失的父节点：从数据库查询所有未分配但作为已分配菜单祖先的节点
+                assigned_ids = set(m['id'] for m in menus)
+                parent_ids_to_fetch = set()
+                for m in menus:
+                    pid = m.get('parent_id', 0)
+                    if pid != 0 and pid not in assigned_ids:
+                        parent_ids_to_fetch.add(pid)
+
+                while parent_ids_to_fetch:
+                    placeholders = ','.join(['%s'] * len(parent_ids_to_fetch))
+                    cursor.execute(f"""
+                        SELECT * FROM menus WHERE id IN ({placeholders}) AND status = 1
+                    """, list(parent_ids_to_fetch))
+                    parent_menus = cursor.fetchall()
+                    newly_added_ids = set()
+                    for pm in parent_menus:
+                        if pm['id'] not in assigned_ids:
+                            menus.append(pm)
+                            assigned_ids.add(pm['id'])
+                            newly_added_ids.add(pm['id'])
+                            if pm.get('parent_id', 0) != 0 and pm['parent_id'] not in assigned_ids:
+                                parent_ids_to_fetch.add(pm['parent_id'])
+                    parent_ids_to_fetch = parent_ids_to_fetch - assigned_ids - newly_added_ids
+                    if not newly_added_ids:
+                        break
+
+                menus.sort(key=lambda x: x.get('sort_order', 0))
+
                 converted_menus = []
                 menu_map = {menu['id']: menu for menu in menus}
                 logger.info(f"菜单查询结果: {len(menus)} 条, IDs: {[m['id'] for m in menus]}")
@@ -222,9 +254,6 @@ async def get_user_menus(credentials=Depends(get_current_user)):
                 }
 
                 for menu in menus:
-                    if not menu.get('path'):
-                        continue
-
                     converted_menu = menu.copy()
 
                     if 'sort_order' in converted_menu:
@@ -235,7 +264,7 @@ async def get_user_menus(credentials=Depends(get_current_user)):
                     if converted_menu.get('parent_id') == 0:
                         converted_menu['component'] = '#'
                     elif converted_menu.get('parent_id') != 0:
-                        path_key = converted_menu.get('path', '').lstrip('/')
+                        path_key = (converted_menu.get('path') or '').lstrip('/')
                         component_mapping = {
                             'analysis': 'Dashboard/Analysis',
                             'workplace': 'Dashboard/Workplace',
@@ -270,9 +299,18 @@ async def get_user_menus(credentials=Depends(get_current_user)):
                     original_name = converted_menu.get('name', '')
                     route_name = converted_menu.get('route_name') or original_name
                     converted_menu['name'] = route_name
+                    icon_value = converted_menu.get('icon', '')
+                    if not icon_value:
+                        try:
+                            meta_raw = converted_menu.get('meta_json')
+                            if meta_raw:
+                                meta_obj = json.loads(meta_raw) if isinstance(meta_raw, str) else meta_raw
+                                icon_value = meta_obj.get('icon', '')
+                        except (json.JSONDecodeError, TypeError):
+                            pass
                     converted_menu['meta'] = {
                         'title': title_map.get(original_name, original_name),
-                        'icon': converted_menu.get('icon', ''),
+                        'icon': icon_value,
                         'hidden': not converted_menu.get('visible', 1),
                         'alwaysShow': bool(converted_menu.get('always_show', 0)),
                         'noCache': bool(converted_menu.get('no_cache', 0)),
@@ -325,10 +363,10 @@ async def get_user_menus(credentials=Depends(get_current_user)):
 
                 def add_redirect_and_always_show(menus, parent_path=''):
                     for m in menus:
-                        current_path = m.get('path', '')
+                        current_path = m.get('path') or ''
                         children = m.get('children', [])
                         if children:
-                            first_child_path = children[0].get('path', '')
+                            first_child_path = children[0].get('path') or ''
                             if current_path.startswith('/'):
                                 m['redirect'] = f"{current_path}/{first_child_path}"
                             else:

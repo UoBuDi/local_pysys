@@ -140,7 +140,14 @@
         </el-form-item>
       </el-form>
       <div class="search-buttons">
-        <el-button type="primary" @click="handleSearch" :loading="loading"> 查询 </el-button>
+        <el-button
+          type="primary"
+          @click="handleSearch"
+          :loading="loading"
+          v-hasPermi="'detail-query:search'"
+        >
+          查询
+        </el-button>
         <el-button @click="handleReset"> 重置 </el-button>
         <el-button
           v-if="canShowExport"
@@ -298,7 +305,7 @@ const hasDebugPermission = (): boolean => {
 
 const hasExportPermission = (): boolean => {
   const permissions = userStore.getPermissions || []
-  return permissions.includes('system:debug:export')
+  return permissions.includes('detail-query:export')
 }
 
 const canShowDebug = computed(() => hasDebugPermission())

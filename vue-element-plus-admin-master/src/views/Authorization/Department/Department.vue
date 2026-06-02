@@ -13,6 +13,7 @@ import Write from './components/Write.vue'
 import Detail from './components/Detail.vue'
 import { CrudSchema, useCrudSchemas } from '@/hooks/web/useCrudSchemas'
 import { BaseButton } from '@/components/Button'
+import { hasPermi } from '@/components/Permission/src/utils'
 
 const { t } = useI18n()
 
@@ -133,15 +134,21 @@ const crudSchemas = reactive<CrudSchema[]>([
         default: (data: any) => {
           return (
             <>
-              <BaseButton type="primary" onClick={() => action(data.row, 'edit')}>
-                {t('exampleDemo.edit')}
-              </BaseButton>
-              <BaseButton type="success" onClick={() => action(data.row, 'detail')}>
-                {t('exampleDemo.detail')}
-              </BaseButton>
-              <BaseButton type="danger" onClick={() => delData(data.row)}>
-                {t('exampleDemo.del')}
-              </BaseButton>
+              {hasPermi('system:dept:edit') && (
+                <BaseButton type="primary" onClick={() => action(data.row, 'edit')}>
+                  {t('exampleDemo.edit')}
+                </BaseButton>
+              )}
+              {hasPermi('system:dept:view') && (
+                <BaseButton type="success" onClick={() => action(data.row, 'detail')}>
+                  {t('exampleDemo.detail')}
+                </BaseButton>
+              )}
+              {hasPermi('system:dept:delete') && (
+                <BaseButton type="danger" onClick={() => delData(data.row)}>
+                  {t('exampleDemo.del')}
+                </BaseButton>
+              )}
             </>
           )
         }
@@ -243,8 +250,15 @@ const setSearchParams = (params: any) => {
     <Search :schema="allSchemas.searchSchema" @search="setSearchParams" @reset="setSearchParams" />
 
     <div class="mt-20px">
-      <BaseButton type="primary" @click="AddAction">{{ t('exampleDemo.add') }}</BaseButton>
-      <BaseButton :loading="delLoading" type="danger" @click="delData(null)">
+      <BaseButton type="primary" @click="AddAction" v-hasPermi="'system:dept:add'">
+        {{ t('exampleDemo.add') }}
+      </BaseButton>
+      <BaseButton
+        :loading="delLoading"
+        type="danger"
+        @click="delData(null)"
+        v-hasPermi="'system:dept:delete'"
+      >
         {{ t('exampleDemo.del') }}
       </BaseButton>
     </div>

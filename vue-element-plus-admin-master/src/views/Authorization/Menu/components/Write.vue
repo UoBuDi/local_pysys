@@ -8,6 +8,7 @@ import { getMenuListApi } from '@/api/menu'
 import { ElButton, ElInput, ElPopconfirm, ElTable, ElTableColumn, ElTag } from 'element-plus'
 import AddButtonPermission from './AddButtonPermission.vue'
 import { BaseButton } from '@/components/Button'
+import { IconPicker } from '@/components/IconPicker'
 import { cloneDeep } from 'lodash-es'
 
 const { t } = useI18n()
@@ -141,7 +142,19 @@ const formSchema = reactive<FormSchema[]>([
     },
     optionApi: async () => {
       const res = await getMenuListApi()
-      return res.data.list || []
+      const list = res.data?.list || []
+      const buildTree = (items: any[], parentId = 0) => {
+        return items
+          .filter((item) => item.parentId === parentId)
+          .map((item) => {
+            const children = buildTree(items, item.id)
+            return {
+              ...item,
+              ...(children.length > 0 ? { children } : {})
+            }
+          })
+      }
+      return buildTree(list)
     }
   },
   {
@@ -172,7 +185,14 @@ const formSchema = reactive<FormSchema[]>([
   {
     field: 'meta.icon',
     label: t('menu.icon'),
-    component: 'Input'
+    component: 'Input',
+    formItemProps: {
+      slots: {
+        default: (data: any) => {
+          return <IconPicker v-model={data['meta.icon']} />
+        }
+      }
+    }
   },
   {
     field: 'path',

@@ -5,7 +5,7 @@
         <div class="card-header">
           <span>班次管理</span>
           <div class="header-actions">
-            <el-button type="primary" @click="handleExport">
+            <el-button type="primary" @click="handleExport" v-hasPermi="'scheduling:shifts:export'">
               <el-icon><Download /></el-icon>
               导出
             </el-button>
@@ -14,13 +14,19 @@
               :before-upload="handleImport"
               accept=".xlsx,.xls"
               style="margin-left: 10px"
+              v-if="hasImportPerm"
             >
               <el-button type="warning">
                 <el-icon><Upload /></el-icon>
                 导入
               </el-button>
             </el-upload>
-            <el-button type="primary" @click="handleAdd" style="margin-left: 10px">
+            <el-button
+              type="primary"
+              @click="handleAdd"
+              style="margin-left: 10px"
+              v-hasPermi="'scheduling:shifts:add'"
+            >
               <el-icon><Plus /></el-icon>
               新增班次
             </el-button>
@@ -36,11 +42,21 @@
         <el-table-column prop="description" label="描述" min-width="150" />
         <el-table-column label="操作" width="150" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="handleEdit(row)">
+            <el-button
+              type="primary"
+              link
+              @click="handleEdit(row)"
+              v-hasPermi="'scheduling:shifts:edit'"
+            >
               <el-icon><Edit /></el-icon>
               编辑
             </el-button>
-            <el-button type="danger" link @click="handleDelete(row)">
+            <el-button
+              type="danger"
+              link
+              @click="handleDelete(row)"
+              v-hasPermi="'scheduling:shifts:delete'"
+            >
               <el-icon><Delete /></el-icon>
               删除
             </el-button>
@@ -94,6 +110,9 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Download, Upload, Plus, Edit, Delete } from '@element-plus/icons-vue'
 import request from '@/axios'
+import { hasPermi } from '@/components/Permission/src/utils'
+
+const hasImportPerm = hasPermi('scheduling:shifts:import')
 
 interface Shift {
   id: number

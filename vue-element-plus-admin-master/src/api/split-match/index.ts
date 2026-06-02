@@ -1,10 +1,33 @@
 import request from '@/axios'
 
-const getCloudPortalAccessToken = (): string => {
+export const getCloudPortalAccessToken = (userId?: number): string => {
   try {
-    return localStorage.getItem('cloud_portal_access_token') || ''
+    const key = userId ? `cloud_portal_access_token_${userId}` : 'cloud_portal_access_token'
+    return localStorage.getItem(key) || ''
   } catch {
     return ''
+  }
+}
+
+export const setCloudPortalAccessToken = (token: string, userId?: number) => {
+  try {
+    const key = userId ? `cloud_portal_access_token_${userId}` : 'cloud_portal_access_token'
+    if (token) {
+      localStorage.setItem(key, token)
+    } else {
+      localStorage.removeItem(key)
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export const removeCloudPortalAccessToken = (userId?: number) => {
+  try {
+    const key = userId ? `cloud_portal_access_token_${userId}` : 'cloud_portal_access_token'
+    localStorage.removeItem(key)
+  } catch {
+    // ignore
   }
 }
 
@@ -14,8 +37,8 @@ const appendUserId = (baseUrl: string, userId?: number): string => {
   return `${baseUrl}${separator}user_id=${userId}`
 }
 
-const injectAccessToken = (data: Record<string, any>): Record<string, any> => {
-  const token = getCloudPortalAccessToken()
+const injectAccessToken = (data: Record<string, any>, userId?: number): Record<string, any> => {
+  const token = getCloudPortalAccessToken(userId)
   if (token && !data.access_token) {
     return { ...data, access_token: token }
   }
@@ -115,8 +138,10 @@ export const updateSplitMatchData = (data: {
   table_name?: string
   row_id: string
   data: Record<string, unknown>
+  version?: number
+  force_overwrite?: boolean
 }) => {
-  return request.post<{ updated: boolean }>({
+  return request.post<{ affectedRows: number; version?: number }>({
     url: '/api/split-match/update/',
     data: data
   })
@@ -132,7 +157,10 @@ export interface ExportSplitMatchData {
 }
 
 export const getExportSplitMatchData = (params: { table_name?: string; filters?: string }) => {
-  return request.get<ExportSplitMatchData>({ url: '/api/split-match/export/', params: { ...params, format: 'json' } })
+  return request.get<ExportSplitMatchData>({
+    url: '/api/split-match/export/',
+    params: { ...params, format: 'json' }
+  })
 }
 
 export const getOriginalImage = (params: {
@@ -273,10 +301,13 @@ export interface AutoLoginResponse {
   need_captcha?: boolean
 }
 
-export const cloudPortalAutoLogin = (data: {
-  username: string
-  password: string
-}, userId?: number) => {
+export const cloudPortalAutoLogin = (
+  data: {
+    username: string
+    password: string
+  },
+  userId?: number
+) => {
   return request.post<AutoLoginResult | AutoLoginResponse>({
     url: appendUserId('/api/cloud-portal/auto-login', userId),
     data,
@@ -284,9 +315,12 @@ export const cloudPortalAutoLogin = (data: {
   })
 }
 
-export const cloudPortalQuery = (data: {
-  query_params: Record<string, unknown>
-}, userId?: number) => {
+export const cloudPortalQuery = (
+  data: {
+    query_params: Record<string, unknown>
+  },
+  userId?: number
+) => {
   return request.post<Record<string, unknown>[]>({
     url: appendUserId('/api/cloud-portal/query', userId),
     data: injectAccessToken(data),
@@ -490,14 +524,17 @@ export interface AIAuditBatchQueryResult {
   errors: string[]
 }
 
-export const aiAuditBatchQuery = (data: {
-  plate_number: string
-  entry_time: string
-  gate_time: string
-  pass_id?: string
-  hours?: number
-  rows?: number
-}, userId?: number) => {
+export const aiAuditBatchQuery = (
+  data: {
+    plate_number: string
+    entry_time: string
+    gate_time: string
+    pass_id?: string
+    hours?: number
+    rows?: number
+  },
+  userId?: number
+) => {
   return request.post<AIAuditBatchQueryResult>({
     url: appendUserId('/api/cloud-portal/ai-audit/batch-query', userId),
     data: injectAccessToken(data),
@@ -574,11 +611,16 @@ export interface OrderDetailData {
   }
 }
 
-export const aiAuditOrderDetail = (params: {
-  order_id: string
-}, userId?: number) => {
+export const aiAuditOrderDetail = (
+  params: {
+    order_id: string
+  },
+  userId?: number
+) => {
   const token = getCloudPortalAccessToken()
-  const queryParams: Record<string, any> = token ? { ...params, access_token: token } : { ...params }
+  const queryParams: Record<string, any> = token
+    ? { ...params, access_token: token }
+    : { ...params }
   if (userId) queryParams.user_id = userId
   return request.get<OrderDetailData>({
     url: '/api/cloud-portal/ai-audit/order-detail',
@@ -587,14 +629,17 @@ export const aiAuditOrderDetail = (params: {
   })
 }
 
-export const aiAuditVehicleImages = (data: {
-  plate_number: string
-  start_time: string
-  end_time: string
-  page?: number
-  page_size?: number
-  sort?: string
-}, userId?: number) => {
+export const aiAuditVehicleImages = (
+  data: {
+    plate_number: string
+    start_time: string
+    end_time: string
+    page?: number
+    page_size?: number
+    sort?: string
+  },
+  userId?: number
+) => {
   return request.post<{ success: boolean; total: number; images: AIAuditVehicleImage[] }>({
     url: appendUserId('/api/cloud-portal/ai-audit/vehicle-images', userId),
     data: injectAccessToken(data),
@@ -602,14 +647,17 @@ export const aiAuditVehicleImages = (data: {
   })
 }
 
-export const aiAuditGantryImages = (data: {
-  station_id: string
-  start_time: string
-  end_time: string
-  rows?: number
-  start?: number
-  sort?: string
-}, userId?: number) => {
+export const aiAuditGantryImages = (
+  data: {
+    station_id: string
+    start_time: string
+    end_time: string
+    rows?: number
+    start?: number
+    sort?: string
+  },
+  userId?: number
+) => {
   return request.post<{ success: boolean; total: number; images: AIAuditGantryImage[] }>({
     url: appendUserId('/api/cloud-portal/ai-audit/gantry-images', userId),
     data: injectAccessToken(data),
@@ -617,11 +665,14 @@ export const aiAuditGantryImages = (data: {
   })
 }
 
-export const aiAuditGantryTrade = (data: {
-  query_value: string
-  start_time: string
-  end_time: string
-}, userId?: number) => {
+export const aiAuditGantryTrade = (
+  data: {
+    query_value: string
+    start_time: string
+    end_time: string
+  },
+  userId?: number
+) => {
   return request.post<{ total: number; records: AIAuditGantryTrade[] }>({
     url: appendUserId('/api/cloud-portal/ai-audit/gantry-trade', userId),
     data: injectAccessToken(data),
@@ -629,11 +680,14 @@ export const aiAuditGantryTrade = (data: {
   })
 }
 
-export const aiAuditGantryPlate = (data: {
-  plate_number: string
-  start_time: string
-  end_time: string
-}, userId?: number) => {
+export const aiAuditGantryPlate = (
+  data: {
+    plate_number: string
+    start_time: string
+    end_time: string
+  },
+  userId?: number
+) => {
   return request.post<{ total: number; records: AIAuditGantryPlate[] }>({
     url: appendUserId('/api/cloud-portal/ai-audit/gantry-plate', userId),
     data: injectAccessToken(data),
@@ -641,12 +695,15 @@ export const aiAuditGantryPlate = (data: {
   })
 }
 
-export const aiAuditExitTrade = (data: {
-  query_value: string
-  start_time: string
-  end_time: string
-  trade_type?: number
-}, userId?: number) => {
+export const aiAuditExitTrade = (
+  data: {
+    query_value: string
+    start_time: string
+    end_time: string
+    trade_type?: number
+  },
+  userId?: number
+) => {
   return request.post<{ total: number; records: AIAuditExitTrade[] }>({
     url: appendUserId('/api/cloud-portal/ai-audit/exit-trade', userId),
     data: injectAccessToken(data),
@@ -654,11 +711,14 @@ export const aiAuditExitTrade = (data: {
   })
 }
 
-export const aiAuditSuspectedCar = (data: {
-  vehicle_or_pass_id: string
-  start_time: string
-  end_time: string
-}, userId?: number) => {
+export const aiAuditSuspectedCar = (
+  data: {
+    vehicle_or_pass_id: string
+    start_time: string
+    end_time: string
+  },
+  userId?: number
+) => {
   return request.post<{ trade_list: AIAuditSuspectedCar[] }>({
     url: appendUserId('/api/cloud-portal/ai-audit/suspected-car', userId),
     data: injectAccessToken(data),
@@ -741,10 +801,13 @@ export const getCloudPortalAccount = (userId?: number) => {
   })
 }
 
-export const saveCloudPortalAccount = (data: {
-  portal_username: string
-  portal_password: string
-}, userId?: number) => {
+export const saveCloudPortalAccount = (
+  data: {
+    portal_username: string
+    portal_password: string
+  },
+  userId?: number
+) => {
   return request.post<null>({
     url: appendUserId('/api/cloud-portal-account/', userId),
     data
@@ -771,5 +834,62 @@ export const getCloudPortalCredentials = (userId?: number) => {
   } | null>({
     url: '/api/cloud-portal-account/credentials',
     params
+  })
+}
+
+// ==================== 协作功能 API ====================
+
+export interface LockResult {
+  locked: boolean
+  own_lock: boolean
+  locked_by?: string
+  user_id?: number
+}
+
+export const lockRow = (data: { table_name: string; row_id: string }) => {
+  return request.post<LockResult>({
+    url: '/api/split-match/lock/',
+    data
+  })
+}
+
+export const unlockRow = (data: { table_name: string; row_id: string }) => {
+  return request.post<{ released: boolean }>({
+    url: '/api/split-match/unlock/',
+    data
+  })
+}
+
+export interface ActiveLock {
+  row_id: string
+  user_id: number
+  username: string
+  expires_at: string
+}
+
+export const getActiveLocks = (tableName: string) => {
+  return request.get<ActiveLock[]>({
+    url: '/api/split-match/active-locks/',
+    params: { table_name: tableName }
+  })
+}
+
+export interface RowVersion {
+  version: number
+  updated_by: string | null
+  updated_at: string | null
+}
+
+export const getRowVersion = (tableName: string, rowId: string) => {
+  return request.get<RowVersion>({
+    url: '/api/split-match/row-version/',
+    params: { table_name: tableName, row_id: rowId }
+  })
+}
+
+export const getSingleRow = (tableName: string, rowId: string) => {
+  return request.get<Record<string, unknown>>({
+    url: '/api/split-match/single-row/',
+    params: { table_name: tableName, row_id: rowId }
   })
 }

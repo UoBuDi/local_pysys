@@ -13,6 +13,7 @@ import Write from './components/Write.vue'
 import Detail from './components/Detail.vue'
 import { Dialog } from '@/components/Dialog'
 import { BaseButton } from '@/components/Button'
+import { hasPermi } from '@/components/Permission/src/utils'
 
 const { t } = useI18n()
 
@@ -21,14 +22,16 @@ const { tableRegister, tableState, tableMethods } = useTable({
     const res = await getMenuListApi()
     const list = res.data?.list || []
 
-    // 将扁平列表转换为树形结构
     const buildTree = (items: any[], parentId = 0) => {
       return items
-        .filter((item) => item.parentId === parentId || item.parent_id === parentId)
-        .map((item) => ({
-          ...item,
-          children: buildTree(items, item.id)
-        }))
+        .filter((item) => item.parentId === parentId)
+        .map((item) => {
+          const children = buildTree(items, item.id)
+          return {
+            ...item,
+            ...(children.length > 0 ? { children } : {})
+          }
+        })
     }
 
     const treeList = buildTree(list)
@@ -44,23 +47,16 @@ const { getList, getElTableExpose } = tableMethods
 
 const tableColumns = reactive<TableColumn[]>([
   {
-    field: 'name',
+    field: 'title',
     label: t('menu.menuName')
   },
   {
-    field: 'icon',
+    field: 'meta.icon',
     label: t('menu.icon'),
     slots: {
       default: (data: any) => {
-        return (
-          <>
-            {data.row.icon ? (
-              <Icon icon={data.row.icon} style="font-size: 20px;" />
-            ) : (
-              <span>-</span>
-            )}
-          </>
-        )
+        const icon = data.row.meta?.icon || data.row.icon
+        return <>{icon ? <Icon icon={icon} style="font-size: 20px;" /> : <span>-</span>}</>
       }
     }
   },
@@ -99,15 +95,21 @@ const tableColumns = reactive<TableColumn[]>([
       default: (data: any) => {
         return (
           <>
-            <BaseButton type="primary" onClick={() => action(data.row, 'edit')}>
-              {t('exampleDemo.edit')}
-            </BaseButton>
-            <BaseButton type="success" onClick={() => action(data.row, 'detail')}>
-              {t('exampleDemo.detail')}
-            </BaseButton>
-            <BaseButton type="danger" onClick={() => delData(data.row)}>
-              {t('exampleDemo.del')}
-            </BaseButton>
+            {hasPermi('system:menu:edit') && (
+              <BaseButton type="primary" onClick={() => action(data.row, 'edit')}>
+                {t('exampleDemo.edit')}
+              </BaseButton>
+            )}
+            {hasPermi('system:menu:view') && (
+              <BaseButton type="success" onClick={() => action(data.row, 'detail')}>
+                {t('exampleDemo.detail')}
+              </BaseButton>
+            )}
+            {hasPermi('system:menu:delete') && (
+              <BaseButton type="danger" onClick={() => delData(data.row)}>
+                {t('exampleDemo.del')}
+              </BaseButton>
+            )}
           </>
         )
       }
@@ -227,8 +229,15 @@ const writeRefEl = ref<ComponentRef<typeof Write>>()
     <Search :schema="searchSchema" @search="setSearchParams" @reset="setSearchParams" />
 
     <div class="mt-20px">
-      <BaseButton type="primary" @click="AddAction">{{ t('exampleDemo.add') }}</BaseButton>
-      <BaseButton :loading="delLoading" type="danger" @click="delData(null)">
+      <BaseButton type="primary" @click="AddAction" v-hasPermi="'system:menu:add'">
+        {{ t('exampleDemo.add') }}
+      </BaseButton>
+      <BaseButton
+        :loading="delLoading"
+        type="danger"
+        @click="delData(null)"
+        v-hasPermi="'system:menu:delete'"
+      >
         {{ t('exampleDemo.del') }}
       </BaseButton>
     </div>

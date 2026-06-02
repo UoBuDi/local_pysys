@@ -959,6 +959,7 @@ export default {
   },
   role: {
     roleName: 'Role name',
+    roleCode: 'Role code',
     role: 'Role',
     // 菜单分配
     menu: 'Menu allocation'

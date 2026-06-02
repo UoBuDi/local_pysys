@@ -116,11 +116,16 @@ export const useSplitMatchImport = (getSelectedTable: () => string, getFilters: 
     for (const field of ['查核资料1', '查核资料2']) {
       if (processedRow[field]) {
         try {
-          if (typeof processedRow[field] === 'string' && processedRow[field].startsWith('=DISPIMG(')) {
+          if (
+            typeof processedRow[field] === 'string' &&
+            processedRow[field].startsWith('=DISPIMG(')
+          ) {
             continue
           }
           if (typeof processedRow[field] === 'string' && processedRow[field].includes(',')) {
-            const { convertToWebP } = await import('./useImageHandler').then(m => ({ convertToWebP: m.useImageHandler }))
+            const { convertToWebP } = await import('./useImageHandler').then((m) => ({
+              convertToWebP: m.useImageHandler
+            }))
           }
         } catch (error) {
           console.error(`处理${field}图片失败:`, error)
@@ -247,10 +252,14 @@ export const useSplitMatchImport = (getSelectedTable: () => string, getFilters: 
 
   const getImportDialogTitle = () => {
     switch (importStep.value) {
-      case 'preview': return '导入数据预览'
-      case 'matching': return '正在匹配数据'
-      case 'importing': return '正在导入数据'
-      default: return '导入数据预览'
+      case 'preview':
+        return '导入数据预览'
+      case 'matching':
+        return '正在匹配数据'
+      case 'importing':
+        return '正在导入数据'
+      default:
+        return '导入数据预览'
     }
   }
 
@@ -270,9 +279,15 @@ export const useSplitMatchImport = (getSelectedTable: () => string, getFilters: 
 
   const isIdMatched = (id: any): boolean => {
     if (!id) return false
-    const importId = String(id).trim().replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+    const importId = String(id)
+      .trim()
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .toLowerCase()
     return importResult.value.some((item) => {
-      const matchedId = String(item.通行标识ID).trim().replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+      const matchedId = String(item.通行标识ID)
+        .trim()
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .toLowerCase()
       return matchedId === importId
     })
   }
@@ -284,10 +299,25 @@ export const useSplitMatchImport = (getSelectedTable: () => string, getFilters: 
 
   const getImportColumns = () => {
     const userDefinedOrder = [
-      '通行标识ID', '车牌号码', '核查通行标识', '复核情况', '备注',
-      '查核资料1', '查核资料2', '特情', '门架通行时间', '入口时间',
-      '收费车型', '车种', '通行介质', '门架应收金额', '门架交易金额',
-      '收费入口名称', '通行门架组合', '通行门架名称组合', '通行日期'
+      '通行标识ID',
+      '车牌号码',
+      '核查通行标识',
+      '复核情况',
+      '备注',
+      '查核资料1',
+      '查核资料2',
+      '特情',
+      '门架通行时间',
+      '入口时间',
+      '收费车型',
+      '车种',
+      '通行介质',
+      '门架应收金额',
+      '门架交易金额',
+      '收费入口名称',
+      '通行门架组合',
+      '通行门架名称组合',
+      '通行日期'
     ]
 
     const allColumns = new Set<string>()

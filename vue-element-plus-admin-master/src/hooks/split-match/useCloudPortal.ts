@@ -5,7 +5,10 @@ import {
   cloudPortalLogin,
   cloudPortalAutoLogin,
   cloudPortalLogout,
-  getCloudPortalCredentials
+  getCloudPortalCredentials,
+  setCloudPortalAccessToken,
+  removeCloudPortalAccessToken,
+  getCloudPortalAccessToken
 } from '@/api/split-match'
 import { useUserStore } from '@/store/modules/user'
 
@@ -63,7 +66,7 @@ export const useCloudPortal = () => {
     }
 
     try {
-      const savedToken = localStorage.getItem('cloud_portal_access_token')
+      const savedToken = getCloudPortalAccessToken(getUserId())
       if (savedToken) {
         cloudPortalAccessToken.value = savedToken
         cloudPortalLoggedIn.value = true
@@ -137,10 +140,13 @@ export const useCloudPortal = () => {
     loginLoading.value = true
     try {
       if (!needManualCaptcha.value) {
-        const autoResponse = await cloudPortalAutoLogin({
-          username: cloudPortalForm.value.username,
-          password: cloudPortalForm.value.password
-        }, getUserId())
+        const autoResponse = await cloudPortalAutoLogin(
+          {
+            username: cloudPortalForm.value.username,
+            password: cloudPortalForm.value.password
+          },
+          getUserId()
+        )
 
         if (autoResponse && autoResponse.code === 200) {
           ElMessage.success('登录成功')
@@ -149,7 +155,7 @@ export const useCloudPortal = () => {
           cloudPortalAccessToken.value = (autoResponse.data as any)?.access_token || ''
 
           if (cloudPortalAccessToken.value) {
-            localStorage.setItem('cloud_portal_access_token', cloudPortalAccessToken.value)
+            setCloudPortalAccessToken(cloudPortalAccessToken.value, getUserId())
           }
 
           return
@@ -182,7 +188,7 @@ export const useCloudPortal = () => {
         cloudPortalAccessToken.value = (response.data as any)?.access_token || ''
 
         if (cloudPortalAccessToken.value) {
-          localStorage.setItem('cloud_portal_access_token', cloudPortalAccessToken.value)
+          setCloudPortalAccessToken(cloudPortalAccessToken.value, getUserId())
         }
       } else {
         ElMessage.error(response?.message || '登录失败')
@@ -204,7 +210,7 @@ export const useCloudPortal = () => {
       cloudPortalLoggedIn.value = false
       cloudPortalUserInfo.value = null
       cloudPortalAccessToken.value = ''
-      localStorage.removeItem('cloud_portal_access_token')
+      removeCloudPortalAccessToken(getUserId())
 
       ElMessage.success('已退出登录')
     } catch (error) {

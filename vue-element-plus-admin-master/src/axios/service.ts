@@ -46,9 +46,10 @@ axiosInstance.interceptors.response.use(
 
     if (!config) {
       console.log('err： ' + error)
-      const errorMsg = error.code === 'ECONNABORTED' && error.message?.includes('timeout')
-        ? '请求超时，请稍后重试（无此数据）'
-        : error.message
+      const errorMsg =
+        error.code === 'ECONNABORTED' && error.message?.includes('timeout')
+          ? '请求超时，请稍后重试（无此数据）'
+          : error.message
       ElMessage.error(errorMsg)
       return Promise.reject(error)
     }
@@ -85,9 +86,10 @@ axiosInstance.interceptors.response.use(
     }
 
     console.log('err： ' + error)
-    const errorMsg = error.code === 'ECONNABORTED' && error.message?.includes('timeout')
-      ? '请求超时，请稍后重试（无此数据）'
-      : error.message
+    const errorMsg =
+      error.code === 'ECONNABORTED' && error.message?.includes('timeout')
+        ? '请求超时，请稍后重试（无此数据）'
+        : error.message
     ElMessage.error(errorMsg)
     return Promise.reject(error)
   }

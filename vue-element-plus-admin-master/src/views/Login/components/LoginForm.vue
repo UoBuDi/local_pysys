@@ -4,7 +4,7 @@ import { Form, FormSchema } from '@/components/Form'
 import { useI18n } from '@/hooks/web/useI18n'
 import { ElCheckbox, ElLink } from 'element-plus'
 import { useForm } from '@/hooks/web/useForm'
-import { loginApi, getUserMenusApi } from '@/api/login'
+import { loginApi, getUserMenusApi, getUserPermissionsApi } from '@/api/login'
 import { usePermissionStore } from '@/store/modules/permission'
 import { useRouter } from 'vue-router'
 import type { RouteLocationNormalizedLoaded, RouteRecordRaw } from 'vue-router'
@@ -132,64 +132,8 @@ const schema = reactive<FormSchema[]>([
         }
       }
     }
-  },
-  {
-    field: 'other',
-    component: 'Divider',
-    label: t('login.otherLogin'),
-    componentProps: {
-      contentPosition: 'center'
-    }
-  },
-  {
-    field: 'otherIcon',
-    colProps: {
-      span: 24
-    },
-    formItemProps: {
-      slots: {
-        default: () => {
-          return (
-            <>
-              <div class="flex justify-between w-[100%]">
-                <Icon
-                  icon="vi-ant-design:github-filled"
-                  size={iconSize}
-                  class="cursor-pointer ant-icon"
-                  color={iconColor}
-                  hoverColor={hoverColor}
-                />
-                <Icon
-                  icon="vi-ant-design:wechat-filled"
-                  size={iconSize}
-                  class="cursor-pointer ant-icon"
-                  color={iconColor}
-                  hoverColor={hoverColor}
-                />
-                <Icon
-                  icon="vi-ant-design:alipay-circle-filled"
-                  size={iconSize}
-                  color={iconColor}
-                  hoverColor={hoverColor}
-                  class="cursor-pointer ant-icon"
-                />
-                <Icon
-                  icon="vi-ant-design:weibo-circle-filled"
-                  size={iconSize}
-                  color={iconColor}
-                  hoverColor={hoverColor}
-                  class="cursor-pointer ant-icon"
-                />
-              </div>
-            </>
-          )
-        }
-      }
-    }
   }
 ])
-
-const iconSize = 30
 
 const remember = ref(userStore.getRememberMe)
 
@@ -208,10 +152,6 @@ const { formRegister, formMethods } = useForm()
 const { getFormData, getElFormExpose, setValues } = formMethods
 
 const loading = ref(false)
-
-const iconColor = '#999'
-
-const hoverColor = 'var(--el-color-primary)'
 
 const redirect = ref<string>('')
 
@@ -278,7 +218,11 @@ const signIn = async () => {
             password: '',
             role: '',
             roleId: '',
-            roleList
+            roleList,
+            avatar: userData.avatar || '',
+            nickname: userData.nickname || '',
+            email: userData.email || '',
+            roles: userData.roles || []
           })
 
           // 从后端获取菜单数据
@@ -296,6 +240,11 @@ const signIn = async () => {
 
           // 设置菜单权限标志，避免路由守卫重复添加
           permissionStore.setIsAddRouters(true)
+
+          // 获取用户权限数据并设置到 store
+          const permissionsRes = await getUserPermissionsApi()
+          const permissions = permissionsRes.data || []
+          userStore.setPermissions(permissions)
 
           // 使用 permissionStore 的 addRouters 找到第一个可用的菜单路径
           let firstMenuPath = '/dashboard/analysis'

@@ -16,9 +16,7 @@
         class="export-progress-bar"
       />
       <div class="export-progress-text">{{ progressText }}</div>
-      <div v-if="totalCount > 0" class="export-progress-total">
-        共 {{ totalCount }} 条数据
-      </div>
+      <div v-if="totalCount > 0" class="export-progress-total"> 共 {{ totalCount }} 条数据 </div>
     </div>
   </el-dialog>
 </template>
@@ -39,9 +37,12 @@ const emit = defineEmits<{
 
 const visible = ref(props.modelValue)
 
-watch(() => props.modelValue, (val) => {
-  visible.value = val
-})
+watch(
+  () => props.modelValue,
+  (val) => {
+    visible.value = val
+  }
+)
 
 watch(visible, (val) => {
   emit('update:modelValue', val)

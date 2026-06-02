@@ -299,11 +299,11 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       },
       proxy: {
         '/api': {
-          target: 'http://172.32.48.254:8000',
+          target: 'http://localhost:8001',
           changeOrigin: true
         },
         '/ws': {
-          target: 'http://172.32.48.254:8000',
+          target: 'http://localhost:8001',
           changeOrigin: true,
           ws: true
         }

@@ -18,10 +18,15 @@ router = APIRouter()
 
 @router.get("/api/permissions/")
 async def get_permissions(db=Depends(get_db)):
-    """获取所有权限点列表"""
+    """获取所有权限点列表（含所属菜单名称）"""
     try:
         with db.cursor(pymysql.cursors.DictCursor) as cursor:
-            cursor.execute("SELECT * FROM permissions ORDER BY id")
+            cursor.execute("""
+                SELECT p.*, m.name AS menu_name
+                FROM permissions p
+                LEFT JOIN menus m ON p.menu_id = m.id
+                ORDER BY p.id
+            """)
             permissions = cursor.fetchall()
             
             return {
@@ -46,11 +51,11 @@ async def create_permission(permission: PermissionCreateRequest, db=Depends(get_
             
             # 插入新权限点
             cursor.execute(
-                """INSERT INTO permissions (code, name, module, resource, operation, description, status) 
-                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                """INSERT INTO permissions (code, name, module, resource, operation, description, status, menu_id) 
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
                 (permission.code, permission.name, permission.module,
                  permission.resource, permission.operation, 
-                 permission.description, permission.status)
+                 permission.description, permission.status, permission.menu_id)
             )
             db.commit()
             
@@ -72,11 +77,11 @@ async def update_permission(permission_id: int, permission: PermissionUpdateRequ
             
             # 更新权限点信息
             cursor.execute(
-                """UPDATE permissions SET name=%s, module=%s, resource=%s, operation=%s, description=%s, status=%s 
+                """UPDATE permissions SET name=%s, module=%s, resource=%s, operation=%s, description=%s, status=%s, menu_id=%s
                    WHERE id=%s""",
                 (permission.name, permission.module, permission.resource,
                  permission.operation, permission.description, 
-                 permission.status, permission_id)
+                 permission.status, permission.menu_id, permission_id)
             )
             db.commit()
             

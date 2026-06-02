@@ -62,7 +62,7 @@ const loadEChartsModules = async () => {
   try {
     // 动态导入ECharts核心
     const echartsCore = await import('echarts/core')
-    
+
     // 导入基础组件
     const [
       { TitleComponent },
@@ -77,7 +77,7 @@ const loadEChartsModules = async () => {
       import('echarts/components'),
       import('echarts/renderers')
     ])
-    
+
     echartsCore.use([
       TitleComponent,
       TooltipComponent,
@@ -85,35 +85,33 @@ const loadEChartsModules = async () => {
       LegendComponent,
       CanvasRenderer
     ])
-    
+
     // 根据图表类型动态导入
     if (props.chartType) {
       const chartModules = await import('echarts/charts')
       const chartTypeMap: Record<string, string> = {
-        'bar': 'BarChart',
-        'line': 'LineChart',
-        'pie': 'PieChart',
-        'radar': 'RadarChart',
-        'map': 'MapChart',
-        'scatter': 'ScatterChart',
-        'effectScatter': 'EffectScatterChart',
-        'radar': 'RadarChart',
-        'tree': 'TreeChart',
-        'treemap': 'TreemapChart',
-        'sunburst': 'SunburstChart',
-        'boxplot': 'BoxplotChart',
-        'candlestick': 'CandlestickChart',
-        'heatmap': 'HeatmapChart',
-        'map': 'MapChart',
-        'parallel': 'ParallelChart',
-        'lines': 'LinesChart',
-        'graph': 'GraphChart',
-        'sankey': 'SankeyChart',
-        'funnel': 'FunnelChart',
-        'themeRiver': 'ThemeRiverChart',
-        'pictorialBar': 'PictorialBarChart'
+        bar: 'BarChart',
+        line: 'LineChart',
+        pie: 'PieChart',
+        radar: 'RadarChart',
+        map: 'MapChart',
+        scatter: 'ScatterChart',
+        effectScatter: 'EffectScatterChart',
+        tree: 'TreeChart',
+        treemap: 'TreemapChart',
+        sunburst: 'SunburstChart',
+        boxplot: 'BoxplotChart',
+        candlestick: 'CandlestickChart',
+        heatmap: 'HeatmapChart',
+        parallel: 'ParallelChart',
+        lines: 'LinesChart',
+        graph: 'GraphChart',
+        sankey: 'SankeyChart',
+        funnel: 'FunnelChart',
+        themeRiver: 'ThemeRiverChart',
+        pictorialBar: 'PictorialBarChart'
       }
-      
+
       const chartComponentName = chartTypeMap[props.chartType.toLowerCase()]
       if (chartComponentName) {
         const ChartComponent = chartModules[chartComponentName]
@@ -122,15 +120,15 @@ const loadEChartsModules = async () => {
         }
       }
     }
-    
+
     // 动态导入词云插件
     if (props.chartType === 'wordcloud') {
       await import('echarts-wordcloud')
     }
-    
+
     echartsInstance.value = echartsCore
     loading.value = false
-    
+
     return echartsCore
   } catch (error) {
     console.error('[ECharts] 加载模块失败:', error)
@@ -173,7 +171,7 @@ const contentResizeHandler = async (e: TransitionEvent) => {
 onMounted(async () => {
   // 动态加载ECharts模块
   await loadEChartsModules()
-  
+
   setTimeout(() => {
     initChart()
   }, 0)
@@ -199,9 +197,9 @@ onActivated(() => {
 </script>
 
 <template>
-  <div 
-    ref="elRef" 
-    :class="[$attrs.class, prefixCls]" 
+  <div
+    ref="elRef"
+    :class="[$attrs.class, prefixCls]"
     :style="styles"
     v-loading="loading"
     element-loading-text="加载图表中..."

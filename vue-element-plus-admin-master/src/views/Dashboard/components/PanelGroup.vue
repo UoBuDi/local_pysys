@@ -5,7 +5,6 @@ import { useDesign } from '@/hooks/web/useDesign'
 import { useI18n } from '@/hooks/web/useI18n'
 import { ref, reactive } from 'vue'
 import { getDashboardStatisticsApi } from '@/api/scheduled-tasks'
-import type { DashboardStatistics } from '@/api/scheduled-tasks/types'
 
 const { t } = useI18n()
 
@@ -52,9 +51,10 @@ getCount()
                 </div>
               </div>
               <div class="flex flex-col justify-between">
-                <div :class="`${prefixCls}__item--text text-16px text-gray-500 text-right`">{{
-                  t('analysis.totalTransactions')
-                }}</div>
+                <div
+                  :class="`${prefixCls}__item--text text-16px text-[var(--el-text-color-regular)] text-right`"
+                  >{{ t('analysis.totalTransactions') }}</div
+                >
                 <CountTo
                   class="text-20px font-700 text-right"
                   :start-val="0"
@@ -81,9 +81,10 @@ getCount()
                 </div>
               </div>
               <div class="flex flex-col justify-between">
-                <div :class="`${prefixCls}__item--text text-16px text-gray-500 text-right`">{{
-                  t('analysis.freeTransactions')
-                }}</div>
+                <div
+                  :class="`${prefixCls}__item--text text-16px text-[var(--el-text-color-regular)] text-right`"
+                  >{{ t('analysis.freeTransactions') }}</div
+                >
                 <CountTo
                   class="text-20px font-700 text-right"
                   :start-val="0"
@@ -110,9 +111,10 @@ getCount()
                 </div>
               </div>
               <div class="flex flex-col justify-between">
-                <div :class="`${prefixCls}__item--text text-16px text-gray-500 text-right`">{{
-                  t('analysis.splitSectionAmount')
-                }}</div>
+                <div
+                  :class="`${prefixCls}__item--text text-16px text-[var(--el-text-color-regular)] text-right`"
+                  >{{ t('analysis.splitSectionAmount') }}</div
+                >
                 <CountTo
                   class="text-20px font-700 text-right"
                   :start-val="0"
@@ -136,14 +138,17 @@ getCount()
   &__item {
     &--peoples {
       color: #40c9c6;
+      background: #e6f9f8;
     }
 
     &--free {
       color: #36a3f7;
+      background: #e6f3fb;
     }
 
     &--money {
       color: #f4516c;
+      background: #fce5e8;
     }
 
     &:hover {

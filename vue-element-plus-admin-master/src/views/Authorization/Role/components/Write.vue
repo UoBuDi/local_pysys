@@ -1,13 +1,11 @@
 <script setup lang="tsx">
 import { Form, FormSchema } from '@/components/Form'
 import { useForm } from '@/hooks/web/useForm'
-import { PropType, reactive, watch, ref, unref, nextTick, onMounted } from 'vue'
+import { PropType, reactive, watch, ref, unref, nextTick } from 'vue'
 import { useValidator } from '@/hooks/web/useValidator'
 import { useI18n } from '@/hooks/web/useI18n'
 import { ElTree, ElCheckboxGroup, ElCheckbox } from 'element-plus'
 import { getMenuListApi } from '@/api/menu'
-import { filter, eachTree } from '@/utils/tree'
-import { findIndex } from '@/utils'
 import { getRoleMenusApi } from '@/api/role'
 
 const { t } = useI18n()
@@ -28,6 +26,14 @@ const formSchema = ref<FormSchema[]>([
     field: 'roleName',
     label: t('role.roleName'),
     component: 'Input'
+  },
+  {
+    field: 'code',
+    label: t('role.roleCode'),
+    component: 'Input',
+    componentProps: {
+      placeholder: '如: finance_audit'
+    }
   },
   {
     field: 'status',
@@ -170,10 +176,26 @@ const { formRegister, formMethods } = useForm()
 const { setValues, getFormData, getElFormExpose } = formMethods
 
 const treeData = ref([])
+const buildMenuTree = (items: any[], parentId = 0) => {
+  return items
+    .filter((item) => item.parentId === parentId)
+    .map((item) => {
+      const children = buildMenuTree(items, item.id)
+      return {
+        ...item,
+        ...(children.length > 0 ? { children } : {})
+      }
+    })
+}
+
+const autoGenerateCode = () => {
+  return 'role_' + Date.now()
+}
 const getMenuList = async () => {
   const res = await getMenuListApi()
   if (res) {
-    treeData.value = res.data.list
+    const list = res.data?.list || []
+    treeData.value = buildMenuTree(list)
     if (!props.currentRow) return
     await nextTick()
 
@@ -207,17 +229,13 @@ const submit = async () => {
   })
   if (valid) {
     const formData = await getFormData()
-    const checkedKeys = unref(treeRef)?.getCheckedKeys() || []
-    const data = filter(unref(treeData), (item: any) => {
-      return checkedKeys.includes(item.id)
-    })
-    formData.menu = data || []
-    // 处理字段映射：roleName -> name
-    if (formData.roleName && !formData.name) {
-      formData.name = formData.roleName
+    return {
+      ...(props.currentRow?.id ? { id: props.currentRow.id } : {}),
+      name: formData.roleName || formData.name,
+      code: formData.code || autoGenerateCode(),
+      status: formData.status,
+      description: formData.description || ''
     }
-    console.log(formData)
-    return formData
   }
 }
 

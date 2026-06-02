@@ -641,6 +641,7 @@ export default {
   },
   role: {
     roleName: '角色名称',
+    roleCode: '角色编码',
     role: '角色',
     menu: '菜单分配',
     assignRole: '分配角色',

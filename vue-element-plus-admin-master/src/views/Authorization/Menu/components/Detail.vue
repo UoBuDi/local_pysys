@@ -11,8 +11,9 @@ defineProps({
   }
 })
 
-const renderTag = (enable?: boolean) => {
-  return <ElTag type={!enable ? 'danger' : 'success'}>{enable ? '启用' : '禁用'}</ElTag>
+const renderTag = (enable?: boolean | number) => {
+  const isActive = !!enable
+  return <ElTag type={isActive ? 'success' : 'danger'}>{isActive ? '启用' : '禁用'}</ElTag>
 }
 
 const detailSchema = ref<DescriptionsSchema[]>([
@@ -23,13 +24,18 @@ const detailSchema = ref<DescriptionsSchema[]>([
     slots: {
       default: (data) => {
         const type = data.type
-        return <>{type === 1 ? '菜单' : '目录'}</>
+        return <>{type === 1 ? '菜单' : type === 2 ? '按钮' : '目录'}</>
       }
     }
   },
   {
-    field: 'parentName',
-    label: '父级菜单'
+    field: 'parentId',
+    label: '父级菜单',
+    slots: {
+      default: (data) => {
+        return <>{data.parentId ? `ID: ${data.parentId}` : '无（顶级）'}</>
+      }
+    }
   },
   {
     field: 'meta.title',
@@ -41,7 +47,9 @@ const detailSchema = ref<DescriptionsSchema[]>([
     slots: {
       default: (data) => {
         const component = data.component
-        return <>{component === '#' ? '顶级目录' : component === '##' ? '子目录' : component}</>
+        return (
+          <>{component === '#' ? '顶级目录' : component === '##' ? '子目录' : component || '-'}</>
+        )
       }
     }
   },
@@ -54,7 +62,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '图标',
     slots: {
       default: (data) => {
-        const icon = data.icon
+        const icon = data.meta?.icon || data.icon
         if (icon) {
           return (
             <>
@@ -62,7 +70,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
             </>
           )
         } else {
-          return null
+          return <span>-</span>
         }
       }
     }
@@ -82,23 +90,24 @@ const detailSchema = ref<DescriptionsSchema[]>([
     slots: {
       default: (data: any) => (
         <>
-          {data?.permissionList?.map((v) => {
+          {data?.permissionList?.map((v: any) => {
             return (
               <ElTag class="mr-1" key={v.value}>
                 {v.label}
               </ElTag>
             )
           })}
+          {(!data?.permissionList || data.permissionList.length === 0) && <span>-</span>}
         </>
       )
     }
   },
   {
-    field: 'menuState',
+    field: 'status',
     label: '菜单状态',
     slots: {
       default: (data) => {
-        return renderTag(data.menuState)
+        return renderTag(data.status)
       }
     }
   },
@@ -107,7 +116,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否隐藏',
     slots: {
       default: (data) => {
-        return renderTag(data.enableHidden)
+        return renderTag(data.meta?.hidden)
       }
     }
   },
@@ -116,7 +125,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否一直显示',
     slots: {
       default: (data) => {
-        return renderTag(data.enableDisplay)
+        return renderTag(data.meta?.alwaysShow)
       }
     }
   },
@@ -125,7 +134,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否清除缓存',
     slots: {
       default: (data) => {
-        return renderTag(data.enableCleanCache)
+        return renderTag(data.meta?.noCache)
       }
     }
   },
@@ -134,7 +143,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否显示面包屑',
     slots: {
       default: (data) => {
-        return renderTag(data.enableShowCrumb)
+        return renderTag(data.meta?.breadcrumb)
       }
     }
   },
@@ -143,7 +152,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否固定标签页',
     slots: {
       default: (data) => {
-        return renderTag(data.enablePinnedTab)
+        return renderTag(data.meta?.affix)
       }
     }
   },
@@ -152,7 +161,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否隐藏标签页',
     slots: {
       default: (data) => {
-        return renderTag(data.enableHiddenTab)
+        return renderTag(data.meta?.noTagsView)
       }
     }
   },
@@ -161,7 +170,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否可跳转',
     slots: {
       default: (data) => {
-        return renderTag(data.enableSkip)
+        return renderTag(data.meta?.canTo)
       }
     }
   }

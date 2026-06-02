@@ -106,8 +106,8 @@ export const useSplitMatchTable = () => {
               const images = imagesMap[passId]
               return {
                 ...row,
-                '查核资料1': images['查核资料1'] || null,
-                '查核资料2': images['查核资料2'] || null
+                查核资料1: images['查核资料1'] || null,
+                查核资料2: images['查核资料2'] || null
               }
             }
             return row
@@ -174,8 +174,8 @@ export const useSplitMatchTable = () => {
 
       const processedData = tableDataArray.map((row: any) => ({
         ...row,
-        '查核资料1': null,
-        '查核资料2': null
+        查核资料1: null,
+        查核资料2: null
       }))
 
       tableData.value = processedData

@@ -140,6 +140,9 @@ app.include_router(scheduled_tasks_router)
 from routers.cloud_portal import router as cloud_portal_router
 app.include_router(cloud_portal_router)
 
+from routers.chat import router as chat_router
+app.include_router(chat_router)
+
 
 # ==================== 静态文件服务 ====================
 
@@ -206,7 +209,43 @@ async def startup_event():
             init_route_logs_table(config)
         except Exception as e:
             logger.warning(f"[路由导航日志] 表初始化失败: {e}")
-        
+
+        # 初始化聊天表（chat_messages + chat_sessions）
+        try:
+            from database import get_db_connection
+            with get_db_connection("USER_DB", config) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS chat_messages (
+                            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                            room_id VARCHAR(100) NOT NULL,
+                            sender_id INT NOT NULL,
+                            sender_name VARCHAR(100),
+                            content_type VARCHAR(20) NOT NULL DEFAULT 'text',
+                            content TEXT NOT NULL,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            INDEX idx_room_created (room_id, created_at),
+                            INDEX idx_sender (sender_id)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """)
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS chat_sessions (
+                            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                            user_id INT NOT NULL,
+                            room_id VARCHAR(100) NOT NULL,
+                            room_name VARCHAR(200) DEFAULT NULL,
+                            room_type VARCHAR(20) NOT NULL DEFAULT 'private',
+                            last_message_id BIGINT DEFAULT NULL,
+                            unread_count INT DEFAULT 0,
+                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                            UNIQUE KEY uk_user_room (user_id, room_id)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """)
+                    conn.commit()
+            logger.info("聊天表(chat_messages/chat_sessions)初始化完成")
+        except Exception as e:
+            logger.warning(f"初始化聊天表失败（非致命）: {e}")
+
         logger.info("========================================")
         logger.info("FastAPI 应用启动完成！")
         logger.info("========================================")
@@ -335,7 +374,7 @@ if os.path.exists(static_index_path):
 if __name__ == "__main__":
     print("=" * 50)
     print("FastAPI 后端服务器启动中...")
-    print(f"监听地址: http://0.0.0.0:8000")
+    print(f"监听地址: http://0.0.0.0:8001")
     print("=" * 50)
     
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)

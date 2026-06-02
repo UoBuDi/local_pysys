@@ -94,10 +94,17 @@ const getMonthlySales = async () => {
 
 const updateLegendTextStyle = (options) => {
   const newTextStyle = {
-    color: isDark.value ? '#ccc' : '#333'
+    color: isDark.value ? '#ccc' : 'var(--el-text-color-primary)'
   }
+  const axisColor = isDark.value ? '#ccc' : 'var(--el-text-color-secondary)'
   const inactiveColor = isDark.value ? '#abacac' : '#ccc'
   set(options, 'title.textStyle', newTextStyle)
+  set(options, 'xAxis.axisLabel.color', axisColor)
+  set(options, 'yAxis.axisLabel.color', axisColor)
+  set(options, 'xAxis.axisLine.lineStyle.color', axisColor)
+  set(options, 'yAxis.axisLine.lineStyle.color', axisColor)
+  set(options, 'xAxis.splitLine.lineStyle.color', isDark.value ? '#333' : '#eee')
+  set(options, 'yAxis.splitLine.lineStyle.color', isDark.value ? '#333' : '#eee')
   if (options !== barOptionsData) {
     set(options, 'legend.textStyle', newTextStyle)
     set(options, 'legend.inactiveColor', inactiveColor)

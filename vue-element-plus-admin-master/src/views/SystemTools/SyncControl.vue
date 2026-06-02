@@ -29,16 +29,35 @@
 
           <!-- 控制按钮 -->
           <div class="control-buttons">
-            <el-button type="primary" @click="startSync" :disabled="syncInProgress" :loading="startSyncLoading">
+            <el-button
+              type="primary"
+              @click="startSync"
+              :disabled="syncInProgress"
+              :loading="startSyncLoading"
+              v-hasPermi="'system:sync:control'"
+            >
               {{ $t('systemTools.startSync') }}
             </el-button>
-            <el-button @click="pauseSync" :disabled="!syncInProgress">
+            <el-button
+              @click="pauseSync"
+              :disabled="!syncInProgress"
+              v-hasPermi="'system:sync:control'"
+            >
               {{ $t('systemTools.pauseSync') }}
             </el-button>
-            <el-button @click="stopSync" :disabled="!syncInProgress">
+            <el-button
+              @click="stopSync"
+              :disabled="!syncInProgress"
+              v-hasPermi="'system:sync:control'"
+            >
               {{ $t('systemTools.stopSync') }}
             </el-button>
-            <el-button type="danger" @click="forceStopSync" :disabled="!syncInProgress">
+            <el-button
+              type="danger"
+              @click="forceStopSync"
+              :disabled="!syncInProgress"
+              v-hasPermi="'system:sync:control'"
+            >
               {{ $t('systemTools.forceStopSync') }}
             </el-button>
           </div>
@@ -98,7 +117,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_PATH || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_PATH || ''
 const WS_MAX_RECONNECT = 10
 const WS_BASE_DELAY = 3000
 
@@ -169,7 +188,10 @@ const fetchAvailableMonths = async () => {
     }
   } catch (error: any) {
     console.error(t('systemTools.fetchMonthsFailed'), error)
-    addLog('ERROR', `${t('systemTools.fetchMonthsFailed')}: ${error.message || t('systemTools.unknownError')}`)
+    addLog(
+      'ERROR',
+      `${t('systemTools.fetchMonthsFailed')}: ${error.message || t('systemTools.unknownError')}`
+    )
   }
 }
 
@@ -214,7 +236,10 @@ const startSync = async () => {
   } catch (error: any) {
     console.error(t('systemTools.syncStartFailed'), error)
     ElMessage.error(error.message || t('systemTools.requestFailed'))
-    addLog('ERROR', `${t('systemTools.syncStartFailed')}: ${error.message || t('systemTools.unknownError')}`)
+    addLog(
+      'ERROR',
+      `${t('systemTools.syncStartFailed')}: ${error.message || t('systemTools.unknownError')}`
+    )
     syncStatus.status = t('systemTools.error')
   } finally {
     startSyncLoading.value = false
@@ -234,7 +259,10 @@ const pauseSync = async () => {
   } catch (error: any) {
     console.error(t('systemTools.syncPauseFailed'), error)
     ElMessage.error(error.message || t('systemTools.requestFailed'))
-    addLog('ERROR', `${t('systemTools.syncPauseFailed')}: ${error.message || t('systemTools.unknownError')}`)
+    addLog(
+      'ERROR',
+      `${t('systemTools.syncPauseFailed')}: ${error.message || t('systemTools.unknownError')}`
+    )
   }
 }
 
@@ -251,7 +279,10 @@ const stopSync = async () => {
   } catch (error: any) {
     console.error(t('systemTools.syncStopFailed'), error)
     ElMessage.error(error.message || t('systemTools.requestFailed'))
-    addLog('ERROR', `${t('systemTools.syncStopFailed')}: ${error.message || t('systemTools.unknownError')}`)
+    addLog(
+      'ERROR',
+      `${t('systemTools.syncStopFailed')}: ${error.message || t('systemTools.unknownError')}`
+    )
   }
 }
 
@@ -274,7 +305,10 @@ const forceStopSync = async () => {
       } catch (error: any) {
         console.error(t('systemTools.syncForceStopFailed'), error)
         ElMessage.error(error.message || t('systemTools.requestFailed'))
-        addLog('ERROR', `${t('systemTools.syncForceStopFailed')}: ${error.message || t('systemTools.unknownError')}`)
+        addLog(
+          'ERROR',
+          `${t('systemTools.syncForceStopFailed')}: ${error.message || t('systemTools.unknownError')}`
+        )
       }
     })
     .catch(() => {})
@@ -387,7 +421,9 @@ onBeforeUnmount(() => {
 })
 
 const syncInProgress = computed(() => {
-  return syncStatus.status === t('systemTools.running') || syncStatus.status === t('systemTools.paused')
+  return (
+    syncStatus.status === t('systemTools.running') || syncStatus.status === t('systemTools.paused')
+  )
 })
 
 const getStatusTagType = (status: string) => {

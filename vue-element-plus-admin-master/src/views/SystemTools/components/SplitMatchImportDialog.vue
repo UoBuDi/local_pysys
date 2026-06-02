@@ -28,12 +28,18 @@
           >
             <template v-if="['查核资料1', '查核资料2'].includes(column)" #default="{ row }">
               <div v-if="row[column]">
-                <div v-if="typeof row[column] === 'string' && row[column].startsWith('=DISPIMG(')" class="import-wps-image">
+                <div
+                  v-if="typeof row[column] === 'string' && row[column].startsWith('=DISPIMG(')"
+                  class="import-wps-image"
+                >
                   <el-icon style="color: #c0c4cc"><Picture /></el-icon>
                   <span style="margin-left: 5px; font-size: 12px; color: #909399">WPS图片</span>
                 </div>
                 <el-image
-                  v-else-if="typeof row[column] === 'string' && (isImageDataCheck(row[column]) || row[column].startsWith('data:image/'))"
+                  v-else-if="
+                    typeof row[column] === 'string' &&
+                    (isImageDataCheck(row[column]) || row[column].startsWith('data:image/'))
+                  "
                   :src="row[column]"
                   fit="cover"
                   class="import-data-image"
@@ -48,13 +54,18 @@
               <span v-else>-</span>
             </template>
             <template v-else-if="column === '通行标识ID'" #default="{ row }">
-              <span :style="{ color: isIdMatched(row[column]) ? '#67c23a' : '#f56c6c' }">{{ row[column] }}</span>
+              <span :style="{ color: isIdMatched(row[column]) ? '#67c23a' : '#f56c6c' }">{{
+                row[column]
+              }}</span>
             </template>
           </el-table-column>
         </el-table>
       </div>
 
-      <div v-else-if="step === 'matching' || step === 'importing'" class="import-progress-container">
+      <div
+        v-else-if="step === 'matching' || step === 'importing'"
+        class="import-progress-container"
+      >
         <div class="import-loading-animation">
           <div class="import-spinner-outer"></div>
           <div class="import-spinner-inner"></div>
@@ -148,15 +159,26 @@ const emit = defineEmits<{
 
 const visible = ref(props.modelValue)
 
-watch(() => props.modelValue, (val) => { visible.value = val })
-watch(visible, (val) => { emit('update:modelValue', val) })
+watch(
+  () => props.modelValue,
+  (val) => {
+    visible.value = val
+  }
+)
+watch(visible, (val) => {
+  emit('update:modelValue', val)
+})
 
 const dialogTitle = computed(() => {
   switch (props.step) {
-    case 'preview': return '导入数据预览'
-    case 'matching': return '正在匹配数据'
-    case 'importing': return '正在导入数据'
-    default: return '导入数据预览'
+    case 'preview':
+      return '导入数据预览'
+    case 'matching':
+      return '正在匹配数据'
+    case 'importing':
+      return '正在导入数据'
+    default:
+      return '导入数据预览'
   }
 })
 
@@ -166,7 +188,10 @@ const isImageDataCheck = (data: string): boolean => {
 
 const isIdMatched = (id: any): boolean => {
   if (!id) return false
-  const importId = String(id).trim().replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+  const importId = String(id)
+    .trim()
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase()
   return props.matchedIds.has(importId)
 }
 
@@ -262,8 +287,12 @@ const handleClose = () => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .import-progress-label {

@@ -1,4 +1,4 @@
-import { ref, reactive, onUnmounted } from 'vue'
+import { ref, reactive, computed } from 'vue'
 
 export interface WsStatus {
   frontend_count: number
@@ -15,13 +15,16 @@ export interface WsStatus {
 
 export interface WsMessage {
   type: string
-  data?: WsStatus
+  data?: any
   client_type?: string
   client_id?: string
   message?: string
-  timestamp?: string
+  timestamp?: number | string
   from_type?: string
   from_id?: string
+  fromUserId?: number
+  toUserId?: number
+  roomId?: string
 }
 
 class WebSocketService {
@@ -46,6 +49,9 @@ class WebSocketService {
   })
   public lastMessage = ref<WsMessage | null>(null)
   public onMessageCallback: ((message: WsMessage) => void) | null = null
+  public onCollaborationCallback: ((message: WsMessage) => void) | null = null
+  public onChatCallbacks: Set<(message: WsMessage) => void> = new Set()
+  private joinedRooms: Set<string> = new Set()
 
   constructor() {
     this.clientId = `frontend_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
@@ -63,7 +69,24 @@ class WebSocketService {
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const baseUrl = url || `${protocol}//${window.location.host}`
-    const wsUrl = `${baseUrl}/ws/status/frontend/${this.clientId}`
+    let wsUrl = `${baseUrl}/ws/status/frontend/${this.clientId}`
+
+    let token: string | null = null
+    try {
+      const userStoreStr = localStorage.getItem('user')
+      if (userStoreStr) {
+        const userStore = JSON.parse(userStoreStr)
+        token = userStore?.token || userStore?.accessToken || null
+      }
+    } catch (e) {
+      // ignore parse error
+    }
+    if (!token) {
+      token = localStorage.getItem('token') || localStorage.getItem('accessToken')
+    }
+    if (token) {
+      wsUrl += `?token=${encodeURIComponent(token)}`
+    }
 
     try {
       console.log(`[WebSocket] 正在连接: ${wsUrl}`)
@@ -82,6 +105,9 @@ class WebSocketService {
         this.reconnectAttempts = 0
         this.clearConnectionTimeout()
         this.startHeartbeat()
+        for (const roomId of this.joinedRooms) {
+          this.send({ type: 'join_room', roomId, data: { roomId } })
+        }
       }
 
       this.ws.onmessage = (event) => {
@@ -94,9 +120,29 @@ class WebSocketService {
           }
 
           if (message.type === 'client_joined' || message.type === 'client_left') {
-            if (message.status) {
-              Object.assign(this.status, message.status)
+            if (message.data?.status) {
+              Object.assign(this.status, message.data.status)
             }
+          }
+
+          // 协作事件分发：行锁定/解锁/更新/房间成员变更
+          const collabEventTypes = [
+            'row_locked',
+            'row_unlocked',
+            'row_updated',
+            'member_joined',
+            'member_left',
+            'room_joined',
+            'room_left'
+          ]
+          if (collabEventTypes.includes(message.type) && this.onCollaborationCallback) {
+            this.onCollaborationCallback(message)
+          }
+
+          // 聊天消息分发
+          const chatEventTypes = ['chat_message', 'chat_room_created', 'chat_message_deleted']
+          if (chatEventTypes.includes(message.type) && this.onChatCallbacks.size > 0) {
+            this.onChatCallbacks.forEach((cb) => cb(message))
           }
 
           if (this.onMessageCallback) {
@@ -206,6 +252,31 @@ class WebSocketService {
   onMessage(callback: (message: WsMessage) => void) {
     this.onMessageCallback = callback
   }
+
+  onCollaboration(callback: (message: WsMessage) => void) {
+    this.onCollaborationCallback = callback
+  }
+
+  joinRoom(roomId: string, userInfo: Record<string, any> = {}) {
+    this.send({ type: 'join_room', roomId, data: { roomId, userInfo } })
+    this.joinedRooms.add(roomId)
+  }
+
+  leaveRoom(roomId: string) {
+    this.send({ type: 'leave_room', roomId, data: { roomId } })
+    this.joinedRooms.delete(roomId)
+  }
+
+  leaveAllRooms() {
+    for (const roomId of this.joinedRooms) {
+      this.send({ type: 'leave_room', roomId, data: { roomId } })
+    }
+    this.joinedRooms.clear()
+  }
+
+  sendCollabEvent(_eventType: string, data: Record<string, any>, roomId?: string) {
+    this.send({ type: 'collab_event', data: { ...data, roomId }, roomId })
+  }
 }
 
 const wsService = new WebSocketService()
@@ -217,6 +288,20 @@ export function useWebSocket() {
     send: (message: object) => wsService.send(message),
     getStatus: () => wsService.getStatus(),
     onMessage: (callback: (message: WsMessage) => void) => wsService.onMessage(callback),
+    onCollaboration: (callback: (message: WsMessage) => void) =>
+      wsService.onCollaboration(callback),
+    onChat: (callback: (message: WsMessage) => void) => {
+      wsService.onChatCallbacks.add(callback)
+      return () => {
+        wsService.onChatCallbacks.delete(callback)
+      }
+    },
+    joinRoom: (roomId: string, userInfo?: Record<string, any>) =>
+      wsService.joinRoom(roomId, userInfo),
+    leaveRoom: (roomId: string) => wsService.leaveRoom(roomId),
+    leaveAllRooms: () => wsService.leaveAllRooms(),
+    sendCollabEvent: (eventType: string, data: Record<string, any>, roomId?: string) =>
+      wsService.sendCollabEvent(eventType, data, roomId),
     connected: wsService.connected,
     status: wsService.status,
     lastMessage: wsService.lastMessage

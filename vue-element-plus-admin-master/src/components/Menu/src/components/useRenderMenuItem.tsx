@@ -15,7 +15,7 @@ export const useRenderMenuItem = (menuMode) =>
   // allRouters: AppRouteRecordRaw[] = [],
   {
     const renderMenuItem = (routers: AppRouteRecordRaw[], parentPath = '/') => {
-      return routers
+      return (routers || [])
         .filter((v) => !v.meta?.hidden)
         .map((v) => {
           const meta = v.meta ?? {}
@@ -45,7 +45,7 @@ export const useRenderMenuItem = (menuMode) =>
               >
                 {{
                   title: () => renderMenuTitle(meta),
-                  default: () => renderMenuItem(v.children!, fullPath)
+                  default: () => renderMenuItem(v.children || [], fullPath)
                 }}
               </ElSubMenu>
             )

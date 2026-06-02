@@ -280,6 +280,8 @@ export const setupElementPlus = (app: App<Element>) => {
   app.config.globalProperties.$messageBox = ElMessageBox
   app.config.globalProperties.$loading = ElLoading.service
   app.config.globalProperties.$notify = ElNotification
+
+  app.directive('loading', ElLoading.directive)
 }
 
 export { ElMessage, ElMessageBox, ElLoading, ElNotification }

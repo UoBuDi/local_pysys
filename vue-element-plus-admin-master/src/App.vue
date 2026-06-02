@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/store/modules/app'
+import { useUserStore } from '@/store/modules/user'
 import { ConfigGlobal } from '@/components/ConfigGlobal'
 import { useDesign } from '@/hooks/web/useDesign'
-//import { ElNotification } from 'element-plus'
+import ChatFloatingIcon from '@/components/ChatFloatingIcon/index.vue'
+import ChatWindow from '@/components/ChatWindow/index.vue'
+import { useWebSocket, type WsMessage } from '@/utils/websocket'
+
 const { getPrefixCls } = useDesign()
 
 const prefixCls = getPrefixCls('app')
 
 const appStore = useAppStore()
+const userStore = useUserStore()
 
 const currentSize = computed(() => appStore.getCurrentSize)
 
@@ -16,23 +21,60 @@ const greyMode = computed(() => appStore.getGreyMode)
 
 appStore.initTheme()
 
-// 移除了提示信息通知
-/*
-ElNotification({
-  title: '提示',
-  type: 'warning',
-  duration: 0,
-  dangerouslyUseHTMLString: true,
-  message:
-    '<div><p><strong>遇事不决，请先查阅常见问题，说不定你能找到相关解答</strong></p><p><a href="https://element-plus-admin-doc.cn/guide/fqa.html" target="_blank">链接地址</a></p></div>'
+const ws = useWebSocket()
+const chatVisible = ref(false)
+const unreadCount = ref(0)
+const lastChatMessage = ref<WsMessage | null>(null)
+
+const isLoggedIn = computed(() => !!userStore.getToken)
+
+const toggleChat = () => {
+  chatVisible.value = !chatVisible.value
+}
+
+const handleUnreadChange = (count: number) => {
+  unreadCount.value = count
+}
+
+ws.onChat((msg) => {
+  if (msg.type === 'chat_message' || msg.type === 'chat_room_created') {
+    lastChatMessage.value = msg
+    if (!chatVisible.value) {
+      unreadCount.value++
+    }
+  }
 })
-*/
+
+watch(isLoggedIn, (val) => {
+  if (val) {
+    ws.connect()
+  } else {
+    ws.disconnect()
+  }
+}, { immediate: true })
+
+onUnmounted(() => {
+  ws.disconnect()
+})
 </script>
 
 <template>
   <ConfigGlobal :size="currentSize">
     <RouterView :class="greyMode ? `${prefixCls}-grey-mode` : ''" />
   </ConfigGlobal>
+  <ChatFloatingIcon
+    v-if="isLoggedIn"
+    :unread-count="unreadCount"
+    :connected="ws.connected.value"
+    @toggle-chat="toggleChat"
+  />
+  <ChatWindow
+    v-if="isLoggedIn"
+    :visible="chatVisible"
+    :last-message="lastChatMessage"
+    @close="chatVisible = false"
+    @unread-change="handleUnreadChange"
+  />
 </template>
 
 <style lang="less">

@@ -52,10 +52,13 @@ const handleSubmit = async () => {
     if (valid) {
       loading.value = true
       try {
-        const response = await saveCloudPortalAccount({
-          portal_username: formData.value.portal_username,
-          portal_password: formData.value.portal_password
-        }, getUserId())
+        const response = await saveCloudPortalAccount(
+          {
+            portal_username: formData.value.portal_username,
+            portal_password: formData.value.portal_password
+          },
+          getUserId()
+        )
         if (response && response.code === 200) {
           ElMessage.success('绑定成功')
           fetchAccountInfo()

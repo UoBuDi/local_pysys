@@ -123,13 +123,28 @@
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item class="button-group">
-              <el-button type="primary" @click="searchData" :loading="loading">
+              <el-button
+                type="primary"
+                @click="searchData"
+                :loading="loading"
+                v-hasPermi="'path-match:search'"
+              >
                 开始搜索
               </el-button>
-              <el-button type="success" @click="exportExcel" :disabled="!hasResults">
+              <el-button
+                type="success"
+                @click="exportExcel"
+                :disabled="!hasResults"
+                v-hasPermi="'path-match:export'"
+              >
                 导出Excel
               </el-button>
-              <el-button type="warning" @click="showVisualization" :disabled="!hasResults">
+              <el-button
+                type="warning"
+                @click="showVisualization"
+                :disabled="!hasResults"
+                v-hasPermi="'path-match:visualization'"
+              >
                 可视化分析
               </el-button>
             </el-form-item>

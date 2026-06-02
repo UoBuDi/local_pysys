@@ -84,11 +84,15 @@ function handleRouteNotFound(
   targetPath: string,
   fallbackPath: string = '/dashboard/analysis'
 ): string {
-  if (!checkRouteExists(targetPath)) {
+  if (checkRouteExists(targetPath)) {
+    return targetPath
+  }
+  if (checkRouteExists(fallbackPath)) {
     console.warn(`目标路由不存在: ${targetPath}, 重定向到: ${fallbackPath}`)
     return fallbackPath
   }
-  return targetPath
+  console.warn(`目标路由和兜底路由均不存在: ${targetPath}, ${fallbackPath}, 重定向到: /login`)
+  return '/login'
 }
 
 function validateRouteCount(routes: any[]): boolean {
@@ -201,6 +205,11 @@ function performFinalNavigation(
   permissionStore: ReturnType<typeof usePermissionStoreWithOut>,
   next: (to?: any) => void
 ): void {
+  if (permissionStore.getAddRouters.length === 0) {
+    permissionStore.setIsAddRouters(true)
+    next({ path: '/403', replace: true })
+    return
+  }
   const redirectPath = from.query.redirect || to.path
   const redirect = decodeURIComponent(redirectPath as string)
   const finalPath = handleRouteNotFound(redirect)
@@ -340,7 +349,7 @@ router.beforeEach(async (to, from, next) => {
     performFinalNavigation(to, from, permissionStore, next)
   } catch (error) {
     handlePermissionError(error, PermissionErrorType.NETWORK_ERROR)
-    next({ path: '/dashboard/analysis' })
+    next({ path: handleRouteNotFound('/dashboard/analysis'), replace: true })
   }
 })
 

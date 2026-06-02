@@ -8,7 +8,7 @@ from typing import Dict, Any, List, Optional
 logger = logging.getLogger(__name__)
 
 GUI_SERVICE_URL = "http://127.0.0.1:5000"
-BACKEND_URL = "http://127.0.0.1:8000"
+BACKEND_URL = "http://172.32.48.238:8001"
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cloud_portal_data")
 
 class CloudPortalDataService:

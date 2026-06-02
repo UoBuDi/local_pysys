@@ -102,13 +102,13 @@ const style = computed(() => {
   if (type === 'primary' && !link) {
     return '--el-button-text-color: #fff; --el-button-hover-text-color: #fff'
   }
-  return ''
+  return '--el-button-text-color: var(--el-text-color-primary); --el-button-hover-text-color: var(--el-text-color-primary)'
 })
 </script>
 
 <template>
   <ElButton
-    :class="`${prefixCls} color-#fff`"
+    :class="prefixCls"
     v-bind="{ ...props }"
     :color="color"
     :style="style"

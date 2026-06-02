@@ -130,7 +130,7 @@ export const generateRoutesByServer = (routes: AppCustomRouteRecordRaw[]): AppRo
       }
     }
     // recursive child routes
-    if (route.children) {
+    if (route.children && route.children.length > 0) {
       data.children = generateRoutesByServer(route.children)
     }
     res.push(data as AppRouteRecordRaw)

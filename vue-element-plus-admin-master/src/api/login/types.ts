@@ -10,6 +10,10 @@ export interface UserType {
   role: string
   roleId: string
   roleList?: string[]
+  avatar?: string
+  nickname?: string
+  email?: string
+  roles?: any[]
 }
 
 export interface TokenData {

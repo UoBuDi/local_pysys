@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { Error } from '@/components/Error'
 import { useRouter } from 'vue-router'
+import { useUserStoreWithOut } from '@/store/modules/user'
 
-const { push } = useRouter()
+const { replace } = useRouter()
+const userStore = useUserStoreWithOut()
 
 const errorClick = () => {
-  push('/login')
+  if (userStore.getUserInfo) {
+    replace('/dashboard/analysis')
+  } else {
+    replace('/login')
+  }
 }
 </script>
 

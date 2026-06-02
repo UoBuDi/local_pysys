@@ -66,11 +66,16 @@
 
     <!-- 操作按钮 -->
     <div class="action-buttons">
-      <el-button type="primary" size="large" @click="saveConfig">
+      <el-button
+        type="primary"
+        size="large"
+        @click="saveConfig"
+        v-hasPermi="'system:params:config'"
+      >
         <el-icon class="btn-icon"><Check /></el-icon>
         {{ $t('systemTools.saveConfig') }}
       </el-button>
-      <el-button size="large" @click="resetConfig">
+      <el-button size="large" @click="resetConfig" v-hasPermi="'system:params:config'">
         <el-icon class="btn-icon"><RefreshLeft /></el-icon>
         {{ $t('systemTools.resetConfig') }}
       </el-button>
@@ -97,7 +102,7 @@ import axios from 'axios'
 
 const { t } = useI18n()
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_PATH || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_PATH || ''
 
 const configStatus = reactive({
   message: '',

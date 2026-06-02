@@ -31,14 +31,26 @@
             @click="handleExecuteMatch"
             :disabled="!selectedTable || matchLoading"
             :loading="matchLoading"
+            v-hasPermi="'split-match:execute'"
           >
             执行匹配
           </el-button>
           <el-button @click="loadTableList"> 刷新列表 </el-button>
-          <el-button type="info" @click="handleSplitStatistics" :loading="statisticsLoading">
+          <el-button
+            type="info"
+            @click="handleSplitStatistics"
+            :loading="statisticsLoading"
+            v-hasPermi="'split-match:statistics'"
+          >
             拆分统计
           </el-button>
-          <el-button @click="handleExport" :loading="exportLoading"> 导出数据 </el-button>
+          <el-button
+            @click="handleExport"
+            :loading="exportLoading"
+            v-hasPermi="'split-match:export'"
+          >
+            导出数据
+          </el-button>
           <el-upload
             v-if="selectedTable"
             class="upload-demo"
@@ -49,7 +61,7 @@
             accept=".xlsx"
             style="margin-left: 8px"
           >
-            <el-button type="warning"> 导入数据 </el-button>
+            <el-button type="warning" v-hasPermi="'split-match:import'"> 导入数据 </el-button>
           </el-upload>
         </el-form-item>
 
@@ -151,13 +163,28 @@
           border
           stripe
           :row-key="(row) => row['通行标识ID'] || Math.random()"
+          :row-class-name="getRowClassName"
         >
-          <el-table-column type="index" label="序号" width="55" :index="(index) => (currentPage - 1) * pageSize + index + 1" />
-          <el-table-column prop="通行标识ID" label="通行标识ID" width="310">
+          <el-table-column
+            type="index"
+            label="序号"
+            width="55"
+            :index="(index) => (currentPage - 1) * pageSize + index + 1"
+          />
+          <el-table-column prop="通行标识ID" label="通行标识ID" width="330">
             <template #default="{ row }">
-              <el-button link @click="handleIdClick(row)" style="border: none; padding: 0">{{
-                row['通行标识ID']
-              }}</el-button>
+              <div style="display: flex; align-items: center; gap: 4px">
+                <el-tooltip
+                  v-if="activeLocksMap[String(row['通行标识ID'])]"
+                  :content="`${activeLocksMap[String(row['通行标识ID'])].username} 正在编辑`"
+                  placement="top"
+                >
+                  <el-icon color="#E6A23C" :size="14"><Lock /></el-icon>
+                </el-tooltip>
+                <el-button link @click="handleIdClick(row)" style="border: none; padding: 0">{{
+                  row['通行标识ID']
+                }}</el-button>
+              </div>
             </template>
           </el-table-column>
           <el-table-column prop="车牌号码" label="车牌号码" min-width="120" />
@@ -222,12 +249,22 @@
       <!-- 详细信息对话框 -->
       <el-dialog
         v-model="dialogVisible"
-        title="详细信息"
         width="70%"
         :before-close="handleDialogClose"
         destroy-on-close
         ref="dialogRef"
       >
+        <template #header>
+          <div style="display: flex; align-items: center; gap: 8px">
+            <span>详细信息</span>
+            <el-tag v-if="currentRowLockedByMe" type="success" size="small"
+              >已锁定（编辑中）</el-tag
+            >
+            <el-tag v-else-if="currentRowLockedBy" type="warning" size="small"
+              >{{ currentRowLockedBy }} 正在编辑</el-tag
+            >
+          </div>
+        </template>
         <div class="dialog-content" style="max-height: 600px; overflow-y: auto">
           <el-descriptions v-if="editedRow" :column="2" border style="table-layout: fixed">
             <el-descriptions-item
@@ -244,7 +281,10 @@
                       当前粘贴目标
                     </el-radio>
                   </div>
-                  <div v-if="editedRow['查核资料1']" style="margin-bottom: 10px; position: relative">
+                  <div
+                    v-if="editedRow['查核资料1']"
+                    style="margin-bottom: 10px; position: relative"
+                  >
                     <el-image
                       :src="editedRow['查核资料1']"
                       fit="cover"
@@ -286,7 +326,9 @@
                     :show-file-list="false"
                     accept="image/*"
                   >
-                    <el-button type="primary" size="small">上传图片</el-button>
+                    <el-button type="primary" size="small" v-hasPermi="'split-match:upload-image'"
+                      >上传图片</el-button
+                    >
                   </el-upload>
                 </div>
               </template>
@@ -298,7 +340,10 @@
                       当前粘贴目标
                     </el-radio>
                   </div>
-                  <div v-if="editedRow['查核资料2']" style="margin-bottom: 10px; position: relative">
+                  <div
+                    v-if="editedRow['查核资料2']"
+                    style="margin-bottom: 10px; position: relative"
+                  >
                     <el-image
                       :src="editedRow['查核资料2']"
                       fit="cover"
@@ -340,7 +385,9 @@
                     :show-file-list="false"
                     accept="image/*"
                   >
-                    <el-button type="primary" size="small">上传图片</el-button>
+                    <el-button type="primary" size="small" v-hasPermi="'split-match:upload-image'"
+                      >上传图片</el-button
+                    >
                   </el-upload>
                 </div>
               </template>
@@ -371,6 +418,7 @@
                     size="default"
                     :loading="verifyLoading"
                     :disabled="!editedRow[key]"
+                    v-hasPermi="'split-match:verify-pass-id'"
                   >
                     核查
                   </el-button>
@@ -444,6 +492,7 @@
                     size="small"
                     :loading="verifyLoading"
                     :disabled="!editedRow[key]"
+                    v-hasPermi="'split-match:verify-pass-id'"
                   >
                     核查
                   </el-button>
@@ -474,6 +523,7 @@
                     :icon="Search"
                     @click="handleOpenCloudPortal"
                     size="small"
+                    v-hasPermi="'split-match:cloud-verify'"
                   >
                     人工核查
                   </el-button>
@@ -493,7 +543,9 @@
         <template #footer>
           <span class="dialog-footer">
             <el-button @click="dialogVisible = false">关闭</el-button>
-            <el-button type="primary" @click="handleSave">保存</el-button>
+            <el-button type="primary" @click="handleSave" v-hasPermi="'split-match:edit'"
+              >保存</el-button
+            >
           </span>
         </template>
       </el-dialog>
@@ -936,7 +988,6 @@
           </span>
         </template>
       </el-dialog>
-
     </el-card>
 
     <!-- 云门户人工核查对话框 -->
@@ -951,101 +1002,142 @@
       class="compact-dialog"
     >
       <!-- 顶部：查询参数 + 信息填写 + 云门户登录 同一行 -->
-      <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch">
+      <div class="audit-top-row">
         <!-- 查询参数 -->
-        <div style="flex: 1; min-height: 140px; overflow: hidden">
-          <div
-            style="
-              font-size: 12px;
-              font-weight: 500;
-              color: #303133;
-              margin-bottom: 6px;
-              padding-bottom: 3px;
-              border-bottom: 1px solid #e4e7ed;
-            "
-          >
-            📋 查询参数
-          </div>
-          <el-descriptions :column="3" border size="small" class="query-params-desc">
-            <el-descriptions-item label="通行标识ID" class-name="pass-id-content">
-              <span style="font-weight: 500">{{ cloudPortalForm.passId || '-' }}</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="车牌号码">
-              <span style="font-weight: 500; color: #409eff">{{
-                cloudPortalForm.plateNumber || '-'
-              }}</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="门架通行时间">
-              <span style="font-weight: 500">{{ cloudPortalForm.gateTime || '-' }}</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="入口时间">
-              <span style="font-weight: 500">{{ cloudPortalForm.entryTime || '-' }}</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="收费入口名称">
-              <span style="font-weight: 500; color: #67c23a">{{
-                cloudPortalForm.entryStationName || '-'
-              }}</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="查询时长">
-              <div style="display: flex; align-items: center; gap: 8px">
+        <div class="audit-query-panel">
+          <div class="audit-section-title">📋 查询参数</div>
+          <div class="audit-params-grid">
+            <div class="audit-param-item">
+              <div class="audit-param-label">通行标识ID</div>
+              <div class="audit-param-value-wrap">
+                <span
+                  class="audit-param-value"
+                  @click="showFieldValueDialog('通行标识ID', cloudPortalForm.passId)"
+                  >{{ cloudPortalForm.passId || '-' }}</span
+                >
+                <el-button
+                  v-if="cloudPortalForm.passId"
+                  type="primary"
+                  :icon="CopyDocument"
+                  @click="handleCopy(cloudPortalForm.passId)"
+                  size="small"
+                  link
+                  title="复制通行标识ID"
+                />
+              </div>
+            </div>
+            <div class="audit-param-item">
+              <div class="audit-param-label">车牌号码</div>
+              <div class="audit-param-value-wrap">
+                <span
+                  class="audit-param-value audit-param-value--highlight"
+                  @click="showFieldValueDialog('车牌号码', cloudPortalForm.plateNumber)"
+                  >{{ cloudPortalForm.plateNumber || '-' }}</span
+                >
+                <el-button
+                  v-if="cloudPortalForm.plateNumber"
+                  type="primary"
+                  :icon="CopyDocument"
+                  @click="handleCopy(cloudPortalForm.plateNumber)"
+                  size="small"
+                  link
+                  title="复制车牌号码"
+                />
+              </div>
+            </div>
+            <div class="audit-param-item">
+              <div class="audit-param-label">门架通行时间</div>
+              <div class="audit-param-value-wrap">
+                <span
+                  class="audit-param-value"
+                  @click="showFieldValueDialog('门架通行时间', cloudPortalForm.gateTime)"
+                  >{{ cloudPortalForm.gateTime || '-' }}</span
+                >
+                <el-button
+                  v-if="cloudPortalForm.gateTime"
+                  type="primary"
+                  :icon="CopyDocument"
+                  @click="handleCopy(cloudPortalForm.gateTime)"
+                  size="small"
+                  link
+                  title="复制门架通行时间"
+                />
+              </div>
+            </div>
+            <div class="audit-param-item">
+              <div class="audit-param-label">入口时间</div>
+              <div class="audit-param-value-wrap">
+                <span
+                  class="audit-param-value"
+                  @click="showFieldValueDialog('入口时间', cloudPortalForm.entryTime)"
+                  >{{ cloudPortalForm.entryTime || '-' }}</span
+                >
+                <el-button
+                  v-if="cloudPortalForm.entryTime"
+                  type="primary"
+                  :icon="CopyDocument"
+                  @click="handleCopy(cloudPortalForm.entryTime)"
+                  size="small"
+                  link
+                  title="复制入口时间"
+                />
+              </div>
+            </div>
+            <div class="audit-param-item">
+              <div class="audit-param-label">收费入口名称</div>
+              <div class="audit-param-value-wrap">
+                <span
+                  class="audit-param-value audit-param-value--success"
+                  @click="showFieldValueDialog('收费入口名称', cloudPortalForm.entryStationName)"
+                  >{{ cloudPortalForm.entryStationName || '-' }}</span
+                >
+              </div>
+            </div>
+            <div class="audit-param-item">
+              <div class="audit-param-label">查询时长</div>
+              <div class="audit-param-value-wrap">
                 <el-input-number
                   v-model="cloudPortalForm.hours"
                   :min="1"
                   :max="72"
                   size="small"
-                  style="width: 90px"
+                  style="width: 80px"
                 />
-                <span>小时</span>
+                <span style="font-size: 12px; color: #909399; margin-left: 2px">小时</span>
               </div>
-            </el-descriptions-item>
-            <el-descriptions-item label="图库条数">
-              <div style="display: flex; align-items: center; gap: 8px">
+            </div>
+            <div class="audit-param-item">
+              <div class="audit-param-label">图库条数</div>
+              <div class="audit-param-value-wrap">
                 <el-input-number
                   v-model="cloudPortalForm.rows"
                   :min="10"
                   :max="100"
                   :step="10"
                   size="small"
-                  style="width: 90px"
+                  style="width: 80px"
                 />
-                <span>条</span>
+                <span style="font-size: 12px; color: #909399; margin-left: 2px">条</span>
               </div>
-            </el-descriptions-item>
-            <el-descriptions-item label="通行门架名称" :span="3">
-              <div
-                v-if="cloudPortalForm.gantryNamesCombined"
-                style="
-                  cursor: pointer;
-                  max-width: 100%;
-                  overflow: hidden;
-                  text-overflow: ellipsis;
-                  white-space: nowrap;
-                "
-                @click="showGantryNamesDialog = true"
-                title="点击查看完整内容"
-              >
-                <span style="color: #606266">{{ cloudPortalForm.gantryNamesCombined }}</span>
-                <el-tag size="small" type="info" style="margin-left: 6px">点击查看</el-tag>
+            </div>
+            <div class="audit-param-item audit-param-item--full">
+              <div class="audit-param-label">通行门架名称</div>
+              <div class="audit-param-value-wrap">
+                <span
+                  v-if="cloudPortalForm.gantryNamesCombined"
+                  class="audit-param-value audit-param-value--clickable"
+                  @click="showGantryNamesDialog = true"
+                  >{{ cloudPortalForm.gantryNamesCombined }}</span
+                >
+                <span v-else class="audit-param-value">-</span>
               </div>
-              <span v-else style="color: #909399">-</span>
-            </el-descriptions-item>
-          </el-descriptions>
+            </div>
+          </div>
         </div>
 
         <!-- 信息填写 -->
-        <div style="flex: 1; min-height: 140px; overflow: hidden">
-          <div
-            style="
-              font-size: 12px;
-              font-weight: 500;
-              color: #303133;
-              margin-bottom: 6px;
-              padding-bottom: 3px;
-              border-bottom: 1px solid #e4e7ed;
-            "
-          >
-            📝 信息填写
-          </div>
+        <div class="audit-info-panel">
+          <div class="audit-section-title">📝 信息填写</div>
           <div class="info-fill-card-compact">
             <el-row :gutter="8">
               <el-col :span="12">
@@ -1103,6 +1195,7 @@
                       :loading="verifyLoading"
                       :disabled="!aiAuditCheckPassId"
                       size="small"
+                      v-hasPermi="'split-match:verify-pass-id'"
                       >核查</el-button
                     >
                   </div>
@@ -1143,7 +1236,7 @@
         </div>
 
         <!-- 云门户登录 -->
-        <div style="width: 280px; flex-shrink: 0">
+        <div class="audit-login-panel">
           <div
             style="
               font-size: 12px;
@@ -1226,11 +1319,11 @@
               <el-alert type="success" :closable="false" style="margin-bottom: 6px" size="small">
                 {{ cloudPortalUserInfo?.real_name || cloudPortalForm.username }}
               </el-alert>
-              <div style="display: flex; justify-content: center; margin-bottom: 6px">
+              <div style="display: flex; justify-content: center; margin-bottom: 16px">
                 <el-button
                   @click="handleCloudPortalLogoutWrapper"
                   size="small"
-                  style="width: 172px; height: 35px"
+                  class="audit-logout-btn"
                   >退出登录</el-button
                 >
               </div>
@@ -1239,16 +1332,9 @@
                   type="primary"
                   @click="executeAIAuditBatchQuery"
                   :loading="aiAuditLoading"
-                  size="small"
-                  style="
-                    width: 172px;
-                    height: 35px;
-                    background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
-                    border: none;
-                    font-weight: 500;
-                    box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
-                    transition: all 0.3s ease;
-                  "
+                  size="default"
+                  v-hasPermi="'split-match:cloud-verify'"
+                  class="audit-batch-query-btn"
                 >
                   🔍 AI稽核批量查询
                 </el-button>
@@ -1259,12 +1345,12 @@
       </div>
 
       <!-- 主内容区域 -->
-      <div style="display: flex; gap: 8px">
+      <div class="audit-main-row">
         <!-- 左侧：AI稽核查询结果 -->
         <div style="flex: 1; min-width: 0">
           <el-form :model="cloudPortalForm" label-width="120px">
             <!-- AI稽核查询结果 -->
-            <div v-if="aiAuditResult" style="max-height: 55vh; overflow-y: auto">
+            <div v-if="aiAuditResult" class="audit-result-scroll">
               <el-tabs v-model="aiAuditActiveTab">
                 <el-tab-pane label="车辆图库" name="vehicle_images">
                   <div v-if="aiAuditResult.vehicle_images?.success">
@@ -1291,7 +1377,10 @@
                       <div style="display: flex; gap: 10px; align-items: center">
                         <span style="font-size: 12px">每页：</span>
                         <el-select v-model="vehicleImagesPageSize" size="small" style="width: 90px">
-                          <el-option :label="'全部 (' + vehicleImagesTotal + ')'" :value="vehicleImagesTotal" />
+                          <el-option
+                            :label="'全部 (' + vehicleImagesTotal + ')'"
+                            :value="vehicleImagesTotal"
+                          />
                           <el-option :label="'20张'" :value="20" />
                           <el-option :label="'40张'" :value="40" />
                           <el-option :label="'60张'" :value="60" />
@@ -2190,7 +2279,7 @@
         </div>
 
         <!-- 右侧：查核资料 -->
-        <div style="width: 280px; flex-shrink: 0">
+        <div class="audit-right-panel">
           <div
             style="border: 1px solid #e4e7ed; border-radius: 4px; padding: 8px; background: #fafafa"
           >
@@ -2204,8 +2293,10 @@
               <el-image
                 v-if="aiAuditSelectedImage1"
                 :src="getImageSrc(aiAuditSelectedImage1)"
-                style="max-width: 100%; max-height: 120px"
+                :preview-src-list="[getImageSrc(aiAuditSelectedImage1)]"
+                style="max-width: 100%; max-height: 120px; cursor: pointer"
                 fit="contain"
+                preview-teleported
               />
               <div
                 v-else
@@ -2227,8 +2318,10 @@
               <el-image
                 v-if="aiAuditSelectedImage2"
                 :src="getImageSrc(aiAuditSelectedImage2)"
-                style="max-width: 100%; max-height: 120px"
+                :preview-src-list="[getImageSrc(aiAuditSelectedImage2)]"
+                style="max-width: 100%; max-height: 120px; cursor: pointer"
                 fit="contain"
+                preview-teleported
               />
               <div
                 v-else
@@ -2254,6 +2347,7 @@
             type="primary"
             @click="saveImagesToDatabase"
             :loading="aiAuditSavingImages"
+            v-hasPermi="'split-match:edit'"
             :disabled="
               !(
                 aiAuditSelectedImage1 ||
@@ -2289,6 +2383,32 @@
       </div>
       <template #footer>
         <el-button type="primary" @click="showGantryNamesDialog = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 字段值查看弹窗 -->
+    <el-dialog
+      v-model="fieldValueDialogVisible"
+      :title="fieldValueDialogTitle"
+      width="500px"
+      draggable
+    >
+      <div
+        style="
+          padding: 12px;
+          background: #f5f7fa;
+          border-radius: 4px;
+          word-break: break-all;
+          line-height: 1.8;
+          font-size: 14px;
+          user-select: text;
+        "
+      >
+        {{ fieldValueDialogContent }}
+      </div>
+      <template #footer>
+        <el-button @click="handleCopy(fieldValueDialogContent)">复制内容</el-button>
+        <el-button type="primary" @click="fieldValueDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
 
@@ -2486,59 +2606,128 @@
       draggable
       top="3vh"
     >
-
       <div v-if="orderDetailLoading" style="text-align: center; padding: 100px">
         <el-icon class="is-loading" :size="50"><Loading /></el-icon>
         <div style="margin-top: 20px; font-size: 16px">正在加载工单详情...</div>
       </div>
 
-      <div v-else-if="currentOrderDetail" style="display: flex; gap: 16px; height: 82vh; overflow: hidden">
+      <div
+        v-else-if="currentOrderDetail"
+        style="display: flex; gap: 16px; height: 82vh; overflow: hidden"
+      >
         <!-- 左侧：基本信息区域 -->
-        <div style="width: 320px; flex-shrink: 0; overflow-y: auto; border: 1px solid #e4e7ed; border-radius: 4px; background: #fff">
+        <div
+          style="
+            width: 320px;
+            flex-shrink: 0;
+            overflow-y: auto;
+            border: 1px solid #e4e7ed;
+            border-radius: 4px;
+            background: #fff;
+          "
+        >
           <!-- 工单基本信息 -->
           <div style="padding: 12px; border-bottom: 1px solid #ebeef5; background: #f5f7fa">
-            <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px">📋 基本信息</div>
-            <el-descriptions :column="1" size="small" :labelStyle="{ width: '90px', color: '#909399' }">
-              <el-descriptions-item label="车牌号码">{{ currentOrderDetail.labelVo?.vehicle_no || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="入口收费站">{{ currentOrderDetail.labelVo?.en_station_name || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="入口时间">{{ currentOrderDetail.labelVo?.en_time || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="出口收费站">{{ currentOrderDetail.labelVo?.ex_station_name || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="出口时间">{{ currentOrderDetail.labelVo?.ex_time || '-' }}</el-descriptions-item>
+            <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px"
+              >📋 基本信息</div
+            >
+            <el-descriptions
+              :column="1"
+              size="small"
+              :labelStyle="{ width: '90px', color: '#909399' }"
+            >
+              <el-descriptions-item label="车牌号码">{{
+                currentOrderDetail.labelVo?.vehicle_no || '-'
+              }}</el-descriptions-item>
+              <el-descriptions-item label="入口收费站">{{
+                currentOrderDetail.labelVo?.en_station_name || '-'
+              }}</el-descriptions-item>
+              <el-descriptions-item label="入口时间">{{
+                currentOrderDetail.labelVo?.en_time || '-'
+              }}</el-descriptions-item>
+              <el-descriptions-item label="出口收费站">{{
+                currentOrderDetail.labelVo?.ex_station_name || '-'
+              }}</el-descriptions-item>
+              <el-descriptions-item label="出口时间">{{
+                currentOrderDetail.labelVo?.ex_time || '-'
+              }}</el-descriptions-item>
               <el-descriptions-item label="出口收费总额">
-                <span style="color: #e6a23c; font-weight: bold">¥ {{ currentOrderDetail.pay_amount ? (currentOrderDetail.pay_amount / 100).toFixed(2) : '0.00' }} 元</span>
+                <span style="color: #e6a23c; font-weight: bold"
+                  >¥
+                  {{
+                    currentOrderDetail.pay_amount
+                      ? (currentOrderDetail.pay_amount / 100).toFixed(2)
+                      : '0.00'
+                  }}
+                  元</span
+                >
               </el-descriptions-item>
             </el-descriptions>
           </div>
 
           <!-- 标签信息 -->
-          <div v-if="currentOrderDetail.labelCodeList && currentOrderDetail.labelCodeList.length > 0" style="padding: 12px; border-bottom: 1px solid #ebeef5">
-            <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px">🏷️ 标签信息</div>
+          <div
+            v-if="currentOrderDetail.labelCodeList && currentOrderDetail.labelCodeList.length > 0"
+            style="padding: 12px; border-bottom: 1px solid #ebeef5"
+          >
+            <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px"
+              >🏷️ 标签信息</div
+            >
             <div
               v-for="(label, idx) in currentOrderDetail.labelCodeList"
               :key="idx"
               style="margin-bottom: 8px; padding: 8px; background: #f5f7fa; border-radius: 4px"
             >
               <div style="display: flex; align-items: center; margin-bottom: 4px">
-                <el-tag size="small" type="warning" style="margin-right: 8px">{{ label.labelCode }}</el-tag>
+                <el-tag size="small" type="warning" style="margin-right: 8px">{{
+                  label.labelCode
+                }}</el-tag>
                 <span style="font-weight: 500; font-size: 13px">{{ label.labelName }}</span>
               </div>
-              <div v-if="label.auditMethod" style="font-size: 12px; color: #606266; line-height: 1.5; margin-top: 4px">
+              <div
+                v-if="label.auditMethod"
+                style="font-size: 12px; color: #606266; line-height: 1.5; margin-top: 4px"
+              >
                 {{ label.auditMethod }}
               </div>
             </div>
           </div>
 
           <!-- 稽核步骤配置 -->
-          <div v-if="currentOrderDetail.auditCheckdescConfigs && currentOrderDetail.auditCheckdescConfigs.length > 0" style="padding: 12px; border-bottom: 1px solid #ebeef5">
-            <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px">✅ 稽核步骤</div>
+          <div
+            v-if="
+              currentOrderDetail.auditCheckdescConfigs &&
+              currentOrderDetail.auditCheckdescConfigs.length > 0
+            "
+            style="padding: 12px; border-bottom: 1px solid #ebeef5"
+          >
+            <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px"
+              >✅ 稽核步骤</div
+            >
             <div
               v-for="(config, idx) in currentOrderDetail.auditCheckdescConfigs"
               :key="idx"
               style="margin-bottom: 10px"
             >
               <div style="display: flex; align-items: center; margin-bottom: 6px">
-                <span style="width: 18px; height: 18px; border-radius: 50%; background: #409eff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; margin-right: 6px">{{ Number(idx) + 1 }}</span>
-                <span style="font-weight: 500; font-size: 13px">{{ config.checkStep1Name || config.checkStep2Name || config.checkStep3Name }}</span>
+                <span
+                  style="
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    background: #409eff;
+                    color: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 11px;
+                    margin-right: 6px;
+                  "
+                  >{{ Number(idx) + 1 }}</span
+                >
+                <span style="font-weight: 500; font-size: 13px">{{
+                  config.checkStep1Name || config.checkStep2Name || config.checkStep3Name
+                }}</span>
               </div>
               <div style="font-size: 12px; color: #606266; line-height: 1.5; padding-left: 24px">
                 {{ config.checkStep1Desc || config.checkStep2Desc || config.checkStep3Desc }}
@@ -2549,7 +2738,10 @@
           <!-- 图片列表 -->
           <div v-if="currentOrderDetail.picBeanVo?.picBeanList" style="padding: 12px">
             <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px">
-              📷 查看图片 ({{ currentOrderDetail.picBeanVo.total || currentOrderDetail.picBeanVo.picBeanList.length }})
+              📷 查看图片 ({{
+                currentOrderDetail.picBeanVo.total ||
+                currentOrderDetail.picBeanVo.picBeanList.length
+              }})
             </div>
             <div style="max-height: 400px; overflow-y: auto">
               <div
@@ -2567,19 +2759,38 @@
                 "
                 :style="{
                   background: selectedPicture?.picId === pic.picId ? '#ecf5ff' : '#fff',
-                  border: selectedPicture?.picId === pic.picId ? '1px solid #409eff' : '1px solid #ebeef5'
+                  border:
+                    selectedPicture?.picId === pic.picId ? '1px solid #409eff' : '1px solid #ebeef5'
                 }"
               >
                 <img
                   v-if="pic.smallPositivePic"
                   :src="pic.smallPositivePic"
-                  style="width: 48px; height: 36px; object-fit: cover; border-radius: 2px; margin-right: 8px; flex-shrink: 0"
+                  style="
+                    width: 48px;
+                    height: 36px;
+                    object-fit: cover;
+                    border-radius: 2px;
+                    margin-right: 8px;
+                    flex-shrink: 0;
+                  "
                 />
                 <div style="flex: 1; min-width: 0">
-                  <div style="font-size: 12px; font-weight: 500; color: #303133; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">
-                    {{ pic.stationName || ('图片 ' + (Number(idx) + 1)) }}
+                  <div
+                    style="
+                      font-size: 12px;
+                      font-weight: 500;
+                      color: #303133;
+                      white-space: nowrap;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                    "
+                  >
+                    {{ pic.stationName || '图片 ' + (Number(idx) + 1) }}
                   </div>
-                  <div style="font-size: 11px; color: #909399; margin-top: 2px">{{ pic.picTime || '-' }}</div>
+                  <div style="font-size: 11px; color: #909399; margin-top: 2px">{{
+                    pic.picTime || '-'
+                  }}</div>
                 </div>
               </div>
             </div>
@@ -2587,26 +2798,61 @@
         </div>
 
         <!-- 右侧：详细信息展示区域 -->
-        <div style="flex: 1; overflow-y: auto; border: 1px solid #e4e7ed; border-radius: 4px; background: #fff; padding: 16px">
+        <div
+          style="
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #e4e7ed;
+            border-radius: 4px;
+            background: #fff;
+            padding: 16px;
+          "
+        >
           <!-- 稽核信息 -->
           <div style="margin-bottom: 20px">
-            <div style="display: flex; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #409eff">
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                margin-bottom: 12px;
+                padding-bottom: 8px;
+                border-bottom: 2px solid #409eff;
+              "
+            >
               <span style="font-size: 16px; font-weight: bold; color: #303133">📊 稽核信息</span>
             </div>
-            <el-alert
-              type="info"
-              :closable="false"
-              show-icon
-              style="margin-bottom: 12px"
-            >
+            <el-alert type="info" :closable="false" show-icon style="margin-bottom: 12px">
               <template #title>
-                <span style="font-size: 13px">【{{ currentOrderDetail.labelVo?.vehicle_no }}】稽核模型利用交易流水中"收费车型与真实车型不符"的特征值进行敏感性筛查，须稽查人员通过门架图片、监控录像等方式确认车辆车型信息。</span>
+                <span style="font-size: 13px"
+                  >【{{
+                    currentOrderDetail.labelVo?.vehicle_no
+                  }}】稽核模型利用交易流水中"收费车型与真实车型不符"的特征值进行敏感性筛查，须稽查人员通过门架图片、监控录像等方式确认车辆车型信息。</span
+                >
               </template>
             </el-alert>
 
             <!-- 处理结论展示 -->
-            <div v-if="currentOrderDetail.labelVo?.audit_remark" style="background: linear-gradient(135deg, #f0f9eb 0%, #f5f7fa 100%); padding: 16px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #67c23a; box-shadow: 0 2px 8px rgba(103, 194, 58, 0.1)">
-              <div style="font-size: 14px; font-weight: bold; color: #67c23a; margin-bottom: 10px; display: flex; align-items: center">
+            <div
+              v-if="currentOrderDetail.labelVo?.audit_remark"
+              style="
+                background: linear-gradient(135deg, #f0f9eb 0%, #f5f7fa 100%);
+                padding: 16px;
+                border-radius: 8px;
+                margin-bottom: 12px;
+                border-left: 4px solid #67c23a;
+                box-shadow: 0 2px 8px rgba(103, 194, 58, 0.1);
+              "
+            >
+              <div
+                style="
+                  font-size: 14px;
+                  font-weight: bold;
+                  color: #67c23a;
+                  margin-bottom: 10px;
+                  display: flex;
+                  align-items: center;
+                "
+              >
                 <el-icon :size="18" style="margin-right: 6px"><CircleCheck /></el-icon>
                 处理结论
               </div>
@@ -2616,8 +2862,13 @@
             </div>
 
             <!-- 标签详情展示 -->
-            <div v-if="currentOrderDetail.labelCodeList && currentOrderDetail.labelCodeList.length > 0" style="background: #fafafa; padding: 12px; border-radius: 4px; margin-bottom: 12px">
-              <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px">【主标签】</div>
+            <div
+              v-if="currentOrderDetail.labelCodeList && currentOrderDetail.labelCodeList.length > 0"
+              style="background: #fafafa; padding: 12px; border-radius: 4px; margin-bottom: 12px"
+            >
+              <div style="font-weight: bold; font-size: 14px; color: #303133; margin-bottom: 8px"
+                >【主标签】</div
+              >
               <div
                 v-for="(label, idx) in currentOrderDetail.labelCodeList"
                 :key="idx"
@@ -2628,7 +2879,12 @@
             </div>
 
             <!-- 稽核流程步骤卡片 -->
-            <div v-if="currentOrderDetail.auditCheckdescConfigs && currentOrderDetail.auditCheckdescConfigs.length > 0">
+            <div
+              v-if="
+                currentOrderDetail.auditCheckdescConfigs &&
+                currentOrderDetail.auditCheckdescConfigs.length > 0
+              "
+            >
               <el-steps :active="3" finish-status="success" simple style="margin-bottom: 16px">
                 <el-step title="车型确认" />
                 <el-step title="费用测算" />
@@ -2641,30 +2897,68 @@
                 style="display: flex; gap: 16px; margin-bottom: 16px"
               >
                 <!-- 步骤1：车型确认 -->
-                <div style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px; border-radius: 8px; color: #fff">
+                <div
+                  style="
+                    flex: 1;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 16px;
+                    border-radius: 8px;
+                    color: #fff;
+                  "
+                >
                   <div style="display: flex; align-items: center; margin-bottom: 8px">
                     <el-icon :size="24" style="margin-right: 8px"><CircleCheck /></el-icon>
-                    <span style="font-weight: bold; font-size: 15px">{{ config.checkStep1Name || '车型确认' }}</span>
+                    <span style="font-weight: bold; font-size: 15px">{{
+                      config.checkStep1Name || '车型确认'
+                    }}</span>
                   </div>
-                  <div style="font-size: 13px; line-height: 1.6; opacity: 0.95">{{ config.checkStep1Desc || '通过图片和监控录像核实实际车型' }}</div>
+                  <div style="font-size: 13px; line-height: 1.6; opacity: 0.95">{{
+                    config.checkStep1Desc || '通过图片和监控录像核实实际车型'
+                  }}</div>
                 </div>
 
                 <!-- 步骤2：费用测算 -->
-                <div style="flex: 1; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 16px; border-radius: 8px; color: #fff">
+                <div
+                  style="
+                    flex: 1;
+                    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                    padding: 16px;
+                    border-radius: 8px;
+                    color: #fff;
+                  "
+                >
                   <div style="display: flex; align-items: center; margin-bottom: 8px">
                     <el-icon :size="24" style="margin-right: 8px"><Money /></el-icon>
-                    <span style="font-weight: bold; font-size: 15px">{{ config.checkStep2Name || '费用测算' }}</span>
+                    <span style="font-weight: bold; font-size: 15px">{{
+                      config.checkStep2Name || '费用测算'
+                    }}</span>
                   </div>
-                  <div style="font-size: 13px; line-height: 1.6; opacity: 0.95">{{ config.checkStep2Desc || '测算实际行驶路径应收费额，与出口实收或省域拆分金额校核是否一致' }}</div>
+                  <div style="font-size: 13px; line-height: 1.6; opacity: 0.95">{{
+                    config.checkStep2Desc ||
+                    '测算实际行驶路径应收费额，与出口实收或省域拆分金额校核是否一致'
+                  }}</div>
                 </div>
 
                 <!-- 步骤3：稽核取证 -->
-                <div style="flex: 1; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 16px; border-radius: 8px; color: #fff">
+                <div
+                  style="
+                    flex: 1;
+                    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                    padding: 16px;
+                    border-radius: 8px;
+                    color: #fff;
+                  "
+                >
                   <div style="display: flex; align-items: center; margin-bottom: 8px">
                     <el-icon :size="24" style="margin-right: 8px"><Camera /></el-icon>
-                    <span style="font-weight: bold; font-size: 15px">{{ config.checkStep3Name || '稽核取证' }}</span>
+                    <span style="font-weight: bold; font-size: 15px">{{
+                      config.checkStep3Name || '稽核取证'
+                    }}</span>
                   </div>
-                  <div style="font-size: 13px; line-height: 1.6; opacity: 0.95">{{ config.checkStep3Desc || '车型截图：门架图片或出入口录像\n金额截图：实际应收金额、出口实收金额' }}</div>
+                  <div style="font-size: 13px; line-height: 1.6; opacity: 0.95">{{
+                    config.checkStep3Desc ||
+                    '车型截图：门架图片或出入口录像\n金额截图：实际应收金额、出口实收金额'
+                  }}</div>
                 </div>
               </div>
             </div>
@@ -2672,21 +2966,51 @@
 
           <!-- 门架图片展示 -->
           <div v-if="selectedPicture">
-            <div style="display: flex; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #67c23a">
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                margin-bottom: 12px;
+                padding-bottom: 8px;
+                border-bottom: 2px solid #67c23a;
+              "
+            >
               <span style="font-size: 16px; font-weight: bold; color: #303133">🖼️ 门架图片</span>
-              <el-tag style="margin-left: 12px" type="success">{{ selectedPicture.stationName || '图片详情' }}</el-tag>
+              <el-tag style="margin-left: 12px" type="success">{{
+                selectedPicture.stationName || '图片详情'
+              }}</el-tag>
             </div>
 
             <!-- 图片信息 -->
             <el-descriptions :column="4" border size="small" style="margin-bottom: 16px">
-              <el-descriptions-item label="拍摄时间">{{ selectedPicture.picTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="车牌号码">{{ selectedPicture.vehPlate || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="站ID">{{ selectedPicture.stationId || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="拍摄位置">{{ selectedPicture.shootPosition === '1' ? '车头' : (selectedPicture.shootPosition === '2' ? '车尾' : '-') }}</el-descriptions-item>
+              <el-descriptions-item label="拍摄时间">{{
+                selectedPicture.picTime || '-'
+              }}</el-descriptions-item>
+              <el-descriptions-item label="车牌号码">{{
+                selectedPicture.vehPlate || '-'
+              }}</el-descriptions-item>
+              <el-descriptions-item label="站ID">{{
+                selectedPicture.stationId || '-'
+              }}</el-descriptions-item>
+              <el-descriptions-item label="拍摄位置">{{
+                selectedPicture.shootPosition === '1'
+                  ? '车头'
+                  : selectedPicture.shootPosition === '2'
+                    ? '车尾'
+                    : '-'
+              }}</el-descriptions-item>
             </el-descriptions>
 
             <!-- 大图展示 -->
-            <div style="text-align: center; background: #f5f7fa; padding: 20px; border-radius: 8px; margin-bottom: 16px">
+            <div
+              style="
+                text-align: center;
+                background: #f5f7fa;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+              "
+            >
               <el-image
                 v-if="selectedPicture.bigPositivePic"
                 :src="selectedPicture.bigPositivePic"
@@ -2697,7 +3021,18 @@
                 :z-index="9999"
               >
                 <template #error>
-                  <div class="image-slot" style="display: flex; justify-content: center; align-items: center; width: 100%; height: 300px; background: #f5f7fa; color: #909399">
+                  <div
+                    class="image-slot"
+                    style="
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      width: 100%;
+                      height: 300px;
+                      background: #f5f7fa;
+                      color: #909399;
+                    "
+                  >
                     <el-icon :size="48"><PictureFilled /></el-icon>
                   </div>
                 </template>
@@ -2709,7 +3044,10 @@
             </div>
 
             <!-- 小图对比展示 -->
-            <div v-if="selectedPicture.smallPositivePic || selectedPicture.smallBackPic" style="display: flex; gap: 12px; margin-bottom: 16px">
+            <div
+              v-if="selectedPicture.smallPositivePic || selectedPicture.smallBackPic"
+              style="display: flex; gap: 12px; margin-bottom: 16px"
+            >
               <div v-if="selectedPicture.smallPositivePic" style="flex: 1; text-align: center">
                 <div style="font-size: 12px; color: #606266; margin-bottom: 6px">车头小图</div>
                 <el-image
@@ -2737,14 +3075,30 @@
           <div v-else style="text-align: center; padding: 80px 20px; color: #909399">
             <el-icon :size="80"><PictureFilled /></el-icon>
             <div style="margin-top: 16px; font-size: 16px">请从左侧列表选择图片查看</div>
-            <div style="margin-top: 8px; font-size: 13px">共 {{ currentOrderDetail.picBeanVo?.total || currentOrderDetail.picBeanVo?.picBeanList?.length || 0 }} 张图片</div>
+            <div style="margin-top: 8px; font-size: 13px"
+              >共
+              {{
+                currentOrderDetail.picBeanVo?.total ||
+                currentOrderDetail.picBeanVo?.picBeanList?.length ||
+                0
+              }}
+              张图片</div
+            >
           </div>
 
           <!-- 完整原始数据（可折叠） -->
           <el-collapse style="margin-top: 20px">
             <el-collapse-item name="raw_data">
               <template #title>
-                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding-right: 16px">
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    width: 100%;
+                    padding-right: 16px;
+                  "
+                >
                   <span>🔧 查看完整原始JSON数据</span>
                   <el-button
                     type="primary"
@@ -2756,7 +3110,19 @@
                   </el-button>
                 </div>
               </template>
-              <pre style="background: #f5f7fa; padding: 16px; border-radius: 4px; overflow-x: auto; font-size: 12px; line-height: 1.5; max-height: 400px; overflow-y: auto">{{ JSON.stringify(currentOrderDetail, null, 2) }}</pre>
+              <pre
+                style="
+                  background: #f5f7fa;
+                  padding: 16px;
+                  border-radius: 4px;
+                  overflow-x: auto;
+                  font-size: 12px;
+                  line-height: 1.5;
+                  max-height: 400px;
+                  overflow-y: auto;
+                "
+                >{{ JSON.stringify(currentOrderDetail, null, 2) }}</pre
+              >
             </el-collapse-item>
           </el-collapse>
         </div>
@@ -2838,9 +3204,15 @@
     <!-- 已拆详情弹窗 -->
     <el-dialog v-model="splitDetailVisible" title="拆分详情" width="80%" destroy-on-close>
       <div class="split-detail-wrapper">
-        <el-descriptions v-if="splitDetailRow" :column="2" border size="small" class="split-detail-desc">
+        <el-descriptions
+          v-if="splitDetailRow"
+          :column="2"
+          border
+          size="small"
+          class="split-detail-desc"
+        >
           <el-descriptions-item
-            v-for="key in displayColumns.filter(k => k !== '拆分月份')"
+            v-for="key in displayColumns.filter((k) => k !== '拆分月份')"
             :key="key"
             :label="key"
             label-class-name="detail-label"
@@ -2904,7 +3276,18 @@ import {
   ElProgress,
   ElMessageBox
 } from 'element-plus'
-import { CopyDocument, Picture, Search, Loading, WarningFilled, CircleCheck, Money, Camera, PictureFilled } from '@element-plus/icons-vue'
+import {
+  CopyDocument,
+  Picture,
+  Search,
+  Loading,
+  WarningFilled,
+  CircleCheck,
+  Money,
+  Camera,
+  PictureFilled,
+  Lock
+} from '@element-plus/icons-vue'
 import {
   getSplitMatchTables,
   getSplitMatchData,
@@ -2921,17 +3304,37 @@ import {
   getOriginalImage,
   updateSplitMatchData,
   getSplitStatistics,
+  lockRow,
+  unlockRow,
+  getActiveLocks,
+  getRowVersion,
+  type LockResult,
+  type ActiveLock,
+  type RowVersion,
   type AIAuditVehicleImage,
   type AIAuditGantryImage,
   type AIAuditBatchQueryResult,
   type AIAuditGantryTrade,
   keepCloudPortalAlive
 } from '@/api/split-match'
+import { useWebSocket, type WsMessage } from '@/utils/websocket'
 import { useCloudPortal } from '@/hooks/split-match/useCloudPortal'
 import request from '@/axios'
 import { useUserStore } from '@/store/modules/user'
 
 const userStore = useUserStore()
+
+const checkPermission = (permission: string): boolean => {
+  const permissions = userStore.getPermissions || []
+  return permissions.includes(permission)
+}
+
+const ws = useWebSocket()
+
+const activeLocksMap = ref<Record<string, ActiveLock>>({})
+const currentRowVersion = ref<number | null>(null)
+const currentRowLockedByMe = ref(false)
+const currentRowLockedBy = ref<string | null>(null)
 
 interface MatchResult {
   matched_count: number
@@ -3018,24 +3421,24 @@ const detailFieldOrder = [
 // 计算属性：按顺序返回字段
 const sortedDetailFields = computed(() => {
   if (!editedRow.value) return []
-  
+
   const allFields = Object.keys(editedRow.value)
   const sortedFields: string[] = []
-  
+
   // 首先添加预定义顺序中存在的字段
   detailFieldOrder.forEach((field) => {
     if (allFields.includes(field)) {
       sortedFields.push(field)
     }
   })
-  
+
   // 然后添加其他未在预定义顺序中的字段
   allFields.forEach((field) => {
     if (!sortedFields.includes(field)) {
       sortedFields.push(field)
     }
   })
-  
+
   return sortedFields
 })
 
@@ -3085,7 +3488,9 @@ const normalizeFilters = (filtersObj: Record<string, any>): Record<string, strin
   for (const [key, value] of Object.entries(filtersObj)) {
     if (value !== null && value !== undefined && String(value).trim() !== '') {
       normalized[key] =
-        typeof value === 'object' ? value.value || value.label || JSON.stringify(value) : String(value)
+        typeof value === 'object'
+          ? value.value || value.label || JSON.stringify(value)
+          : String(value)
     }
   }
   return normalized
@@ -3094,15 +3499,15 @@ const normalizeFilters = (filtersObj: Record<string, any>): Record<string, strin
 const handlePassIdBlur = (event: FocusEvent) => {
   const inputElement = event.target as HTMLInputElement
   const inputValue = inputElement?.value?.trim()
-  
+
   if (!inputValue) return
-  
+
   const currentValue = filters.value['通行标识ID']
-  
+
   if (!currentValue || String(currentValue).trim() === '') {
     filters.value['通行标识ID'] = inputValue
   }
-  
+
   if (!recentCheckIds.value.includes(inputValue)) {
     recentCheckIds.value.unshift(inputValue)
     if (recentCheckIds.value.length > 10) {
@@ -3214,7 +3619,30 @@ const loadTableData = async () => {
 const handleTableChange = async () => {
   currentPage.value = 1
   matchResult.value = null
+  activeLocksMap.value = {}
   loadTableData()
+
+  // 加入协作房间并加载活跃锁
+  if (selectedTable.value) {
+    const roomId = `collab_${selectedTable.value}`
+    ws.joinRoom(roomId, {
+      userId: userStore.getUserInfo?.id,
+      username: userStore.getUserInfo?.username
+    })
+
+    try {
+      const locksResp = await getActiveLocks(selectedTable.value)
+      if (locksResp?.code === 200 && Array.isArray(locksResp.data)) {
+        const locksMap: Record<string, ActiveLock> = {}
+        for (const lock of locksResp.data) {
+          locksMap[lock.row_id] = lock
+        }
+        activeLocksMap.value = locksMap
+      }
+    } catch (e) {
+      console.error('加载活跃锁失败:', e)
+    }
+  }
 }
 
 const handleExecuteMatch = async () => {
@@ -3232,7 +3660,12 @@ const handleExecuteMatch = async () => {
     }
     const exportResponse = await getExportSplitMatchData(exportParams)
 
-    if (!exportResponse || exportResponse.code !== 200 || !exportResponse.data || !Array.isArray(exportResponse.data.data)) {
+    if (
+      !exportResponse ||
+      exportResponse.code !== 200 ||
+      !exportResponse.data ||
+      !Array.isArray(exportResponse.data.data)
+    ) {
       ElMessage.error('获取记录失败')
       return
     }
@@ -3253,11 +3686,7 @@ const handleExecuteMatch = async () => {
 
     // 4. 调用预览接口获取SQL
     const previewResponse = await previewSplitMatch(params)
-    if (
-      previewResponse &&
-      previewResponse.code === 200 &&
-      previewResponse.data?.sqls
-    ) {
+    if (previewResponse && previewResponse.code === 200 && previewResponse.data?.sqls) {
       // SQL preview available
     }
 
@@ -3380,22 +3809,24 @@ const handleSplitDetailClick = async (row: Record<string, unknown>) => {
         }
 
         const valueCount = result.query_values?.length || 1
-        ElMessage.success(`查询成功：找到 ${result.match_count} 条匹配记录 (查询了 ${valueCount} 个ID)`)
+        ElMessage.success(
+          `查询成功：找到 ${result.match_count} 条匹配记录 (查询了 ${valueCount} 个ID)`
+        )
       } else {
         splitDetailRow.value = {
-          '查询结果': `未找到匹配记录 (已查询通行标识ID: ${passIdById || '无'}${passIdByCheck ? ', ' + passIdByCheck : ''})`
+          查询结果: `未找到匹配记录 (已查询通行标识ID: ${passIdById || '无'}${passIdByCheck ? ', ' + passIdByCheck : ''})`
         }
         displayColumns.value = ['查询结果']
         ElMessage.warning('未找到匹配记录')
       }
     } else {
-      splitDetailRow.value = { '错误': response?.message || '查询失败' }
+      splitDetailRow.value = { 错误: response?.message || '查询失败' }
       displayColumns.value = ['错误']
       ElMessage.error(response?.message || '查询失败')
     }
   } catch (error: any) {
     console.error('查询拆分详情失败:', error)
-    splitDetailRow.value = { '错误': error?.message || '查询失败，请稍后重试' }
+    splitDetailRow.value = { 错误: error?.message || '查询失败，请稍后重试' }
     displayColumns.value = ['错误']
     ElMessage.error(error?.message || '查询失败，请稍后重试')
   }
@@ -3403,8 +3834,41 @@ const handleSplitDetailClick = async (row: Record<string, unknown>) => {
 
 const handleIdClick = async (row: Record<string, unknown>) => {
   selectedRow.value = row
-  editedRow.value = { ...row, '查核资料1': null, '查核资料2': null }
+  editedRow.value = { ...row, 查核资料1: null, 查核资料2: null }
   imagePreviewList.value = { 查核资料1: [], 查核资料2: [] }
+
+  // 获取行锁
+  const passId = String(row['通行标识ID'] || '')
+  currentRowLockedByMe.value = false
+  currentRowLockedBy.value = null
+  currentRowVersion.value = null
+
+  if (passId && selectedTable.value && checkPermission('split-match:lock-edit')) {
+    try {
+      const lockResp = await lockRow({ table_name: selectedTable.value, row_id: passId })
+      if (lockResp?.code === 200 && lockResp.data) {
+        const lockData = lockResp.data as LockResult
+        if (lockData.locked && lockData.own_lock) {
+          currentRowLockedByMe.value = true
+        } else if (!lockData.own_lock) {
+          currentRowLockedBy.value = lockData.locked_by || '其他用户'
+        }
+      }
+    } catch (e) {
+      console.error('获取行锁失败:', e)
+    }
+
+    // 获取版本号
+    try {
+      const versionResp = await getRowVersion(selectedTable.value, passId)
+      if (versionResp?.code === 200 && versionResp.data) {
+        currentRowVersion.value = (versionResp.data as RowVersion).version
+      }
+    } catch (e) {
+      console.error('获取行版本号失败:', e)
+    }
+  }
+
   dialogVisible.value = true
 
   // 按需加载该行高清原图
@@ -3536,6 +4000,19 @@ const handleDialogClose = () => {
   // 清空二进制数据存储
   imageBinaryData.value = {}
 
+  // 释放行锁
+  if (currentRowLockedByMe.value && editedRow.value && selectedTable.value) {
+    const rowId = String(editedRow.value['通行标识ID'] || '')
+    if (rowId) {
+      unlockRow({ table_name: selectedTable.value, row_id: rowId }).catch((e) =>
+        console.error('释放行锁失败:', e)
+      )
+    }
+  }
+  currentRowLockedByMe.value = false
+  currentRowLockedBy.value = null
+  currentRowVersion.value = null
+
   dialogVisible.value = false
 }
 
@@ -3648,6 +4125,17 @@ const {
 
 let keepAliveTimer: ReturnType<typeof setInterval> | null = null
 const showGantryNamesDialog = ref(false)
+const fieldValueDialogVisible = ref(false)
+const fieldValueDialogTitle = ref('')
+const fieldValueDialogContent = ref('')
+
+const showFieldValueDialog = (label: string, value: string | undefined) => {
+  if (!value) return
+  fieldValueDialogTitle.value = label
+  fieldValueDialogContent.value = value
+  fieldValueDialogVisible.value = true
+}
+
 const cloudPortalQueryResult = ref<any[]>([])
 
 const aiAuditLoading = ref(false)
@@ -3745,9 +4233,12 @@ const handleViewOrderDetail = async (orderId: string) => {
   selectedPicture.value = null
 
   try {
-    const response = await aiAuditOrderDetail({
-      order_id: orderId
-    }, userStore.getUserInfo?.id as number | undefined)
+    const response = await aiAuditOrderDetail(
+      {
+        order_id: orderId
+      },
+      userStore.getUserInfo?.id as number | undefined
+    )
 
     if (response && response.code === 200 && response.data) {
       currentOrderDetail.value = response.data
@@ -3931,6 +4422,19 @@ const isGateTimeMatched = (transTime: string): boolean => {
   return transTime === cloudPortalForm.value.gateTime
 }
 
+const getRowClassName = ({ row }: { row: any }): string => {
+  const passId = String(row['通行标识ID'] || '')
+  const lockInfo = activeLocksMap.value[passId]
+  if (lockInfo) {
+    const currentUserId = userStore.getUserInfo?.id
+    if (lockInfo.user_id === currentUserId) {
+      return 'row-locked-self'
+    }
+    return 'row-locked-other'
+  }
+  return ''
+}
+
 const getGantryTradeRowClass = ({ row }: { row: any }): string => {
   if (isGantryMatched(row.gantryId)) {
     return 'matched-gantry-row'
@@ -4017,14 +4521,17 @@ const executeAIAuditBatchQuery = async () => {
   aiAuditResult.value = null
 
   try {
-    const response = await aiAuditBatchQuery({
-      plate_number: cloudPortalForm.value.plateNumber,
-      entry_time: cloudPortalForm.value.entryTime,
-      gate_time: cloudPortalForm.value.gateTime,
-      pass_id: cloudPortalForm.value.passId || undefined,
-      hours: cloudPortalForm.value.hours,
-      rows: cloudPortalForm.value.rows
-    }, userStore.getUserInfo?.id as number | undefined)
+    const response = await aiAuditBatchQuery(
+      {
+        plate_number: cloudPortalForm.value.plateNumber,
+        entry_time: cloudPortalForm.value.entryTime,
+        gate_time: cloudPortalForm.value.gateTime,
+        pass_id: cloudPortalForm.value.passId || undefined,
+        hours: cloudPortalForm.value.hours,
+        rows: cloudPortalForm.value.rows
+      },
+      userStore.getUserInfo?.id as number | undefined
+    )
 
     if (response && response.code === 200) {
       aiAuditResult.value = response.data as any
@@ -4064,14 +4571,17 @@ const loadVehicleImagesPage = async () => {
   vehicleImagesLoading.value = true
 
   try {
-    const response = await aiAuditVehicleImages({
-      plate_number: cloudPortalForm.value.plateNumber.split('_')[0],
-      start_time: aiAuditResult.value.time_range.start_time,
-      end_time: aiAuditResult.value.time_range.end_time,
-      page: vehicleImagesPage.value,
-      page_size: vehicleImagesPageSize.value,
-      sort: vehicleImagesSort.value
-    }, userStore.getUserInfo?.id as number | undefined)
+    const response = await aiAuditVehicleImages(
+      {
+        plate_number: cloudPortalForm.value.plateNumber.split('_')[0],
+        start_time: aiAuditResult.value.time_range.start_time,
+        end_time: aiAuditResult.value.time_range.end_time,
+        page: vehicleImagesPage.value,
+        page_size: vehicleImagesPageSize.value,
+        sort: vehicleImagesSort.value
+      },
+      userStore.getUserInfo?.id as number | undefined
+    )
 
     if (response && response.code === 200 && response.data?.success) {
       if (aiAuditResult.value) {
@@ -4117,9 +4627,12 @@ const fetchOriginalImageWithRetry = async (
   let lastError: string = ''
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const response = await aiAuditOriginalImage({
-        picture_path: picturePath
-      }, userStore.getUserInfo?.id as number | undefined)
+      const response = await aiAuditOriginalImage(
+        {
+          picture_path: picturePath
+        },
+        userStore.getUserInfo?.id as number | undefined
+      )
 
       if (response && response.code === 200 && response.data?.image) {
         return response.data.image
@@ -4310,12 +4823,15 @@ const queryGantryImagesForRow = async (row: AIAuditGantryTrade) => {
   gantryImageLoading.value = row.gantryId
 
   try {
-    const response = await aiAuditGantryImages({
-      station_id: row.gantryId,
-      start_time: startTime,
-      end_time: endTime,
-      rows: 50
-    }, userStore.getUserInfo?.id as number | undefined)
+    const response = await aiAuditGantryImages(
+      {
+        station_id: row.gantryId,
+        start_time: startTime,
+        end_time: endTime,
+        rows: 50
+      },
+      userStore.getUserInfo?.id as number | undefined
+    )
 
     if (response && response.code === 200 && response.data?.success) {
       const images = response.data.images || []
@@ -4366,13 +4882,16 @@ const queryVehicleDetail = async (plateNumber: string, picTime: string) => {
   const endTime = formatDateTimeForQuery(endDate)
 
   try {
-    const response = await aiAuditBatchQuery({
-      plate_number: plateNumber,
-      entry_time: startTime,
-      gate_time: endTime,
-      hours: 48,
-      rows: 100
-    }, userStore.getUserInfo?.id as number | undefined)
+    const response = await aiAuditBatchQuery(
+      {
+        plate_number: plateNumber,
+        entry_time: startTime,
+        gate_time: endTime,
+        hours: 48,
+        rows: 100
+      },
+      userStore.getUserInfo?.id as number | undefined
+    )
 
     if (response && response.code === 200 && response.data) {
       vehicleDetailResult.value = response.data
@@ -4428,10 +4947,20 @@ const captureTable = async (tableName: string, targetImage: 'image1' | 'image2')
 
   await nextTick()
 
+  const bodyWrapper = tableEl.querySelector('.el-table__body-wrapper') as HTMLElement | null
+  const savedMaxHeight = bodyWrapper?.style.maxHeight || ''
+  const savedOverflow = bodyWrapper?.style.overflow || ''
+  if (bodyWrapper) {
+    bodyWrapper.style.maxHeight = 'none'
+    bodyWrapper.style.overflow = 'visible'
+  }
+
   const startTime = performance.now()
-  
+
   try {
     console.log(`[Screenshot] 开始截取 ${tableLabel}...`)
+
+    await nextTick()
 
     const dataUrl = await domToPng(tableEl, {
       scale: 1.2,
@@ -4455,11 +4984,11 @@ const captureTable = async (tableName: string, targetImage: 'image1' | 'image2')
 
     const endTime = performance.now()
     const duration = endTime - startTime
-    
+
     console.log(
       `[Screenshot] ${tableLabel} 截图完成 (${duration.toFixed(0)}ms)` +
-      `\n  - 元素尺寸: ${tableEl.scrollWidth}x${tableEl.scrollHeight}` +
-      `\n  - 数据大小: ${(dataUrl.length / 1024).toFixed(1)}KB`
+        `\n  - 元素尺寸: ${tableEl.scrollWidth}x${tableEl.scrollHeight}` +
+        `\n  - 数据大小: ${(dataUrl.length / 1024).toFixed(1)}KB`
     )
 
     if (targetImage === 'image1') {
@@ -4473,6 +5002,11 @@ const captureTable = async (tableName: string, targetImage: 'image1' | 'image2')
     const errorTime = performance.now() - startTime
     console.error(`[Screenshot] ${tableLabel} 截图失败 (${errorTime.toFixed(0)}ms):`, error)
     ElMessage.error(`截图失败: ${error.message || '未知错误'}`)
+  } finally {
+    if (bodyWrapper) {
+      bodyWrapper.style.maxHeight = savedMaxHeight
+      bodyWrapper.style.overflow = savedOverflow
+    }
   }
 }
 
@@ -4543,7 +5077,7 @@ const saveImagesToDatabase = async () => {
         )
         if (updatedRow) {
           editedRow.value = { ...updatedRow }
-          
+
           // 保留用户选择的图片值，不重新从 tableData 获取
           // 因为图片是异步加载的，此时 tableData 中的图片字段还是 null
           // aiAuditSelectedImage1 和 aiAuditSelectedImage2 保持用户选择的值
@@ -4587,7 +5121,9 @@ const getRateType = (rate: number): 'success' | 'warning' | 'info' | 'danger' =>
   return 'info'
 }
 
-const getOrderStatusType = (status: number): 'success' | 'primary' | 'warning' | 'info' | 'danger' => {
+const getOrderStatusType = (
+  status: number
+): 'success' | 'primary' | 'warning' | 'info' | 'danger' => {
   if (status === null || status === undefined) return 'info'
   switch (status) {
     case 1:
@@ -5096,6 +5632,7 @@ const detectExcelFormat = async (
     }
 
     for (const [_fileName, _count] of Object.entries(nodeCounts)) {
+      /* noop */
     }
 
     let maxNodes = 0
@@ -5291,6 +5828,7 @@ const buildCellImagesMappingsWithSheet1 = async (
             relMap[id] = fileName
             foundRels++
             if (foundRels <= 5) {
+              /* noop */
             }
           }
         }
@@ -5371,6 +5909,7 @@ const buildCellImagesMappingsWithSheet1 = async (
             }
             foundImages++
             if (foundImages <= 5) {
+              /* noop */
             }
           } else {
             console.warn(`    警告: r:embed属性为空`)
@@ -5421,6 +5960,7 @@ const buildCellImagesMappingsWithSheet1 = async (
             sheet1XmlData[imageName] = cellRef
             dispimgCount++
             if (dispimgCount <= 5) {
+              /* noop */
             }
           }
         }
@@ -5497,6 +6037,7 @@ const buildImageMappings = async (
               relMap[id] = fileName
               foundRels++
               if (foundRels <= 5) {
+                /* noop */
               }
             }
           }
@@ -5530,6 +6071,7 @@ const buildImageMappings = async (
             oneCellAnchors = [oneCellAnchors]
           }
           if (twoCellAnchors && twoCellAnchors.length > 0) {
+            /* noop */
           }
 
           let foundAnchors = 0
@@ -5574,6 +6116,7 @@ const buildImageMappings = async (
               }
               foundAnchors++
               if (foundAnchors <= 5) {
+                /* noop */
               }
             }
           }
@@ -5595,8 +6138,10 @@ const buildImageMappings = async (
     }
 
     if (Object.keys(relMap).length > 0) {
+      /* noop */
     }
     if (Object.keys(drawingMap).length > 0) {
+      /* noop */
     }
   } catch (e) {
     console.error('构建图片映射失败:', e)
@@ -5795,6 +6340,7 @@ const associateImagesWithRows = (
       }
 
       if (images.length > 2) {
+        /* noop */
       }
     } else {
       console.warn(
@@ -5836,6 +6382,7 @@ const parseExcelAsync = async (
   const totalRows = jsonData.length
 
   if (totalRows > 0) {
+    /* noop */
   }
 
   onProgress(20, '正在处理数据...')
@@ -6396,13 +6943,13 @@ const executeImport = async () => {
 }
 
 const SAVE_FIELD_MAPPING: Record<string, string> = {
-  '查核资料1': 'image1_base64',
-  '查核资料2': 'image2_base64',
-  '复核情况': 'review_status',
-  '核查通行标识': 'check_pass_id',
-  '特情': 'special_situation',
-  '核查拆分': 'check_split',
-  '备注': 'remark'
+  查核资料1: 'image1_base64',
+  查核资料2: 'image2_base64',
+  复核情况: 'review_status',
+  核查通行标识: 'check_pass_id',
+  特情: 'special_situation',
+  核查拆分: 'check_split',
+  备注: 'remark'
 }
 
 const handleSave = async () => {
@@ -6464,7 +7011,9 @@ const handleSave = async () => {
     const apiParams = {
       table_name: selectedTable.value,
       row_id: rowId,
-      data: saveData
+      data: saveData,
+      version: currentRowVersion.value ?? undefined,
+      force_overwrite: false
     }
 
     try {
@@ -6472,6 +7021,14 @@ const handleSave = async () => {
 
       if (response && response.code === 200) {
         ElMessage.success('保存成功')
+
+        // 更新本地版本号
+        if (response.data?.version) {
+          currentRowVersion.value = response.data.version
+        }
+
+        // 释放行锁
+        currentRowLockedByMe.value = false
 
         request.clearCache('/api/split-match/')
 
@@ -6487,6 +7044,30 @@ const handleSave = async () => {
           }
 
           imageBinaryData.value = {}
+        }
+      } else if (response && response.code === 409) {
+        // 版本冲突处理
+        try {
+          await ElMessageBox.confirm('数据已被其他用户修改，是否强制覆盖？', '版本冲突', {
+            confirmButtonText: '强制覆盖',
+            cancelButtonText: '取消',
+            type: 'warning'
+          })
+          const forceParams = { ...apiParams, force_overwrite: true }
+          const forceResp = await updateSplitMatchData(forceParams)
+          if (forceResp && forceResp.code === 200) {
+            ElMessage.success('强制覆盖保存成功')
+            if (forceResp.data?.version) {
+              currentRowVersion.value = forceResp.data.version
+            }
+            currentRowLockedByMe.value = false
+            request.clearCache('/api/split-match/')
+            loadTableData().catch((e) => console.error('保存后刷新表格失败:', e))
+          } else {
+            ElMessage.error('强制覆盖保存失败')
+          }
+        } catch {
+          // 用户取消强制覆盖
         }
       } else {
         ElMessage.error('保存失败，请检查后端服务')
@@ -6504,11 +7085,54 @@ onMounted(() => {
   specialSituationHistory.value = loadHistoryFromStorage(STORAGE_KEY_SPECIAL_SITUATION)
   remarkHistory.value = loadHistoryFromStorage(STORAGE_KEY_REMARK)
 
-  keepAliveTimer = setInterval(() => {
-    if (cloudPortalLoggedIn.value) {
-      keepCloudPortalAlive(userStore.getUserInfo?.id as number | undefined).catch(() => {})
+  keepAliveTimer = setInterval(
+    () => {
+      if (cloudPortalLoggedIn.value) {
+        keepCloudPortalAlive(userStore.getUserInfo?.id as number | undefined).catch(() => {})
+      }
+    },
+    5 * 60 * 1000
+  )
+
+  // 协作功能：监听WebSocket协作事件
+  ws.onCollaboration((message: WsMessage) => {
+    if (message.type === 'row_locked' && message.data) {
+      const { row_id, username } = message.data
+      if (row_id && selectedTable.value) {
+        activeLocksMap.value[row_id] = {
+          row_id,
+          user_id: message.data.user_id,
+          username: username || '其他用户',
+          expires_at: ''
+        }
+      }
+    } else if (message.type === 'row_unlocked' && message.data) {
+      const { row_id } = message.data
+      if (row_id) {
+        delete activeLocksMap.value[row_id]
+      }
+    } else if (message.type === 'row_updated' && message.data) {
+      const { row_id, changed_fields } = message.data
+      // 局部更新：仅更新表格中对应行的变更字段
+      if (row_id && changed_fields) {
+        const targetRow = tableData.value.find((r) => String(r['通行标识ID']) === String(row_id))
+        if (targetRow) {
+          const fieldMapping: Record<string, string> = {
+            review_status: '复核情况',
+            check_pass_id: '核查通行标识',
+            special_situation: '特情',
+            check_split: '核查拆分',
+            remark: '备注'
+          }
+          for (const [enField, cnField] of Object.entries(fieldMapping)) {
+            if (changed_fields[enField] !== undefined) {
+              targetRow[cnField] = changed_fields[enField]
+            }
+          }
+        }
+      }
     }
-  }, 5 * 60 * 1000)
+  })
 })
 
 onUnmounted(() => {
@@ -6517,6 +7141,8 @@ onUnmounted(() => {
     clearInterval(keepAliveTimer)
     keepAliveTimer = null
   }
+  // 离开协作房间
+  ws.leaveAllRooms()
 })
 </script>
 
@@ -6533,43 +7159,6 @@ onUnmounted(() => {
   flex: 1;
   overflow: hidden;
   min-height: 0;
-}
-
-.query-params-desc :deep(.el-descriptions__label) {
-  width: 90px;
-  white-space: nowrap;
-}
-
-.query-params-desc :deep(.el-descriptions__body) {
-  table-layout: fixed;
-}
-
-.query-params-desc :deep(.el-descriptions__table) {
-  table-layout: fixed;
-}
-
-.query-params-desc :deep(.el-descriptions__cell) {
-  max-width: 250px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.query-params-desc :deep(.el-descriptions__content) {
-  max-width: 250px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.query-params-desc :deep(.el-descriptions__body tr td:nth-child(6)) {
-  max-width: 170px;
-  width: 170px;
-}
-
-.query-params-desc :deep(.pass-id-content) {
-  max-width: 280px;
-  width: 280px;
 }
 
 .card-header {
@@ -6786,7 +7375,215 @@ onUnmounted(() => {
   background-color: #e0f2fe !important;
 }
 
+/* 协作锁行标记样式 */
+::deep(.row-locked-self) {
+  background-color: #f0f9eb !important;
+}
+
+::deep(.row-locked-self:hover > td) {
+  background-color: #e1f3d8 !important;
+}
+
+::deep(.row-locked-other) {
+  background-color: #fdf6ec !important;
+}
+
+::deep(.row-locked-other:hover > td) {
+  background-color: #faecd8 !important;
+}
+
 /* 紧凑对话框样式 */
+
+/* 云门户人工核查 - 自适应布局 */
+.audit-top-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.audit-section-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+.audit-query-panel {
+  flex: 1;
+  min-width: 280px;
+  overflow: hidden;
+}
+
+.audit-info-panel {
+  flex: 1;
+  min-width: 280px;
+  min-height: 140px;
+  overflow: hidden;
+}
+
+.audit-params-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.audit-param-item {
+  background: #fafafa;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 5px 8px;
+  transition: border-color 0.2s ease;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.audit-param-item:hover {
+  border-color: #c0c4cc;
+}
+
+.audit-param-item--full {
+  grid-column: 1 / -1;
+}
+
+.audit-param-label {
+  font-size: 11px;
+  color: #909399;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.audit-param-value-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.audit-param-value {
+  font-size: 12px;
+  font-weight: 500;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 6ch;
+  cursor: default;
+  flex: 1;
+}
+
+.audit-param-value--highlight {
+  color: #409eff;
+  cursor: pointer;
+}
+
+.audit-param-value--success {
+  color: #67c23a;
+  cursor: pointer;
+}
+
+.audit-param-value--clickable {
+  color: #606266;
+  cursor: pointer;
+}
+
+.audit-param-value--highlight:hover,
+.audit-param-value--success:hover,
+.audit-param-value--clickable:hover {
+  text-decoration: underline;
+}
+
+.audit-login-panel {
+  width: 260px;
+  flex-shrink: 0;
+}
+
+.audit-main-row {
+  display: flex;
+  gap: 8px;
+}
+
+.audit-right-panel {
+  width: 260px;
+  flex-shrink: 0;
+}
+
+.audit-result-scroll {
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.audit-batch-query-btn {
+  width: 100%;
+  height: 44px;
+  font-size: 15px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
+  border: none;
+  box-shadow: 0 4px 14px rgba(64, 158, 255, 0.4);
+  transition: all 0.3s ease;
+  letter-spacing: 1px;
+}
+
+.audit-batch-query-btn:hover {
+  box-shadow: 0 6px 20px rgba(64, 158, 255, 0.55);
+  transform: translateY(-1px);
+}
+
+.audit-logout-btn {
+  width: 100px;
+  height: 28px;
+  font-size: 12px;
+}
+
+@media (max-width: 1400px) {
+  .audit-params-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .audit-login-panel {
+    width: 240px;
+  }
+  .audit-right-panel {
+    width: 240px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .audit-top-row {
+    flex-direction: column;
+  }
+  .audit-query-panel,
+  .audit-info-panel {
+    min-width: 100%;
+  }
+  .audit-params-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .audit-login-panel {
+    width: 100%;
+  }
+  .audit-main-row {
+    flex-direction: column;
+  }
+  .audit-right-panel {
+    width: 100%;
+  }
+  .audit-result-scroll {
+    max-height: 40vh;
+  }
+}
+
+@media (max-width: 900px) {
+  .audit-params-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 .compact-dialog ::deep(.el-dialog__header) {
   padding: 5px 15px;
   margin: 0;

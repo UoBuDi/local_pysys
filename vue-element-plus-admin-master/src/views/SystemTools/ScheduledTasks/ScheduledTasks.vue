@@ -346,11 +346,26 @@ onMounted(() => {
                   size="small"
                   @click="handleRunTask(row)"
                   :loading="runLoading === row.task_name"
+                  v-hasPermi="'scheduled-tasks:run'"
                 >
                   立即执行
                 </ElButton>
-                <ElButton type="default" size="small" @click="handleEditTask(row)"> 编辑 </ElButton>
-                <ElButton type="info" size="small" @click="handleViewHistory(row)"> 历史 </ElButton>
+                <ElButton
+                  type="default"
+                  size="small"
+                  @click="handleEditTask(row)"
+                  v-hasPermi="'scheduled-tasks:edit'"
+                >
+                  编辑
+                </ElButton>
+                <ElButton
+                  type="info"
+                  size="small"
+                  @click="handleViewHistory(row)"
+                  v-hasPermi="'scheduled-tasks:view-history'"
+                >
+                  历史
+                </ElButton>
               </template>
             </ElTableColumn>
           </ElTable>

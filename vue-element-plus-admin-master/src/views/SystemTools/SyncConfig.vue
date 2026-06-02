@@ -22,7 +22,12 @@
                   <el-input v-model="remoteDbForm.host" />
                 </el-form-item>
                 <el-form-item :label="$t('systemTools.port')" prop="port">
-                  <el-input-number v-model="remoteDbForm.port" controls-position="right" :min="1" :max="65535" />
+                  <el-input-number
+                    v-model="remoteDbForm.port"
+                    controls-position="right"
+                    :min="1"
+                    :max="65535"
+                  />
                 </el-form-item>
                 <el-form-item :label="$t('systemTools.username')" prop="username">
                   <el-input v-model="remoteDbForm.username" />
@@ -54,12 +59,14 @@
                     type="primary"
                     @click="testRemoteConnection"
                     :loading="remoteTestLoading"
+                    v-hasPermi="'system:sync:config'"
                   >
                     {{ $t('systemTools.testConnection') }}
                   </el-button>
                   <el-button
                     @click="showRemoteTables"
                     :loading="remoteTablesLoading"
+                    v-hasPermi="'system:sync:view'"
                   >
                     {{ $t('systemTools.showTableList') }}
                   </el-button>
@@ -86,7 +93,12 @@
                   <el-input v-model="localDbForm.host" />
                 </el-form-item>
                 <el-form-item :label="$t('systemTools.port')" prop="port">
-                  <el-input-number v-model="localDbForm.port" controls-position="right" :min="1" :max="65535" />
+                  <el-input-number
+                    v-model="localDbForm.port"
+                    controls-position="right"
+                    :min="1"
+                    :max="65535"
+                  />
                 </el-form-item>
                 <el-form-item :label="$t('systemTools.username')" prop="username">
                   <el-input v-model="localDbForm.username" />
@@ -121,10 +133,7 @@
                   >
                     {{ $t('systemTools.testConnection') }}
                   </el-button>
-                  <el-button
-                    @click="showLocalTables"
-                    :loading="localTablesLoading"
-                  >
+                  <el-button @click="showLocalTables" :loading="localTablesLoading">
                     {{ $t('systemTools.showTableList') }}
                   </el-button>
                 </el-form-item>
@@ -239,7 +248,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_PATH || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_PATH || ''
 const PASSWORD_MASK = '***'
 
 const { t } = useI18n()
@@ -371,7 +380,9 @@ const getConfig = async (configData?: Record<string, any>) => {
       const parsedTimeout = Number(config.SYNC.timeout)
       syncParams.batchSize = Number.isNaN(parsedBatch) ? syncParams.batchSize : parsedBatch
       syncParams.retryCount = Number.isNaN(parsedRetry) ? syncParams.retryCount : parsedRetry
-      syncParams.timeoutSeconds = Number.isNaN(parsedTimeout) ? syncParams.timeoutSeconds : parsedTimeout
+      syncParams.timeoutSeconds = Number.isNaN(parsedTimeout)
+        ? syncParams.timeoutSeconds
+        : parsedTimeout
       syncParams.primaryKeys = config.SYNC.primary_keys ?? syncParams.primaryKeys
       syncParams.defaultMonth = config.SYNC.default_month ?? syncParams.defaultMonth
     }
@@ -554,7 +565,10 @@ const saveConfig = async () => {
         host: remoteDbForm.host,
         port: remoteDbForm.port.toString(),
         user: remoteDbForm.username,
-        password: remotePasswordMasked.value && !remoteDbForm.password ? PASSWORD_MASK : remoteDbForm.password,
+        password:
+          remotePasswordMasked.value && !remoteDbForm.password
+            ? PASSWORD_MASK
+            : remoteDbForm.password,
         database: remoteDbForm.database,
         charset: remoteDbForm.charset
       },
@@ -562,7 +576,8 @@ const saveConfig = async () => {
         host: localDbForm.host,
         port: localDbForm.port.toString(),
         user: localDbForm.username,
-        password: localPasswordMasked.value && !localDbForm.password ? PASSWORD_MASK : localDbForm.password,
+        password:
+          localPasswordMasked.value && !localDbForm.password ? PASSWORD_MASK : localDbForm.password,
         database: localDbForm.database,
         charset: localDbForm.charset
       },

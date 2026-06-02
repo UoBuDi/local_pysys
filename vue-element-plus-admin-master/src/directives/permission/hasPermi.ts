@@ -17,20 +17,25 @@ const hasPermission = (value: string): boolean => {
   }
   return false
 }
-function hasPermi(el: Element, binding: DirectiveBinding) {
-  const value = binding.value
 
+function updateElementVisibility(el: Element, binding: DirectiveBinding) {
+  const value = binding.value
   const flag = hasPermission(value)
-  if (!flag) {
-    el.parentNode?.removeChild(el)
+  if (flag) {
+    el.removeAttribute('style')
+    ;(el as HTMLElement).style.display = ''
+  } else {
+    ;(el as HTMLElement).style.display = 'none'
   }
-}
-const mounted = (el: Element, binding: DirectiveBinding<any>) => {
-  hasPermi(el, binding)
 }
 
 const permiDirective: Directive = {
-  mounted
+  mounted(el: Element, binding: DirectiveBinding<any>) {
+    updateElementVisibility(el, binding)
+  },
+  updated(el: Element, binding: DirectiveBinding<any>) {
+    updateElementVisibility(el, binding)
+  }
 }
 
 export const setupPermissionDirective = (app: App<Element>) => {

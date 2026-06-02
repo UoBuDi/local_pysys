@@ -23,7 +23,7 @@ export interface DashboardStatistics {
   total_split_amount?: number
   station_count?: number
   vehicle_types: Array<{ type: string; code: string; count: number }>
-  media_types: Array<{ type: string; count: number }>
+  media_types: Array<{ type: string | null; count: number }>
   province_data: Array<{ province: string; count: number }>
   daily_transactions?: Array<{ date: string; count: number }>
   created_at: string

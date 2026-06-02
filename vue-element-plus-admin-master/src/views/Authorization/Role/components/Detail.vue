@@ -31,10 +31,22 @@ const nodeClick = (treeData: any) => {
 }
 
 const treeData = ref<any[]>([])
+const buildMenuTree = (items: any[], parentId = 0) => {
+  return items
+    .filter((item) => item.parentId === parentId)
+    .map((item) => {
+      const children = buildMenuTree(items, item.id)
+      return {
+        ...item,
+        ...(children.length > 0 ? { children } : {})
+      }
+    })
+}
 const getMenuList = async () => {
   const res = await getMenuListApi()
   if (res) {
-    treeData.value = res.data.list
+    const list = res.data?.list || []
+    treeData.value = buildMenuTree(list)
     await nextTick()
   }
 }

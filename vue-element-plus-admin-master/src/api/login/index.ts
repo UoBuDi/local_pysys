@@ -22,6 +22,9 @@ interface LoginResponse {
     username: string
     roles?: any[]
     roleList?: string[]
+    avatar?: string
+    nickname?: string
+    email?: string
   }
 }
 

@@ -20,9 +20,11 @@ const isLoading = ref(true)
 const hasError = ref(false)
 const imageSrc = ref('')
 
-const defaultLoading = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0iIzk5OSI+TG9hZGluZy4uLjwvdGV4dD48L3N2Zz4='
+const defaultLoading =
+  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0iIzk5OSI+TG9hZGluZy4uLjwvdGV4dD48L3N2Zz4='
 
-const defaultError = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmZjBmMCIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0iI2ZmNmI2YiI+RXJyb3I8L3RleHQ+PC9zdmc+'
+const defaultError =
+  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmZjBmMCIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0iI2ZmNmI2YiI+RXJyb3I8L3RleHQ+PC9zdmc+'
 
 const styles = computed(() => {
   const width = typeof props.width === 'number' ? `${props.width}px` : props.width
@@ -58,7 +60,7 @@ const loadImage = () => {
 }
 
 const handleIntersect = (entries: IntersectionObserverEntry[]) => {
-  entries.forEach(entry => {
+  entries.forEach((entry) => {
     if (entry.isIntersecting) {
       loadImage()
       if (observer && imageRef.value) {
@@ -95,19 +97,22 @@ onBeforeUnmount(() => {
   }
 })
 
-watch(() => props.src, () => {
-  if (observer && imageRef.value) {
-    observer.unobserve(imageRef.value)
+watch(
+  () => props.src,
+  () => {
+    if (observer && imageRef.value) {
+      observer.unobserve(imageRef.value)
+    }
+    setupObserver()
   }
-  setupObserver()
-})
+)
 </script>
 
 <template>
   <div class="lazy-image-container" :style="styles">
     <img
       ref="imageRef"
-      :src="imageSrc || (isLoading ? (loading || defaultLoading) : '')"
+      :src="imageSrc || (isLoading ? loading || defaultLoading : '')"
       :alt="alt"
       :style="styles"
       class="lazy-image"

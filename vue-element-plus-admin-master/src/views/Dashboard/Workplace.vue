@@ -126,7 +126,7 @@ const { t } = useI18n()
                 <div class="text-20px">
                   {{ t('workplace.goodMorning') }}，Archer，{{ t('workplace.happyDay') }}
                 </div>
-                <div class="mt-10px text-14px text-gray-500">
+                <div class="mt-10px text-14px text-[var(--el-text-color-regular)]">
                   {{ t('workplace.toady') }}，20℃ - 32℃！
                 </div>
               </div>
@@ -135,7 +135,9 @@ const { t } = useI18n()
           <ElCol :xl="12" :lg="12" :md="12" :sm="24" :xs="24">
             <div class="flex h-70px items-center justify-end lt-sm:mt-20px">
               <div class="px-8px text-right">
-                <div class="text-14px text-gray-400 mb-20px">{{ t('workplace.project') }}</div>
+                <div class="text-14px text-[var(--el-text-color-secondary)] mb-20px">{{
+                  t('workplace.project')
+                }}</div>
                 <CountTo
                   class="text-20px"
                   :start-val="0"
@@ -145,7 +147,9 @@ const { t } = useI18n()
               </div>
               <ElDivider direction="vertical" />
               <div class="px-8px text-right">
-                <div class="text-14px text-gray-400 mb-20px">{{ t('workplace.toDo') }}</div>
+                <div class="text-14px text-[var(--el-text-color-secondary)] mb-20px">{{
+                  t('workplace.toDo')
+                }}</div>
                 <CountTo
                   class="text-20px"
                   :start-val="0"
@@ -155,7 +159,9 @@ const { t } = useI18n()
               </div>
               <ElDivider direction="vertical" border-style="dashed" />
               <div class="px-8px text-right">
-                <div class="text-14px text-gray-400 mb-20px">{{ t('workplace.access') }}</div>
+                <div class="text-14px text-[var(--el-text-color-secondary)] mb-20px">{{
+                  t('workplace.access')
+                }}</div>
                 <CountTo
                   class="text-20px"
                   :start-val="0"
@@ -195,8 +201,12 @@ const { t } = useI18n()
                   <Icon :icon="item.icon" :size="25" class="mr-10px" />
                   <span class="text-16px">{{ item.name }}</span>
                 </div>
-                <div class="mt-15px text-14px text-gray-400">{{ t(item.message) }}</div>
-                <div class="mt-20px text-12px text-gray-400 flex justify-between">
+                <div class="mt-15px text-14px text-[var(--el-text-color-secondary)]">{{
+                  t(item.message)
+                }}</div>
+                <div
+                  class="mt-20px text-12px text-[var(--el-text-color-secondary)] flex justify-between"
+                >
                   <span>{{ item.personal }}</span>
                   <span>{{ formatTime(item.time, 'yyyy-MM-dd') }}</span>
                 </div>
@@ -227,7 +237,7 @@ const { t } = useI18n()
                     {{ t('workplace.pushCode') }}
                   </Highlight>
                 </div>
-                <div class="mt-15px text-12px text-gray-400">
+                <div class="mt-15px text-12px text-[var(--el-text-color-secondary)]">
                   {{ useTimeAgo(item.time) }}
                 </div>
               </div>

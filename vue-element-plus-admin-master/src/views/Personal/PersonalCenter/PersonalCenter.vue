@@ -8,20 +8,25 @@ import { Dialog } from '@/components/Dialog'
 import EditInfo from './components/EditInfo.vue'
 import EditPassword from './components/EditPassword.vue'
 import CloudPortalAccount from './components/CloudPortalAccount.vue'
+import { useUserStore } from '@/store/modules/user'
+import request from '@/axios'
+
+const userStore = useUserStore()
 
 const userInfo = ref()
 const fetchDetailUserApi = async () => {
-  // 这里可以调用接口获取用户信息
-  const data = {
-    id: 1,
-    username: 'admin',
-    realName: 'admin',
-    phoneNumber: '18888888888',
-    email: '502431556@qq.com',
-    avatarUrl: '',
-    roleList: ['超级管理员']
+  const storeInfo = userStore.getUserInfo
+  if (storeInfo) {
+    userInfo.value = {
+      id: storeInfo.id,
+      username: storeInfo.username,
+      realName: storeInfo.nickname || storeInfo.username,
+      phoneNumber: storeInfo.mobile || '-',
+      email: storeInfo.email || '-',
+      avatarUrl: storeInfo.avatar || '',
+      roleList: storeInfo.roles?.map((r: any) => r.name || r.code) || []
+    }
   }
-  userInfo.value = data
 }
 fetchDetailUserApi()
 
@@ -35,13 +40,20 @@ const saveAvatar = async () => {
   try {
     avatarLoading.value = true
     const base64 = unref(uploadAvatarRef)?.getBase64()
-    console.log(base64)
-    // 这里可以调用修改头像接口
-    fetchDetailUserApi()
+    if (!base64) {
+      ElMessage.warning('请先选择头像')
+      return
+    }
+    await request.post({
+      url: '/api/user/avatar',
+      params: { avatar: base64 }
+    })
+    await fetchDetailUserApi()
     ElMessage.success('修改成功')
     dialogVisible.value = false
   } catch (error) {
     console.log(error)
+    ElMessage.error('头像修改失败')
   } finally {
     avatarLoading.value = false
   }

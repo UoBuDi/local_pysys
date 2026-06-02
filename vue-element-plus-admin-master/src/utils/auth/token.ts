@@ -47,10 +47,7 @@ function setRefreshState(state: Partial<RefreshState>): void {
       return
     }
     const current = getRefreshState()
-    window.sessionStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ ...current, ...state })
-    )
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, ...state }))
   } catch {
     console.warn('写入Token刷新状态失败')
   }
@@ -216,7 +213,9 @@ class TokenManagerClass {
           lastRefreshTime: Date.now()
         })
 
-        console.log(`[TokenManager] Token刷新成功，新Token有效期至: ${new Date(expiresAt).toLocaleString()}`)
+        console.log(
+          `[TokenManager] Token刷新成功，新Token有效期至: ${new Date(expiresAt).toLocaleString()}`
+        )
         return token
       } else {
         console.warn('[TokenManager] Token刷新返回异常:', res)

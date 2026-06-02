@@ -1,7 +1,7 @@
 import requests
 import json
 
-base = 'http://localhost:8000'
+base = 'http://localhost:8001'
 
 login_resp = requests.post(f'{base}/api/login', json={'username': 'admin', 'password': 'admin123'})
 login_data = login_resp.json()

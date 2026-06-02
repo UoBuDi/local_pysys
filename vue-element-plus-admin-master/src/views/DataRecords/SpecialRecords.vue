@@ -32,7 +32,11 @@
               <div class="card-header">
                 <span>无卡车记录</span>
                 <div class="header-actions">
-                  <el-button type="success" @click="handleExport">
+                  <el-button
+                    type="success"
+                    @click="handleExport"
+                    v-hasPermi="'special-records:export'"
+                  >
                     <el-icon><Download /></el-icon>
                     导出
                   </el-button>
@@ -41,6 +45,7 @@
                     :before-upload="handleImport"
                     accept=".xlsx,.xls"
                     style="margin-left: 10px"
+                    v-if="hasExportPerm"
                   >
                     <el-button type="warning">
                       <el-icon><Upload /></el-icon>
@@ -159,7 +164,11 @@
                 </el-form-item>
 
                 <el-form-item>
-                  <el-button type="primary" @click="handleAddNoTruck">
+                  <el-button
+                    type="primary"
+                    @click="handleAddNoTruck"
+                    v-hasPermi="'special-records:add'"
+                  >
                     <el-icon><Plus /></el-icon>
                     添加
                   </el-button>
@@ -208,11 +217,21 @@
               <el-table-column prop="remark" label="备注" min-width="150" align="center" />
               <el-table-column label="操作" width="150" align="center" fixed="right">
                 <template #default="{ row }">
-                  <el-button type="primary" link @click="handleEdit(row)">
+                  <el-button
+                    type="primary"
+                    link
+                    @click="handleEdit(row)"
+                    v-hasPermi="'special-records:edit'"
+                  >
                     <el-icon><Edit /></el-icon>
                     编辑
                   </el-button>
-                  <el-button type="danger" link @click="handleDelete(row)">
+                  <el-button
+                    type="danger"
+                    link
+                    @click="handleDelete(row)"
+                    v-hasPermi="'special-records:delete'"
+                  >
                     <el-icon><Delete /></el-icon>
                     删除
                   </el-button>
@@ -221,10 +240,18 @@
             </el-table>
 
             <div class="batch-actions" v-if="selectedRows.length > 0">
-              <el-button type="danger" @click="handleBatchDelete">
+              <el-button
+                type="danger"
+                @click="handleBatchDelete"
+                v-hasPermi="'special-records:batch-delete'"
+              >
                 批量删除 ({{ selectedRows.length }})
               </el-button>
-              <el-button type="success" @click="handleBatchExport">
+              <el-button
+                type="success"
+                @click="handleBatchExport"
+                v-hasPermi="'special-records:export'"
+              >
                 批量导出 ({{ selectedRows.length }})
               </el-button>
             </div>
@@ -346,6 +373,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Download, Upload, Edit, Delete, Refresh } from '@element-plus/icons-vue'
 import request from '@/axios'
 import detailQueryOptions from '@/assets/data/detail-query-options.json'
+import { hasPermi } from '@/components/Permission/src/utils'
+
+const hasExportPerm = hasPermi('special-records:import')
 
 const activeTab = ref('no-truck')
 const tableRef = ref()

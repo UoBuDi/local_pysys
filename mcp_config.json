@@ -4,7 +4,7 @@
     "port": 3306,
     "user": "root",
     "password": "9a1d4e4ae72d2eaa",
-    "database": "branchdb",
+    "database": "system_db",
     "charset": "utf8mb4",
     "connect_timeout": 30,
     "read_timeout": 30,

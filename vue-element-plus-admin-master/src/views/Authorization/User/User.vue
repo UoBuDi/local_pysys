@@ -16,6 +16,7 @@ import { getRoleListApi } from '@/api/role'
 import { CrudSchema, useCrudSchemas } from '@/hooks/web/useCrudSchemas'
 import { BaseButton } from '@/components/Button'
 import { assignUserRolesApi, getUserRolesApi } from '@/api/user-role'
+import { hasPermi } from '@/components/Permission/src/utils'
 
 const { t } = useI18n()
 
@@ -142,18 +143,26 @@ const tableColumns = reactive<TableColumn[]>([
       default: (data: any) => {
         return (
           <>
-            <BaseButton type="primary" onClick={() => action(data.row, 'edit')}>
-              {t('exampleDemo.edit')}
-            </BaseButton>
-            <BaseButton type="success" onClick={() => action(data.row, 'detail')}>
-              {t('exampleDemo.detail')}
-            </BaseButton>
-            <BaseButton type="warning" onClick={() => openRoleDialog(data.row)}>
-              {t('role.assignRole')}
-            </BaseButton>
-            <BaseButton type="danger" onClick={() => delData(data.row)}>
-              {t('exampleDemo.del')}
-            </BaseButton>
+            {hasPermi('system:user:edit') && (
+              <BaseButton type="primary" onClick={() => action(data.row, 'edit')}>
+                {t('exampleDemo.edit')}
+              </BaseButton>
+            )}
+            {hasPermi('system:user:view') && (
+              <BaseButton type="success" onClick={() => action(data.row, 'detail')}>
+                {t('exampleDemo.detail')}
+              </BaseButton>
+            )}
+            {hasPermi('system:user:assign') && (
+              <BaseButton type="warning" onClick={() => openRoleDialog(data.row)}>
+                {t('role.assignRole')}
+              </BaseButton>
+            )}
+            {hasPermi('system:user:delete') && (
+              <BaseButton type="danger" onClick={() => delData(data.row)}>
+                {t('exampleDemo.del')}
+              </BaseButton>
+            )}
           </>
         )
       }
@@ -466,7 +475,7 @@ const openRoleDialog = async (row: DepartmentUserItem) => {
   // 获取用户当前的角色
   try {
     const res = await getUserRolesApi(row.id)
-    selectedRoles.value = res.data || []
+    selectedRoles.value = (res.data || []).map((r: any) => r.id)
   } catch (error) {
     ElMessage.error(t('exampleDemo.loadFailed'))
     selectedRoles.value = []
@@ -486,6 +495,7 @@ const saveRoles = async () => {
     if (res.code === 200) {
       ElMessage.success(t('exampleDemo.saveSuccess'))
       roleDialogVisible.value = false
+      getList()
     } else {
       ElMessage.error(res.message || t('exampleDemo.saveFailed'))
     }
@@ -518,8 +528,15 @@ const saveRoles = async () => {
       <Search :schema="searchSchema" @search="setSearchParams" @reset="setSearchParams" />
 
       <div class="mt-20px">
-        <BaseButton type="primary" @click="AddAction">{{ t('exampleDemo.add') }}</BaseButton>
-        <BaseButton :loading="delLoading" type="danger" @click="delData(null)">
+        <BaseButton type="primary" @click="AddAction" v-hasPermi="'system:user:add'">
+          {{ t('exampleDemo.add') }}
+        </BaseButton>
+        <BaseButton
+          :loading="delLoading"
+          type="danger"
+          @click="delData(null)"
+          v-hasPermi="'system:user:delete'"
+        >
           {{ t('exampleDemo.del') }}
         </BaseButton>
       </div>

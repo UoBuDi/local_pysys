@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { reactive, ref, unref, watch, computed } from 'vue'
+import { reactive, ref, unref, watch, computed, nextTick } from 'vue'
 import {
   getRoleListApi,
   saveRoleApi,
@@ -22,6 +22,7 @@ import Detail from './components/Detail.vue'
 import { Dialog } from '@/components/Dialog'
 import { BaseButton } from '@/components/Button'
 import { getMenuListApi } from '@/api/menu'
+import { hasPermi } from '@/components/Permission/src/utils'
 
 const { t } = useI18n()
 
@@ -59,6 +60,7 @@ const tableColumns = reactive<TableColumn[]>([
   {
     field: 'status',
     label: t('menu.status'),
+    width: 80,
     formatter: (_, __, cellValue) => {
       return (
         <ElTag type={cellValue ? 'success' : 'danger'}>
@@ -69,30 +71,43 @@ const tableColumns = reactive<TableColumn[]>([
   },
   {
     field: 'created_at',
-    label: t('userDemo.createTime')
+    label: t('userDemo.createTime'),
+    width: 170
   },
   {
     field: 'action',
     label: t('userDemo.action'),
+    width: 380,
+    fixed: 'right',
     slots: {
       default: (data: any) => {
         return (
           <>
-            <BaseButton type="primary" onClick={() => action(data.row, 'edit')}>
-              {t('exampleDemo.edit')}
-            </BaseButton>
-            <BaseButton type="success" onClick={() => action(data.row, 'detail')}>
-              {t('exampleDemo.detail')}
-            </BaseButton>
-            <BaseButton type="warning" onClick={() => assignMenus(data.row)}>
-              {t('role.menu')}
-            </BaseButton>
-            <BaseButton type="info" onClick={() => assignPermissions(data.row)}>
-              权限
-            </BaseButton>
-            <BaseButton type="danger" onClick={() => delData(data.row)}>
-              {t('exampleDemo.del')}
-            </BaseButton>
+            {hasPermi('system:role:edit') && (
+              <BaseButton type="primary" onClick={() => action(data.row, 'edit')}>
+                {t('exampleDemo.edit')}
+              </BaseButton>
+            )}
+            {hasPermi('system:role:view') && (
+              <BaseButton type="success" onClick={() => action(data.row, 'detail')}>
+                {t('exampleDemo.detail')}
+              </BaseButton>
+            )}
+            {hasPermi('system:role:assign') && (
+              <BaseButton type="warning" onClick={() => assignMenus(data.row)}>
+                {t('role.menu')}
+              </BaseButton>
+            )}
+            {hasPermi('system:role:assign-permission') && (
+              <BaseButton type="info" onClick={() => assignPermissions(data.row)}>
+                权限
+              </BaseButton>
+            )}
+            {hasPermi('system:role:delete') && (
+              <BaseButton type="danger" onClick={() => delData(data.row)}>
+                {t('exampleDemo.del')}
+              </BaseButton>
+            )}
           </>
         )
       }
@@ -208,16 +223,10 @@ const writeRefEl = ref<ComponentRef<typeof Write>>()
 
 const detailRef = ref<ComponentRef<typeof Detail>>()
 
-const print = () => {
-  const detailRefEl = unref(detailRef)
-  detailRefEl?.print()
-}
-
 // 菜单分配相关
 const menuDialogVisible = ref(false)
 const menuLoading = ref(false)
 const menuList = ref<any[]>([])
-const selectedMenus = ref<number[]>([])
 const menuTreeRef = ref()
 const selectAll = ref(false)
 const isIndeterminate = ref(false)
@@ -240,7 +249,8 @@ const getAllMenuIds = (menus: any[]): number[] => {
 // 检查是否全选
 const checkSelectAll = () => {
   const allMenuIds = getAllMenuIds(menuList.value)
-  const selectedCount = selectedMenus.value.length
+  const checkedKeys = menuTreeRef.value?.getCheckedKeys() || []
+  const selectedCount = checkedKeys.length
   const totalCount = allMenuIds.length
 
   if (selectedCount === 0) {
@@ -259,28 +269,31 @@ const checkSelectAll = () => {
 const handleSelectAll = (checked: boolean) => {
   if (checked) {
     const allMenuIds = getAllMenuIds(menuList.value)
-    selectedMenus.value = allMenuIds
+    menuTreeRef.value?.setCheckedKeys(allMenuIds)
   } else {
-    selectedMenus.value = []
+    menuTreeRef.value?.setCheckedKeys([])
   }
   isIndeterminate.value = false
 }
 
-// 监听选中菜单变化
-watch(
-  selectedMenus,
-  () => {
-    checkSelectAll()
-  },
-  { deep: true }
-)
-
 // 获取菜单列表
+const buildMenuTree = (items: any[], parentId = 0) => {
+  return items
+    .filter((item) => item.parentId === parentId && item.type !== 2)
+    .map((item) => {
+      const children = buildMenuTree(items, item.id)
+      return {
+        ...item,
+        ...(children.length > 0 ? { children } : {})
+      }
+    })
+}
 const getMenuList = async () => {
   menuLoading.value = true
   try {
     const res = await getMenuListApi()
-    menuList.value = res.data?.list || []
+    const list = res.data?.list || []
+    menuList.value = buildMenuTree(list)
   } catch (error) {
     ElMessage.error(t('exampleDemo.loadFailed'))
   } finally {
@@ -289,31 +302,60 @@ const getMenuList = async () => {
 }
 
 // 打开菜单分配对话框
+// 从菜单树中提取所有叶子节点ID
+const getLeafIds = (nodes: any[]): number[] => {
+  const ids: number[] = []
+  const traverse = (items: any[]) => {
+    items.forEach((item) => {
+      if (item.children && item.children.length > 0) {
+        traverse(item.children)
+      } else {
+        ids.push(item.id)
+      }
+    })
+  }
+  traverse(nodes)
+  return ids
+}
+
+// 从已保存的菜单ID中过滤出叶子节点ID（用于setCheckedKeys回显）
+const filterLeafIds = (savedIds: number[], tree: any[]): number[] => {
+  const leafSet = new Set(getLeafIds(tree))
+  return savedIds.filter((id) => leafSet.has(id))
+}
+
 const assignMenus = async (row: any) => {
   currentRow.value = row
   menuDialogVisible.value = true
 
-  // 获取菜单列表
   await getMenuList()
 
-  // 获取角色当前的菜单
   try {
     const res = await getRoleMenusApi(row.id)
-    selectedMenus.value = res.data || []
+    const menuIds = res.data || []
+    const leafIds = filterLeafIds(menuIds, menuList.value)
+    await nextTick()
+    menuTreeRef.value?.setCheckedKeys(leafIds)
+    checkSelectAll()
   } catch (error) {
     ElMessage.error(t('exampleDemo.loadFailed'))
-    selectedMenus.value = []
   }
 }
 
 // 保存菜单分配
+// 保存时必须包含半选父节点ID，后端需通过父节点构建完整菜单树
+// 回显时仅传叶子节点ID给setCheckedKeys，el-tree自动推导父节点选中状态
 const saveMenus = async () => {
   if (!currentRow.value) return
 
   try {
+    const checkedKeys = menuTreeRef.value?.getCheckedKeys() || []
+    const halfCheckedKeys = menuTreeRef.value?.getHalfCheckedKeys() || []
+    const allMenuIds = [...checkedKeys, ...halfCheckedKeys]
+
     const res = await assignRoleMenusApi({
       role_id: currentRow.value.id,
-      menu_ids: selectedMenus.value
+      menu_ids: allMenuIds
     })
 
     if (res.code === 200) {
@@ -337,19 +379,19 @@ const selectedPermissions = ref<number[]>([])
 const permissionSelectAll = ref(false)
 const permissionIsIndeterminate = ref(false)
 
-// 按模块分组权限
+// 按所属菜单页面分组权限
 const groupedPermissions = computed(() => {
   const groups: Record<string, any[]> = {}
   permissionList.value.forEach((perm) => {
-    const module = perm.module || '其他'
-    if (!groups[module]) {
-      groups[module] = []
+    const groupKey = perm.menu_name || '未关联页面'
+    if (!groups[groupKey]) {
+      groups[groupKey] = []
     }
-    groups[module].push(perm)
+    groups[groupKey].push(perm)
   })
-  return Object.keys(groups).map((module) => ({
-    module,
-    permissions: groups[module]
+  return Object.keys(groups).map((menuName) => ({
+    module: menuName,
+    permissions: groups[menuName]
   }))
 })
 
@@ -460,8 +502,15 @@ const savePermissions = async () => {
     <Search :schema="searchSchema" @search="setSearchParams" @reset="setSearchParams" />
 
     <div class="mt-20px">
-      <BaseButton type="primary" @click="AddAction">{{ t('exampleDemo.add') }}</BaseButton>
-      <BaseButton :loading="delLoading" type="danger" @click="delData(null)">
+      <BaseButton type="primary" @click="AddAction" v-hasPermi="'system:role:add'">
+        {{ t('exampleDemo.add') }}
+      </BaseButton>
+      <BaseButton
+        :loading="delLoading"
+        type="danger"
+        @click="delData(null)"
+        v-hasPermi="'system:role:delete'"
+      >
         {{ t('exampleDemo.del') }}
       </BaseButton>
     </div>
@@ -492,9 +541,6 @@ const savePermissions = async () => {
       <BaseButton v-if="!isDetail" type="primary" :loading="saveLoading" @click="save">
         {{ t('exampleDemo.save') }}
       </BaseButton>
-      <BaseButton v-else type="primary" @click="print">
-        {{ t('exampleDemo.print') }}
-      </BaseButton>
       <BaseButton @click="dialogVisible = false">{{ t('exampleDemo.close') }}</BaseButton>
     </template>
   </Dialog>
@@ -519,8 +565,8 @@ const savePermissions = async () => {
         :data="menuList"
         show-checkbox
         node-key="id"
-        :props="{ label: 'name', children: 'children' }"
-        v-model:checked-keys="selectedMenus"
+        :props="{ label: 'title', children: 'children' }"
+        @check="checkSelectAll"
       />
     </div>
 

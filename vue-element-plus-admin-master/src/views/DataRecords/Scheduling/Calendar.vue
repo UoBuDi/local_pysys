@@ -5,7 +5,11 @@
         <div class="card-header">
           <span>排班日历</span>
           <div class="header-actions">
-            <el-button type="primary" @click="handleExport">
+            <el-button
+              type="primary"
+              @click="handleExport"
+              v-hasPermi="'scheduling:calendar:export'"
+            >
               <el-icon><Download /></el-icon>
               导出
             </el-button>
@@ -14,13 +18,19 @@
               :before-upload="handleImport"
               accept=".xlsx,.xls"
               style="margin-left: 10px"
+              v-if="hasImportPerm"
             >
               <el-button type="warning">
                 <el-icon><Upload /></el-icon>
                 导入
               </el-button>
             </el-upload>
-            <el-button type="danger" @click="handleResetMonth" style="margin-left: 10px">
+            <el-button
+              type="danger"
+              @click="handleResetMonth"
+              style="margin-left: 10px"
+              v-hasPermi="'scheduling:calendar:reset'"
+            >
               <el-icon><Refresh /></el-icon>
               重置当月
             </el-button>
@@ -241,6 +251,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Download, Upload, Refresh, Plus } from '@element-plus/icons-vue'
 import request from '@/axios'
+import { hasPermi } from '@/components/Permission/src/utils'
+
+const hasImportPerm = hasPermi('scheduling:calendar:import')
 
 interface Group {
   id: number

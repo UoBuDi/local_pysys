@@ -9,8 +9,10 @@ import base64
 import io
 import json
 
+import pymysql
 from fastapi import APIRouter, Depends, Query
 from typing import Optional
+from datetime import datetime, timedelta
 
 from core.dependencies import get_current_user
 from core.models import ExecuteMatchRequest, UpdateMatchRequest, SplitStatisticsRequest
@@ -432,10 +434,30 @@ async def preview_split_match(request: ExecuteMatchRequest, user: dict = Depends
 
 @router.post("/api/split-match/update/")
 async def update_split_match_data(request: UpdateMatchRequest, user: dict = Depends(get_current_user)):
-    """更新拆分匹配的数据"""
+    """更新拆分匹配的数据（支持乐观锁校验）"""
     try:
         config = get_app_config()
         from database import get_db_connection
+
+        # 乐观锁校验：若请求携带 version 字段，校验版本号
+        if request.version is not None and not request.force_overwrite:
+            with get_db_connection("USER_DB", config) as conn:
+                with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                    cursor.execute(
+                        "SELECT version, updated_by FROM row_versions WHERE table_name = %s AND row_id = %s",
+                        (request.table_name, request.row_id)
+                    )
+                    version_row = cursor.fetchone()
+
+                    if version_row and version_row["version"] != request.version:
+                        return {
+                            "code": 409,
+                            "message": "数据已被其他用户修改，请刷新后重试",
+                            "data": {
+                                "current_version": version_row["version"],
+                                "updated_by": version_row["updated_by"]
+                            }
+                        }
 
         with get_db_connection("CHECK_DATA_DB", config) as conn:
             with conn.cursor() as cursor:
@@ -468,13 +490,29 @@ async def update_split_match_data(request: UpdateMatchRequest, user: dict = Depe
 
                 affected_rows = cursor.rowcount
 
-                return {
-                    "code": 200,
-                    "message": f"成功更新 {affected_rows} 条记录",
-                    "data": {
-                        "affectedRows": affected_rows
-                    }
-                }
+        # 更新成功后递增版本号
+        username = user.get("username", "")
+        with get_db_connection("USER_DB", config) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE row_versions SET version = version + 1, updated_by = %s WHERE table_name = %s AND row_id = %s",
+                    (username, request.table_name, request.row_id)
+                )
+                conn.commit()
+                if cursor.rowcount == 0:
+                    cursor.execute(
+                        "INSERT INTO row_versions (table_name, row_id, version, updated_by) VALUES (%s, %s, 2, %s)",
+                        (request.table_name, request.row_id, username)
+                    )
+                    conn.commit()
+
+        return {
+            "code": 200,
+            "message": f"成功更新 {affected_rows} 条记录",
+            "data": {
+                "affectedRows": affected_rows
+            }
+        }
 
     except Exception as e:
         logger.error(f"更新拆分匹配数据失败: {e}")
@@ -699,3 +737,239 @@ async def get_split_statistics(request: SplitStatisticsRequest):
     except Exception as e:
         logger.error(f"获取拆分统计失败: {e}")
         return {"code": 500, "message": f"获取拆分统计失败: {str(e)}"}
+
+
+LOCK_EXPIRE_MINUTES = 5
+
+
+@router.post("/api/split-match/lock/")
+async def lock_row(request: dict, user: dict = Depends(get_current_user)):
+    """获取行锁（使用数据库 row_locks 表）"""
+    table_name = request.get("table_name", "")
+    row_id = request.get("row_id", "")
+    if not table_name or not row_id:
+        return {"code": 400, "message": "table_name 和 row_id 不能为空"}
+
+    user_id = user.get("id", 0)
+    username = user.get("username", "")
+
+    try:
+        config = get_app_config()
+        from database import get_db_connection
+
+        with get_db_connection("USER_DB", config) as conn:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                now = datetime.now()
+
+                # 清理该行的过期锁
+                cursor.execute(
+                    "DELETE FROM row_locks WHERE table_name = %s AND row_id = %s AND expires_at < %s",
+                    (table_name, row_id, now)
+                )
+                conn.commit()
+
+                # 查询当前有效锁
+                cursor.execute(
+                    "SELECT user_id, username, expires_at FROM row_locks WHERE table_name = %s AND row_id = %s",
+                    (table_name, row_id)
+                )
+                existing = cursor.fetchone()
+
+                if existing:
+                    if existing["user_id"] == user_id:
+                        # 当前用户已持有锁，续期
+                        new_expires = now + timedelta(minutes=LOCK_EXPIRE_MINUTES)
+                        cursor.execute(
+                            "UPDATE row_locks SET expires_at = %s WHERE table_name = %s AND row_id = %s AND user_id = %s",
+                            (new_expires, table_name, row_id, user_id)
+                        )
+                        conn.commit()
+                        return {"code": 200, "data": {"locked": True, "own_lock": True}}
+                    else:
+                        # 被其他用户锁定
+                        return {
+                            "code": 200,
+                            "data": {
+                                "locked": False,
+                                "own_lock": False,
+                                "locked_by": existing["username"],
+                                "user_id": existing["user_id"]
+                            }
+                        }
+
+                # 无锁，新建
+                expires_at = now + timedelta(minutes=LOCK_EXPIRE_MINUTES)
+                cursor.execute(
+                    "INSERT INTO row_locks (table_name, row_id, user_id, username, locked_at, expires_at) VALUES (%s, %s, %s, %s, %s, %s)",
+                    (table_name, row_id, user_id, username, now, expires_at)
+                )
+                conn.commit()
+                return {"code": 200, "data": {"locked": True, "own_lock": True}}
+
+    except Exception as e:
+        logger.error(f"获取行锁失败: {e}")
+        return {"code": 500, "message": f"获取行锁失败: {str(e)}"}
+
+
+@router.post("/api/split-match/unlock/")
+async def unlock_row(request: dict, user: dict = Depends(get_current_user)):
+    """释放行锁（使用数据库 row_locks 表）"""
+    table_name = request.get("table_name", "")
+    row_id = request.get("row_id", "")
+    user_id = user.get("id", 0)
+
+    try:
+        config = get_app_config()
+        from database import get_db_connection
+
+        with get_db_connection("USER_DB", config) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "DELETE FROM row_locks WHERE table_name = %s AND row_id = %s AND user_id = %s",
+                    (table_name, row_id, user_id)
+                )
+                conn.commit()
+                released = cursor.rowcount > 0
+                return {"code": 200, "message": "success", "data": {"released": released}}
+
+    except Exception as e:
+        logger.error(f"释放行锁失败: {e}")
+        return {"code": 500, "message": f"释放行锁失败: {str(e)}"}
+
+
+@router.get("/api/split-match/active-locks/")
+async def get_active_locks(
+    table_name: str = Query(..., description="表名"),
+    user: dict = Depends(get_current_user)
+):
+    """获取指定表的活跃行锁列表（使用数据库 row_locks 表）"""
+    try:
+        config = get_app_config()
+        from database import get_db_connection
+
+        with get_db_connection("USER_DB", config) as conn:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                now = datetime.now()
+
+                # 清理过期锁
+                cursor.execute(
+                    "DELETE FROM row_locks WHERE table_name = %s AND expires_at < %s",
+                    (table_name, now)
+                )
+                conn.commit()
+
+                # 查询活跃锁
+                cursor.execute(
+                    "SELECT row_id, user_id, username, expires_at FROM row_locks WHERE table_name = %s AND expires_at >= %s",
+                    (table_name, now)
+                )
+                locks = []
+                for row in cursor.fetchall():
+                    expires_at = row["expires_at"]
+                    locks.append({
+                        "row_id": row["row_id"],
+                        "user_id": row["user_id"],
+                        "username": row["username"],
+                        "expires_at": expires_at.isoformat() if isinstance(expires_at, datetime) else str(expires_at)
+                    })
+                return {"code": 200, "message": "success", "data": locks}
+
+    except Exception as e:
+        logger.error(f"获取活跃锁列表失败: {e}")
+        return {"code": 500, "message": f"获取活跃锁列表失败: {str(e)}"}
+
+
+@router.get("/api/split-match/row-version/")
+async def get_row_version(
+    table_name: str = Query(..., description="表名"),
+    row_id: str = Query(..., description="行标识ID"),
+    user: dict = Depends(get_current_user)
+):
+    """获取行版本号（使用数据库 row_versions 表，懒初始化）"""
+    try:
+        config = get_app_config()
+        from database import get_db_connection
+
+        with get_db_connection("USER_DB", config) as conn:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(
+                    "SELECT version, updated_by, updated_at FROM row_versions WHERE table_name = %s AND row_id = %s",
+                    (table_name, row_id)
+                )
+                row = cursor.fetchone()
+
+                if row:
+                    updated_at = row["updated_at"]
+                    return {
+                        "code": 200,
+                        "data": {
+                            "version": row["version"],
+                            "updated_by": row["updated_by"],
+                            "updated_at": updated_at.isoformat() if isinstance(updated_at, datetime) else str(updated_at)
+                        }
+                    }
+
+                # 懒初始化：记录不存在时创建
+                cursor.execute(
+                    "INSERT INTO row_versions (table_name, row_id, version) VALUES (%s, %s, 1)",
+                    (table_name, row_id)
+                )
+                conn.commit()
+                return {
+                    "code": 200,
+                    "data": {
+                        "version": 1,
+                        "updated_by": None,
+                        "updated_at": None
+                    }
+                }
+
+    except Exception as e:
+        logger.error(f"获取行版本号失败: {e}")
+        return {"code": 500, "message": f"获取行版本号失败: {str(e)}"}
+
+
+@router.get("/api/split-match/single-row/")
+async def get_single_row(
+    table_name: str = Query(..., description="表名"),
+    row_id: str = Query(..., description="行标识ID"),
+    user: dict = Depends(get_current_user)
+):
+    """获取单行数据（排除BLOB列，用于协作局部更新）"""
+    try:
+        config = get_app_config()
+        from database import get_db_connection
+
+        with get_db_connection("CHECK_DATA_DB", config) as conn:
+            with conn.cursor() as cursor:
+                # 获取表结构，排除BLOB列
+                cursor.execute(f"DESCRIBE `{table_name}`")
+                actual_columns = {row[0] for row in cursor.fetchall()}
+                BLOB_COLUMNS = {'查核资料1', '查核资料2'}
+                text_columns = [c for c in actual_columns if c not in BLOB_COLUMNS]
+                col_list = ', '.join(f'`{c}`' for c in text_columns)
+
+                cursor.execute(
+                    f"SELECT {col_list} FROM `{table_name}` WHERE `通行标识ID` = %s LIMIT 1",
+                    (row_id,)
+                )
+                columns = [desc[0] for desc in cursor.description]
+                row = cursor.fetchone()
+
+                if not row:
+                    return {"code": 404, "message": "未找到该行数据"}
+
+                row_dict = {}
+                for i, col in enumerate(columns):
+                    val = row[i]
+                    if isinstance(val, datetime):
+                        val = val.isoformat()
+                    elif isinstance(val, bytes):
+                        val = val.decode('utf-8', errors='replace')
+                    row_dict[col] = val
+
+                return {"code": 200, "data": row_dict}
+
+    except Exception as e:
+        logger.error(f"获取单行数据失败: {e}")
+        return {"code": 500, "message": f"获取单行数据失败: {str(e)}"}

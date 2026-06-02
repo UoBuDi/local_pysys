@@ -2,6 +2,255 @@
 
 本文件记录项目的所有重要变更，格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/)。
 
+## [2026-06-02] - 聊天功能P0/P1修复（消息回显+实时广播+房间管理）
+
+### 🔧 修复 (Bug Fixes)
+
+- **消息发送后无回显**: 改为乐观更新模式，发送后立即在本地显示消息（临时ID），API返回后替换为真实ID，不再依赖 `loadMessages` 重新拉取
+- **其他用户不能实时看到消息**: 后端 `broadcast_to_frontend` 改为 `broadcast_to_room`，按房间定向广播
+- **WebSocket连接依赖Footer组件**: 将WebSocket连接提升到 `App.vue`，登录后立即连接，不依赖Footer挂载
+- **WebSocket重连后丢失房间**: 重连后自动重新加入 `joinedRooms` 中的所有房间
+- **前端未joinRoom导致房间广播失效**: 切换房间时自动调用 `joinRoom`/`leaveRoom`
+- **未读计数不同步**: WebSocket推送消息到达时同步更新会话列表的 `unread_count`
+
+### 🆕 新增 (Features)
+
+- **删除消息API**: `DELETE /api/chat/message/{message_id}`，仅发送者可删除，删除后广播 `chat_message_deleted` 事件
+- **历史消息向上翻页**: 滚动到顶部时自动加载更早的消息（`before_id` 参数），保持滚动位置不跳动
+- **在线用户列表实时刷新**: 聊天窗口打开时每15秒轮询在线用户，关闭时停止轮询
+- **发送失败标记**: 消息发送失败时标记 `_failed` 状态
+
+### 🔄 变更 (Changes)
+
+- **send_message API返回值**: 增加 `created_at` 字段，支持乐观更新替换
+- **chatEventTypes**: 增加 `chat_message_deleted` 事件类型
+- **OnlineUser类型**: 增加 `online` 可选字段
+- **ChatWindow onUnmounted**: 关闭时 `leaveRoom` + 停止在线用户轮询
+
+## [2026-06-02] - 恢复聊天功能（从v2.12恢复 + 优化）
+
+### 🔧 修复 (Bug Fixes)
+
+- **聊天功能恢复**: 从 pysys-v2.12.0-deploy.zip 恢复完整聊天代码，修复v2.14+版本中聊天API被回退为空壳导致大厅和用户列表不显示的问题
+  - 恢复 `routers/chat.py` 全部7个API的完整实现
+  - 恢复 `core/websocket_manager.py` 的 build_message、房间管理、协作锁功能
+  - 恢复 `core/ws_manager_instance.py` 单例模块
+  - 恢复 `routers/websocket_endpoints.py` 的 join_room/leave_room/collab_event 消息处理
+  - 恢复 `main.py` startup 中的 chat_messages/chat_sessions 自动建表逻辑
+
+### 🔄 变更 (Changes)
+
+- **私聊房间ID前缀**: 从 `private_` 修正为 `chat_`，符合文档9.10节规范（`chat_{min_uid}_{max_uid}`）
+- **在线用户查询优化**: 从"返回所有DB用户"改为"基于WebSocket连接状态标记在线/离线"
+- **WebSocket Token鉴权**: 新增前端连接时携带Token，后端解析Token绑定user_id/username，支持在线用户状态追踪
+- **前端WebSocket连接**: `websocket.ts` 的 `connect()` 方法从Pinia持久化存储读取Token并附加到URL
+
+## [2026-05-20] - 在线聊天系统（阶段4 P3）+ 协作锁MySQL迁移
+
+### 🆕 新增 (Features)
+
+#### **F-09 在线聊天系统**
+
+**功能**: 一对一私聊、多人群聊、文件传输、会话管理、实时消息推送。
+
+**后端实现**:
+- `routers/chat.py` — 新建聊天API路由
+  - `POST /api/chat/send/` — 发送消息（文字/文件），WebSocket广播
+  - `GET /api/chat/history/{room_id}` — 获取聊天历史（支持向上翻页）
+  - `POST /api/chat/read/{room_id}` — 标记房间消息已读
+  - `GET /api/chat/sessions/` — 获取当前用户会话列表
+  - `POST /api/chat/create-room/` — 创建聊天房间（私聊/群聊）
+  - `GET /api/chat/online-users/` — 获取在线用户列表
+  - `POST /api/chat/upload/` — 上传聊天文件
+- `main.py` — startup中创建 `chat_messages` 和 `chat_sessions` 表
+
+**前端实现**:
+- `api/chat/index.ts` — 新建聊天API封装
+- `components/ChatFloatingIcon/index.vue` — 新建悬浮聊天入口图标
+  - 固定悬浮在页面右下角
+  - 支持拖拽移动，自动吸附屏幕边缘
+  - 位置持久化到 localStorage
+  - 未读消息红点提示
+  - WebSocket连接状态光晕指示（绿色=已连接，灰色=断开）
+- `components/ChatWindow/index.vue` — 新建弹出式聊天窗口
+  - 左侧会话列表 + 右侧聊天区域
+  - 消息气泡（区分自己/他人）
+  - 文件上传发送
+  - WebSocket实时消息接收
+  - ESC键关闭窗口
+  - 移动端全屏适配
+- `views/systemtools/Chat.vue` — 新建完整聊天管理页面
+- `App.vue` — 全局注册悬浮图标和聊天窗口
+- `utils/websocket.ts` — 新增 `onChat` 回调，聊天消息独立分发
+
+#### **协作锁MySQL迁移（多Worker架构修复）**
+
+**问题**: Gunicorn多Worker架构下，内存锁无法跨进程共享，导致协作锁失效。
+
+**修复**:
+- `core/ws_manager_instance.py` — 新建共享单例模块，确保同一Worker内所有路由使用同一个 `StatusConnectionManager` 实例
+- `core/websocket_manager.py` — 锁存储从内存 `dict` 迁移到 MySQL `row_locks` 表
+  - 所有锁方法增加 `config` 参数，通过数据库连接操作
+  - 自动建表（`_ensure_lock_table`）
+  - 过期锁自动清理
+- `main.py` — startup中同时创建 `row_versions` 和 `row_locks` 表
+- `routers/split_match.py` — 改用共享单例，锁方法调用传入 `config`
+- `routers/websocket_endpoints.py` — 改用共享单例
+
+## [2026-05-20] - WebSocket协作功能集成（阶段1 P0）
+
+### 🆕 新增 (Features)
+
+#### **F-01 乐观锁版本管理**
+
+**功能**: 基于独立表 `row_versions` 的行级版本控制，防止多用户并发修改导致数据丢失。
+
+**后端实现**:
+- `services/collaboration_service.py` — 新建核心服务模块
+  - `get_or_create_version()`: 获取行版本号，不存在则懒初始化创建
+  - `increment_version()`: 版本号+1，返回新版本号
+  - `check_version_conflict()`: 检查客户端版本与服务端版本是否一致
+  - `get_changed_fields()`: 对比更新前后字段差异，返回变更映射
+- `core/models.py` — `UpdateMatchRequest` 新增 `version` 和 `force_overwrite` 字段
+- `routers/split_match.py` — `/update` 端点增加乐观锁校验逻辑
+  - 客户端传递 `version` 时自动启用版本校验
+  - 版本冲突返回 HTTP 409 + 冲突详情
+  - `force_overwrite=true` 支持强制覆盖
+- `main.py` — startup 事件中自动创建 `row_versions` 表
+
+**前端实现**:
+- `api/split-match/index.ts` — `updateSplitMatchData` 增加 `version/force_overwrite` 参数
+- `views/SystemTools/SplitMatch.vue` — 保存时携带版本号，409冲突时弹出强制覆盖确认框
+
+---
+
+#### **F-02 行级协作锁**
+
+**功能**: 内存级行锁机制，编辑行时自动锁定，防止多用户同时编辑同一行。
+
+**后端实现**:
+- `core/websocket_manager.py` — 内存锁管理
+  - `_row_locks` 字典存储锁信息（row_key → {user_id, username, expires_at}）
+  - `lock_row()`: 获取行锁，5分钟自动过期
+  - `unlock_row()`: 释放行锁
+  - `is_row_locked()`: 检查行锁状态
+  - `get_active_locks()`: 获取指定表所有活跃锁
+- `routers/split_match.py` — 新增3个端点
+  - `POST /api/split-match/lock`: 获取行锁
+  - `POST /api/split-match/unlock`: 释放行锁
+  - `GET /api/split-match/active-locks`: 获取活跃锁列表
+- `core/models.py` — 新增 `LockRowRequest`、`UnlockRowRequest` 模型
+
+**前端实现**:
+- `api/split-match/index.ts` — 新增 `lockRow`、`unlockRow`、`getActiveLocks` API 及类型定义
+- `views/SystemTools/SplitMatch.vue`
+  - 打开编辑对话框时自动获取行锁和版本号
+  - 关闭对话框时自动释放行锁
+  - 表格行显示锁图标（黄色锁 + 用户名提示）
+  - 对话框标题显示锁状态标签（绿色"已锁定"/橙色"XX正在编辑"）
+
+---
+
+#### **F-03 数据表无感局部更新**
+
+**功能**: 协作用户修改数据后，其他用户表格中仅更新变更字段，无需整表刷新。
+
+**后端实现**:
+- `routers/split_match.py` — 新增 `GET /api/split-match/single-row` 端点，查询单行数据
+- `services/collaboration_service.py` — `get_changed_fields()` 计算字段差异
+- `routers/split_match.py` — `/update` 端点更新成功后广播 `row_updated` 事件，携带 `changed_fields`
+
+**前端实现**:
+- `api/split-match/index.ts` — 新增 `getSingleRow` API
+- `views/SystemTools/SplitMatch.vue` — WebSocket 监听 `row_updated` 事件，仅更新对应行变更字段
+
+---
+
+#### **F-04 协作事件广播 + 消息格式 + 房间机制**
+
+**功能**: 标准化WebSocket协作消息格式，支持按表分组的房间机制，实现协作事件实时广播。
+
+**后端实现**:
+- `core/websocket_manager.py` — 核心扩展
+  - `build_message()`: 标准化消息构建（type + data + room_id + timestamp）
+  - `join_room() / leave_room()`: 房间加入/离开管理
+  - `broadcast_to_room()`: 房间内消息广播
+  - `broadcast_collaboration_event()`: 协作事件专用广播（row_locked/row_unlocked/row_updated）
+- `routers/websocket_endpoints.py` — 新增3个消息路由
+  - `join_room`: 加入协作房间
+  - `leave_room`: 离开协作房间
+  - `collab_event`: 协作事件转发
+
+**前端实现**:
+- `utils/websocket.ts` — 全面扩展
+  - `WsMessage` 接口对齐后端规范
+  - `onCollaboration()`: 协作事件回调注册
+  - `joinRoom() / leaveRoom() / leaveAllRooms()`: 房间管理
+  - `sendCollabEvent()`: 发送协作事件
+  - 自动分发协作事件到注册的回调
+- `views/SystemTools/SplitMatch.vue`
+  - 切换表时加入协作房间 `collab_{table_name}`
+  - 加载该表所有活跃锁
+  - `onMounted` 注册协作事件监听（row_locked/row_unlocked/row_updated）
+  - `onUnmounted` 离开所有协作房间
+
+---
+
+### 📁 修改文件清单
+
+| 文件路径 | 修改类型 | 主要变更 |
+|---------|---------|---------|
+| `backend/services/collaboration_service.py` | 🆕 新建 | 乐观锁版本管理核心服务 |
+| `backend/core/websocket_manager.py` | 🔧 重构 | 内存锁+消息构建+房间管理+协作广播 |
+| `backend/core/models.py` | 📝 扩展 | 新增锁请求模型，UpdateMatchRequest增加version/force_overwrite |
+| `backend/routers/split_match.py` | 📝 扩展 | 新增5个协作端点，修改update端点支持乐观锁 |
+| `backend/routers/websocket_endpoints.py` | 📝 扩展 | 新增join_room/leave_room/collab_event路由 |
+| `backend/main.py` | 📝 扩展 | startup创建row_versions表 |
+| `src/utils/websocket.ts` | 📝 扩展 | 协作回调+房间管理+WsMessage接口对齐 |
+| `src/api/split-match/index.ts` | 📝 扩展 | 新增5个协作API及类型定义 |
+| `src/views/SystemTools/SplitMatch.vue` | 📝 扩展 | 行级锁标记+锁检测+冲突处理+局部更新+房间加入 |
+
+---
+
+### 🏗️ 架构设计
+
+```
+┌─────────────┐     WebSocket      ┌──────────────────┐
+│  前端 Vue    │ ◄──────────────► │  后端 FastAPI     │
+│  SplitMatch  │   标准化消息格式   │  WebSocket Manager│
+│  + WS Client │   room_id+type    │  + 房间管理       │
+└─────────────┘                    │  + 内存锁         │
+                                   │  + 消息广播       │
+                                   └────────┬─────────┘
+                                            │
+                                   ┌────────┴─────────┐
+                                   │ collaboration_    │
+                                   │ service.py        │
+                                   │ + 版本管理        │
+                                   │ + 冲突检测        │
+                                   │ + 字段差异计算     │
+                                   └────────┬─────────┘
+                                            │
+                                   ┌────────┴─────────┐
+                                   │ MySQL row_versions│
+                                   │ + table_name      │
+                                   │ + row_id          │
+                                   │ + version         │
+                                   │ + updated_by      │
+                                   └──────────────────┘
+```
+
+---
+
+### 🎯 版本信息
+
+- **版本**: v2.1.0 (WebSocket协作功能集成 - 阶段1)
+- **日期**: 2026-05-20
+- **部署包**: `pysys-v2.1.0-deploy-package.zip`
+- **状态**: ✅ 前端构建通过，类型检查通过（协作相关文件零错误）
+
+---
+
 ## [2026-05-13] - 详单查询功能全面修复与优化
 
 ### 🔧 修复 (Fixes)

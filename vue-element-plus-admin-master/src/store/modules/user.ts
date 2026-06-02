@@ -32,6 +32,7 @@ export const useUserStore = defineStore('user', {
       tokenExpiresAt: 0,
       refreshExpiresAt: 0,
       roleRouters: undefined,
+      permissions: [],
       rememberMe: true,
       loginInfo: undefined
     }

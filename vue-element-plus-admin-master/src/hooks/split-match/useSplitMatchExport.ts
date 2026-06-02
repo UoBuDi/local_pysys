@@ -149,7 +149,12 @@ export const useSplitMatchExport = (getSelectedTable: () => string, getFilters: 
         cell.font = { bold: true, size: 11 }
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } }
         cell.alignment = { horizontal: 'center', vertical: 'middle' }
-        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        }
       })
 
       exportProgressText.value = '正在写入数据...'
@@ -181,7 +186,12 @@ export const useSplitMatchExport = (getSelectedTable: () => string, getFilters: 
             vertical: 'middle',
             wrapText: true
           }
-          cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          }
         })
 
         if ((rowIndex + 1) % 50 === 0 || rowIndex === exportData.length - 1) {
@@ -197,9 +207,12 @@ export const useSplitMatchExport = (getSelectedTable: () => string, getFilters: 
 
       let processedImages = 0
       const totalImages = exportData.reduce((count, row) => {
-        return count + IMAGE_COLUMNS.filter(
-          (col) => row[col] && typeof row[col] === 'string' && isImageData(row[col])
-        ).length
+        return (
+          count +
+          IMAGE_COLUMNS.filter(
+            (col) => row[col] && typeof row[col] === 'string' && isImageData(row[col])
+          ).length
+        )
       }, 0)
 
       for (let rowIndex = 0; rowIndex < exportData.length; rowIndex++) {
@@ -217,7 +230,11 @@ export const useSplitMatchExport = (getSelectedTable: () => string, getFilters: 
 
             if (result.success && result.data && result.extension) {
               if (result.isWPS) {
-                const placeholderBase64 = createPlaceholderImage('WPS图片', IMAGE_WIDTH_PX, IMAGE_HEIGHT_PX)
+                const placeholderBase64 = createPlaceholderImage(
+                  'WPS图片',
+                  IMAGE_WIDTH_PX,
+                  IMAGE_HEIGHT_PX
+                )
                 if (placeholderBase64) {
                   const imageId = workbook.addImage({ base64: placeholderBase64, extension: 'png' })
                   worksheet.addImage(imageId, {
@@ -227,7 +244,10 @@ export const useSplitMatchExport = (getSelectedTable: () => string, getFilters: 
                   })
                 }
               } else {
-                const imageId = workbook.addImage({ base64: result.data, extension: result.extension })
+                const imageId = workbook.addImage({
+                  base64: result.data,
+                  extension: result.extension
+                })
                 worksheet.addImage(imageId, {
                   tl: { col: colIndex, row: rowIndex + 1 },
                   br: { col: colIndex + 1, row: rowIndex + 2 },
