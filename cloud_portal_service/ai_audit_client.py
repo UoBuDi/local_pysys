@@ -27,20 +27,25 @@ class AIAuditClient:
             'Referer': f'{self.AI_AUDIT_BASE_URL}/aiAuditWeb/index.html'
         }
     
-    def _calculate_time_range(self, entry_time: str, gate_time: str, hours: int = 5) -> Dict[str, str]:
+    def _calculate_time_range(self, gate_time: str, hours: int = 24) -> Dict[str, str]:
+        """基于门架通行时间计算查询时间范围
+
+        start_time = 门架通行时间 - 24h
+        end_time = 门架通行时间 + 24h
+        """
         try:
-            entry_dt = datetime.strptime(entry_time, '%Y-%m-%d %H:%M:%S')
             gate_dt = datetime.strptime(gate_time, '%Y-%m-%d %H:%M:%S')
-            end_dt = gate_dt + timedelta(hours=hours)
-            
+            start_dt = gate_dt - timedelta(hours=24)
+            end_dt = gate_dt + timedelta(hours=24)
+
             return {
-                'start_time': entry_dt.strftime('%Y-%m-%d %H:%M:%S'),
+                'start_time': start_dt.strftime('%Y-%m-%d %H:%M:%S'),
                 'end_time': end_dt.strftime('%Y-%m-%d %H:%M:%S')
             }
         except Exception as e:
             logger.error(f"时间范围计算失败: {e}")
             return {
-                'start_time': entry_time,
+                'start_time': gate_time,
                 'end_time': gate_time
             }
     
@@ -50,7 +55,7 @@ class AIAuditClient:
         start_time: str,
         end_time: str,
         plate_color: str = "",
-        rows: int = 40,
+        rows: int = 500,
         start: int = 0,
         sort: str = "picTime DESC"
     ) -> Dict[str, Any]:
@@ -510,13 +515,12 @@ class AIAuditClient:
     def batch_query_all(
         self,
         plate_number: str,
-        entry_time: str,
         gate_time: str,
         pass_id: Optional[str] = None,
-        hours: int = 5,
-        rows: int = 40
+        hours: int = 24,
+        rows: int = 500
     ) -> Dict[str, Any]:
-        time_range = self._calculate_time_range(entry_time, gate_time, hours)
+        time_range = self._calculate_time_range(gate_time, hours)
         start_time = time_range['start_time']
         end_time = time_range['end_time']
         
@@ -546,7 +550,8 @@ class AIAuditClient:
         results['gantry_trade'] = self.query_gantry_trade(
             query_value=clean_plate,
             start_time=start_time,
-            end_time=end_time
+            end_time=end_time,
+            length=rows
         )
         if not results['gantry_trade']['success']:
             results['errors'].append(f"门架交易查询失败: {results['gantry_trade']['error']}")
@@ -554,7 +559,8 @@ class AIAuditClient:
         results['gantry_plate'] = self.query_gantry_plate(
             plate_number=clean_plate,
             start_time=start_time,
-            end_time=end_time
+            end_time=end_time,
+            length=rows
         )
         if not results['gantry_plate']['success']:
             results['errors'].append(f"门架牌识查询失败: {results['gantry_plate']['error']}")
@@ -563,7 +569,8 @@ class AIAuditClient:
             query_value=clean_plate,
             start_time=start_time,
             end_time=end_time,
-            trade_type=1
+            trade_type=1,
+            length=rows
         )
         if not results['exit_trade_etc']['success']:
             results['errors'].append(f"ETC出口交易查询失败: {results['exit_trade_etc']['error']}")
@@ -572,7 +579,8 @@ class AIAuditClient:
             query_value=clean_plate,
             start_time=start_time,
             end_time=end_time,
-            trade_type=2
+            trade_type=2,
+            length=rows
         )
         if not results['exit_trade_other']['success']:
             results['errors'].append(f"其它出口交易查询失败: {results['exit_trade_other']['error']}")

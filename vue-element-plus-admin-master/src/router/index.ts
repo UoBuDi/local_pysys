@@ -768,6 +768,15 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
           title: 'router.paramsConfig',
           icon: 'vi-ep:operation'
         }
+      },
+      {
+        path: 'scheduled-tasks',
+        component: () => import('@/views/SystemTools/ScheduledTasks/ScheduledTasks.vue'),
+        name: 'ScheduledTasks',
+        meta: {
+          title: 'router.scheduledTasks',
+          icon: 'vi-ep:timer'
+        }
       }
     ]
   },
@@ -918,15 +927,6 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         meta: {
           title: 'router.role',
           icon: 'vi-ant-design:team-outlined'
-        }
-      },
-      {
-        path: 'scheduled-tasks',
-        component: () => import('@/views/SystemTools/ScheduledTasks/ScheduledTasks.vue'),
-        name: 'ScheduledTasks',
-        meta: {
-          title: 'router.scheduledTasks',
-          icon: 'vi-ant-design:clock-circle-outlined'
         }
       }
     ]

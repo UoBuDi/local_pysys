@@ -1,21 +1,18 @@
 """
-Nuitka Standalone 编译脚本
+Nuitka Onefile 编译脚本
 
 核心策略:
-  1. standalone 编译（不使用 onefile 模式）
-  2. 显式包含所有依赖模块和数据文件
-  3. 确保运行时无缺失
+  1. onefile 编译（单文件模式）
+  2. 所有模块和依赖打包进单个 exe
+  3. 运行时自解压到临时目录，无需外部依赖
 
-为什么用 standalone 而非 onefile:
-  - standalone 直接解压到目录，启动更快
-  - 避免运行时临时目录权限问题
-  - 更容易排查和替换单个文件
-  - ddddocr 的 ONNX 模型文件（~84MB）无需重复解压
+注意:
+  - onefile 模式启动时会将文件解压到临时目录，首次启动稍慢
+  - 生成的单文件 exe 包含所有依赖，可直接分发
 """
 
 import os
 import sys
-import shutil
 import subprocess
 
 
@@ -29,13 +26,8 @@ SITE_PACKAGES = r"D:\local_pysys\.venv\Lib\site-packages"
 
 
 def get_common_nuitka_args():
-    """
-    Nuitka 编译参数
-    
-    包含所有业务依赖 + ddddocr 完整版所需的原生库和模型文件
-    """
+    """Nuitka 编译参数（与 standalone 共用）"""
     ddddocr_dir = os.path.join(SITE_PACKAGES, "ddddocr")
-    ort_capi_dir = os.path.join(SITE_PACKAGES, "onnxruntime", "capi")
 
     args = [
         "--windows-console-mode=disable",
@@ -144,49 +136,43 @@ def get_common_nuitka_args():
     return args
 
 
-def compile_standalone():
-    """执行 Nuitka standalone 编译"""
-    print("\n[1/1] Nuitka standalone 编译...")
+def compile_onefile():
+    """执行 Nuitka onefile 编译"""
+    print("\n[1/1] Nuitka onefile 编译...")
 
     cmd = [
         sys.executable, "-m", "nuitka",
-        "--standalone",
+        "--onefile",
+        # onefile 模式下指定临时解压目录，避免每次解压到不同位置
+        "--onefile-tempdir-spec={CACHE_DIR}/CloudPortalService/runtime",
     ] + get_common_nuitka_args() + ["main.py"]
 
     print(f"  命令: {' '.join(cmd[:6])}... (共 {len(cmd)} 个参数)")
     result = subprocess.run(cmd, cwd=PROJECT_DIR)
     if result.returncode != 0:
-        print(f"  错误: standalone 编译失败 (exit code {result.returncode})")
+        print(f"  错误: onefile 编译失败 (exit code {result.returncode})")
         sys.exit(result.returncode)
 
-    main_dist = os.path.join(DIST_DIR, "main.dist")
-    if not os.path.isdir(main_dist):
-        print("  错误: main.dist 目录不存在")
+    exe_path = os.path.join(DIST_DIR, OUTPUT_FILENAME)
+    if not os.path.isfile(exe_path):
+        print("  错误: exe 文件未生成")
         sys.exit(1)
 
-    total_mb = sum(
-        os.path.getsize(os.path.join(dp, f))
-        for dp, _, fns in os.walk(main_dist)
-        for f in fns
-    ) / (1024 * 1024)
+    exe_size = os.path.getsize(exe_path) / (1024 * 1024)
 
-    exe_path = os.path.join(main_dist, OUTPUT_FILENAME)
-    exe_size = os.path.getsize(exe_path) / (1024 * 1024) if os.path.exists(exe_path) else 0
+    print(f"\n  ✅ onefile 编译完成!")
+    print(f"     输出文件: {exe_path}")
+    print(f"     文件大小: {exe_size:.2f} MB")
+    print(f"\n  部署方式: 将 CloudPortalService.exe 复制到目标机器即可运行")
 
-    print(f"\n  ✅ standalone 编译完成!")
-    print(f"     输出目录: {main_dist}")
-    print(f"     主程序:   {exe_path} ({exe_size:.2f} MB)")
-    print(f"     总体积:   {total_mb:.2f} MB")
-    print(f"\n  部署方式: 将整个 main.dist 目录复制到目标机器即可运行")
-
-    return main_dist
+    return exe_path
 
 
 def main():
     print("=" * 60)
-    print("Nuitka Standalone 编译")
-    print("  模式: standalone（非 onefile）")
-    print("  特点: 启动快、易调试、可增量更新文件")
+    print("Nuitka Onefile 编译")
+    print("  模式: onefile（单文件）")
+    print("  特点: 所有依赖打包进单个 exe，直接分发")
     print("")
     print("  包含依赖:")
     print("    - PySide6 GUI + Flask API")
@@ -195,7 +181,7 @@ def main():
     print("    - PIL / numpy / requests / websocket")
     print("=" * 60)
 
-    compile_standalone()
+    compile_onefile()
 
 
 if __name__ == "__main__":

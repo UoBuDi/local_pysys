@@ -385,11 +385,13 @@ export interface AIAuditGantryTrade {
   vehiclePlateColorName: string
   gantryOrderNumName: string
   enVehicleTypeName?: string
+  obuVehicleTypeName?: string
   mediaTypeName?: string
   tradeStatus?: string
   tradeStatusName?: string
   receivableFee?: number
   actualFee?: number
+  discountFee?: number
   specialType?: string
   specialTypeName?: string
 }
@@ -407,6 +409,7 @@ export interface AIAuditGantryPlate {
 }
 
 export interface AIAuditExitTrade {
+  passid?: string
   plateNumber: string
   fee: number
   entime: string
@@ -422,6 +425,14 @@ export interface AIAuditExitTrade {
   mediaTypeName?: string
   enVehiclePlate?: string
   exVehiclePlate?: string
+  enVehicleIdName?: string
+  identifyVehicleIdName?: string
+  payfee?: number
+  discountfee?: number
+  shortfee?: number
+  FEEMILEAGE?: number
+  SHORTFEEMILEAGE?: number
+  exitFeeTypeName?: string
   totalReceivableFee?: number
   totalTradeFee?: number
   totalDiscountFee?: number

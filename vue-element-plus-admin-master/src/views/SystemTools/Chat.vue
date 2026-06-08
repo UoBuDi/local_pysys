@@ -102,7 +102,7 @@ const handleSend = async () => {
       content: text
     })
     inputText.value = ''
-    await loadMessages(currentRoomId.value)
+    // 不再调用 loadMessages，消息由 WebSocket onWsChat 回调实时推送，避免重复回显
     await loadSessions()
   } catch (e) {
     console.error('发送消息失败:', e)
@@ -123,7 +123,7 @@ const handleFileUpload = async (e: Event) => {
 
   try {
     await uploadChatFile(file, currentRoomId.value)
-    await loadMessages(currentRoomId.value)
+    // 不再调用 loadMessages，消息由 WebSocket onWsChat 回调实时推送，避免重复回显
     await loadSessions()
   } catch (e) {
     console.error('上传文件失败:', e)

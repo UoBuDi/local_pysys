@@ -3,8 +3,7 @@ import { ElRow, ElCol, ElCard, ElSkeleton } from 'element-plus'
 import { CountTo } from '@/components/CountTo'
 import { useDesign } from '@/hooks/web/useDesign'
 import { useI18n } from '@/hooks/web/useI18n'
-import { ref, reactive } from 'vue'
-import { getDashboardStatisticsApi } from '@/api/scheduled-tasks'
+import type { DashboardStatistics } from '@/api/scheduled-tasks'
 
 const { t } = useI18n()
 
@@ -12,35 +11,17 @@ const { getPrefixCls } = useDesign()
 
 const prefixCls = getPrefixCls('panel')
 
-const loading = ref(true)
-
-const totalState = reactive({
-  totalTransactions: 0,
-  freeTransactions: 0,
-  splitSectionAmount: 0
-})
-
-const getCount = async () => {
-  const res = await getDashboardStatisticsApi()
-    .catch(() => {})
-    .finally(() => {
-      loading.value = false
-    })
-  if (res?.data) {
-    totalState.totalTransactions = res.data.total_transactions || 0
-    totalState.freeTransactions = res.data.free_transactions || 0
-    totalState.splitSectionAmount = res.data.split_section_amount || 0
-  }
-}
-
-getCount()
+const props = defineProps<{
+  loading?: boolean
+  statistics?: DashboardStatistics | null
+}>()
 </script>
 
 <template>
   <ElRow :gutter="20" justify="space-between" :class="prefixCls">
     <ElCol :xl="8" :lg="8" :md="12" :sm="24" :xs="24">
       <ElCard shadow="hover" class="mb-20px">
-        <ElSkeleton :loading="loading" animated :rows="2">
+        <ElSkeleton :loading="props.loading" animated :rows="2">
           <template #default>
             <div :class="`${prefixCls}__item flex justify-between`">
               <div>
@@ -58,7 +39,7 @@ getCount()
                 <CountTo
                   class="text-20px font-700 text-right"
                   :start-val="0"
-                  :end-val="totalState.totalTransactions"
+                  :end-val="props.statistics?.total_transactions || 0"
                   :duration="2600"
                 />
               </div>
@@ -70,7 +51,7 @@ getCount()
 
     <ElCol :xl="8" :lg="8" :md="12" :sm="24" :xs="24">
       <ElCard shadow="hover" class="mb-20px">
-        <ElSkeleton :loading="loading" animated :rows="2">
+        <ElSkeleton :loading="props.loading" animated :rows="2">
           <template #default>
             <div :class="`${prefixCls}__item flex justify-between`">
               <div>
@@ -88,7 +69,7 @@ getCount()
                 <CountTo
                   class="text-20px font-700 text-right"
                   :start-val="0"
-                  :end-val="totalState.freeTransactions"
+                  :end-val="props.statistics?.free_transactions || 0"
                   :duration="2600"
                 />
               </div>
@@ -100,7 +81,7 @@ getCount()
 
     <ElCol :xl="8" :lg="8" :md="12" :sm="24" :xs="24">
       <ElCard shadow="hover" class="mb-20px">
-        <ElSkeleton :loading="loading" animated :rows="2">
+        <ElSkeleton :loading="props.loading" animated :rows="2">
           <template #default>
             <div :class="`${prefixCls}__item flex justify-between`">
               <div>
@@ -118,7 +99,7 @@ getCount()
                 <CountTo
                   class="text-20px font-700 text-right"
                   :start-val="0"
-                  :end-val="totalState.splitSectionAmount"
+                  :end-val="props.statistics?.split_section_amount || 0"
                   :duration="2600"
                   :decimals="2"
                 />

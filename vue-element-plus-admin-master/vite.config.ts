@@ -7,7 +7,6 @@ import progress from 'vite-plugin-progress'
 import EslintPlugin from 'vite-plugin-eslint'
 import { ViteEjsPlugin } from 'vite-plugin-ejs'
 import { viteMockServe } from 'vite-plugin-mock'
-import PurgeIcons from 'vite-plugin-purge-icons'
 import ServerUrlCopy from 'vite-plugin-url-copy'
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
@@ -164,9 +163,6 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         symbolId: 'icon-[dir]-[name]',
         svgoOptions: true
       }),
-      // PurgeIcons 已禁用 - 改用 UnoCSS presetIcons 实现离线图标
-      // 原因：PurgeIcons 处理大型图标集时出现 ECONNRESET 错误
-      // 替代方案：uno.config.ts 中已配置 presetIcons({ autoInstall: false })
       env.VITE_USE_MOCK === 'true'
         ? viteMockServe({
             ignore: /^\_/,
@@ -316,7 +312,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         'vue-types',
         'element-plus/es/locale/lang/zh-cn',
         'element-plus/es/locale/lang/en',
-        '@iconify/iconify',
+        '@iconify/vue/offline',
         '@vueuse/core',
         'axios',
         'qs',

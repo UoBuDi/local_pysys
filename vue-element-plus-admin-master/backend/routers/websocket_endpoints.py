@@ -66,6 +66,10 @@ async def websocket_status(websocket: WebSocket, client_type: str, client_id: st
     else:
         await status_manager.connect_gui(websocket, client_id)
 
+    # 前端连接鉴权通过后，自动加入lobby聊天房间，确保大厅消息可达
+    if client_type == "frontend" and user_id:
+        await status_manager.join_room(client_id, "lobby", {"userId": user_id, "username": username})
+
     try:
         await websocket.send_text(json.dumps({
             "type": "connected",

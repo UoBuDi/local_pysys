@@ -171,16 +171,32 @@ def save_statistics(data: Dict[str, Any]) -> bool:
     finally:
         conn.close()
 
-def get_dashboard_statistics() -> Optional[Dict[str, Any]]:
+def get_dashboard_statistics(stat_month: Optional[str] = None) -> Optional[Dict[str, Any]]:
     conn = get_user_db_connection()
     
     try:
         with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT * FROM dashboard_statistics 
-                ORDER BY stat_date DESC 
-                LIMIT 1
-            """)
+            normalized_month = None
+            if stat_month:
+                normalized_month = stat_month.replace('-', '')
+                if len(normalized_month) == 6 and normalized_month.isdigit():
+                    normalized_month = f"{normalized_month[:4]}-{normalized_month[4:]}"
+                else:
+                    normalized_month = stat_month
+
+            if normalized_month:
+                cursor.execute("""
+                    SELECT * FROM dashboard_statistics
+                    WHERE stat_month = %s
+                    ORDER BY stat_date DESC
+                    LIMIT 1
+                """, (normalized_month,))
+            else:
+                cursor.execute("""
+                    SELECT * FROM dashboard_statistics 
+                    ORDER BY stat_date DESC 
+                    LIMIT 1
+                """)
             data = cursor.fetchone()
             
             if data:

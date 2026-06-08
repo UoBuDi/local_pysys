@@ -18,10 +18,13 @@ router = APIRouter()
 
 
 @router.get("/api/dashboard-statistics/")
-async def get_dashboard_statistics_api(user: dict = Depends(get_current_user)):
-    """获取Dashboard统计数据（最新一条）"""
+async def get_dashboard_statistics_api(
+    stat_month: Optional[str] = Query(default=None, description="统计月份，格式 YYYY-MM"),
+    user: dict = Depends(get_current_user)
+):
+    """获取Dashboard统计数据，支持按月份查询"""
     try:
-        data = get_dashboard_statistics()
+        data = get_dashboard_statistics(stat_month=stat_month)
         if data:
             return {
                 "code": 200,

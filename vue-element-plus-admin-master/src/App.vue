@@ -37,21 +37,29 @@ const handleUnreadChange = (count: number) => {
 }
 
 ws.onChat((msg) => {
-  if (msg.type === 'chat_message' || msg.type === 'chat_room_created') {
+  if (
+    msg.type === 'chat_message' ||
+    msg.type === 'chat_room_created' ||
+    msg.type === 'chat_message_deleted'
+  ) {
     lastChatMessage.value = msg
-    if (!chatVisible.value) {
+    if (!chatVisible.value && msg.type !== 'chat_message_deleted') {
       unreadCount.value++
     }
   }
 })
 
-watch(isLoggedIn, (val) => {
-  if (val) {
-    ws.connect()
-  } else {
-    ws.disconnect()
-  }
-}, { immediate: true })
+watch(
+  isLoggedIn,
+  (val) => {
+    if (val) {
+      ws.connect()
+    } else {
+      ws.disconnect()
+    }
+  },
+  { immediate: true }
+)
 
 onUnmounted(() => {
   ws.disconnect()

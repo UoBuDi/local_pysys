@@ -244,7 +244,7 @@ const handleFileUpload = async (e: Event) => {
 
   try {
     await uploadChatFile(file, currentRoomId.value)
-    await loadMessages(currentRoomId.value)
+    // 不再调用 loadMessages，消息由 WebSocket watch(lastMessage) 回调实时推送，避免重复回显
     await loadSessions()
   } catch (e) {
     console.error('上传文件失败:', e)
@@ -354,15 +354,22 @@ watch(
     if (msg.type === 'chat_message' && msg.data) {
       const data = msg.data as ChatMessage
       if (data.room_id === currentRoomId.value) {
-        const exists = messages.value.some((m) => m.id === data.id || m.id === -data.id)
-        if (!exists) {
-          messages.value.push(data)
+        // 去重：按真实ID匹配，或匹配同发送者同内容的临时消息（乐观更新的临时ID为负数）
+        const existsById = messages.value.some((m) => m.id === data.id)
+        const tempIdx = messages.value.findIndex(
+          (m) => m.id < 0 && m.sender_id === data.sender_id && m.content === data.content
+        )
+
+        if (existsById) {
+          // 真实ID已存在（HTTP响应已替换临时消息），无需操作
+        } else if (tempIdx !== -1) {
+          // 找到临时消息，替换为服务端确认的真实消息
+          messages.value[tempIdx] = data
           scrollToBottom()
         } else {
-          const tempIdx = messages.value.findIndex((m) => m.id === -data.id || m.id < 0)
-          if (tempIdx !== -1 && data.id > 0) {
-            messages.value[tempIdx] = data
-          }
+          // 全新消息，直接追加
+          messages.value.push(data)
+          scrollToBottom()
         }
         markRoomRead(data.room_id)
         const session = sessions.value.find((s) => s.room_id === data.room_id)
@@ -663,66 +670,6 @@ onUnmounted(() => {
 
             <!-- 输入区域 -->
             <div class="wc-main__input-area">
-              <div class="wc-main__toolbar">
-                <button class="wc-icon-btn" title="表情">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="#666"
-                    stroke-width="1.8"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-                    <line x1="9" y1="9" x2="9.01" y2="9" />
-                    <line x1="15" y1="9" x2="15.01" y2="9" />
-                  </svg>
-                </button>
-                <button class="wc-icon-btn" title="上传文件" @click="fileInput?.click()">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="#666"
-                    stroke-width="1.8"
-                  >
-                    <path
-                      d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
-                    />
-                  </svg>
-                </button>
-                <button class="wc-icon-btn" title="截图">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="#666"
-                    stroke-width="1.8"
-                  >
-                    <path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2V7l-4-4z" />
-                    <polyline points="15 3 15 7 19 7" />
-                    <line x1="9" y1="13" x2="15" y2="13" />
-                  </svg>
-                </button>
-                <button class="wc-icon-btn" title="语音消息">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="#666"
-                    stroke-width="1.8"
-                  >
-                    <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
-                    <path d="M19 10v2a7 7 0 01-14 0v-2" />
-                    <line x1="12" y1="19" x2="12" y2="23" />
-                    <line x1="8" y1="23" x2="16" y2="23" />
-                  </svg>
-                </button>
-              </div>
               <div class="wc-main__input-box">
                 <textarea
                   v-model="inputText"
@@ -732,7 +679,67 @@ onUnmounted(() => {
                   @keydown="handleKeyDown"
                 ></textarea>
               </div>
-              <div class="wc-main__send-row">
+              <div class="wc-main__action-row">
+                <div class="wc-main__toolbar">
+                  <button class="wc-icon-btn" title="表情">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="#666"
+                      stroke-width="1.8"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                      <line x1="9" y1="9" x2="9.01" y2="9" />
+                      <line x1="15" y1="9" x2="15.01" y2="9" />
+                    </svg>
+                  </button>
+                  <button class="wc-icon-btn" title="上传文件" @click="fileInput?.click()">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="#666"
+                      stroke-width="1.8"
+                    >
+                      <path
+                        d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                      />
+                    </svg>
+                  </button>
+                  <button class="wc-icon-btn" title="截图">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="#666"
+                      stroke-width="1.8"
+                    >
+                      <path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2V7l-4-4z" />
+                      <polyline points="15 3 15 7 19 7" />
+                      <line x1="9" y1="13" x2="15" y2="13" />
+                    </svg>
+                  </button>
+                  <button class="wc-icon-btn" title="语音消息">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="#666"
+                      stroke-width="1.8"
+                    >
+                      <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+                      <path d="M19 10v2a7 7 0 01-14 0v-2" />
+                      <line x1="12" y1="19" x2="12" y2="23" />
+                      <line x1="8" y1="23" x2="16" y2="23" />
+                    </svg>
+                  </button>
+                </div>
                 <button class="wc-send-btn" :disabled="!inputText.trim()" @click="handleSend"
                   >发送</button
                 >
@@ -1043,12 +1050,6 @@ onUnmounted(() => {
     padding: 6px 16px 10px;
   }
 
-  &__toolbar {
-    display: flex;
-    gap: 2px;
-    padding-bottom: 4px;
-  }
-
   &__input-box {
     background: #fff;
     border: 1px solid #e0e0e0;
@@ -1074,10 +1075,16 @@ onUnmounted(() => {
     }
   }
 
-  &__send-row {
+  &__action-row {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: space-between;
     padding-top: 6px;
+  }
+
+  &__toolbar {
+    display: flex;
+    gap: 2px;
   }
 }
 

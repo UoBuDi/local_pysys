@@ -2,6 +2,57 @@
 
 本文件记录项目的所有重要变更，格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/)。
 
+## [2026-06-06] - v2.35.0 部署修复
+
+### 🔧 修复 (Bug Fixes)
+
+- **前端 API 地址错误**: `.env.base` 中 `VITE_API_BASE_PATH` 为 `http://localhost:8001`，打包后部署到服务器导致浏览器请求发往 localhost 连接失败，已改为 `http://172.32.48.238:8001`
+- **SPA 路由 404**: 后端缺少 SPA fallback 路由，直接访问前端路由（如 `/data-query/path-match`）返回 404。已添加 `/{path:path}` catch-all 路由返回 `index.html`，并挂载 `/assets` 静态资源目录
+- **路由导航日志 403**: `/api/analytics/route` 接口强制要求认证，未登录用户访问页面时发送的路由日志请求被拒绝。已改为可选认证（`get_optional_user`），未登录时静默记录（user_id 为 None）
+- **路径匹配收费车型输入框不显示**: `el-select-v2` 组件因 `vite.config.ts` 的 `styleMap` 缺少样式映射导致 CSS 未加载，已替换为 `el-select`
+
+## [2026-06-06] - 路径匹配收费车型组件不显示修复 + 分析页统计月份切换
+
+### 🔧 修复 (Bug Fixes)
+
+- **路径匹配页收费车型输入框不显示**: PathMatch.vue 中 `el-select-v2` 组件因 `vite.config.ts` 的 `styleMap` 缺少 `el-select-v2` 样式映射，导致组件 CSS 未加载而不可见。将 `el-select-v2` 替换为 `el-select`（仅16个选项无需虚拟化），样式正常加载，功能不变（多选、过滤、折叠标签、全选复选框均保留）
+
+## [2026-06-06] - 分析页统计月份切换
+
+### 🆕 新增 (Features)
+
+- **分析页统计月份切换**: Dashboard 分析页新增月份选择器与上一个/下一个月份切换按钮，可直接按月查看统计卡片与图表数据
+
+### 🔄 变更 (Changes)
+
+- **Dashboard 统计接口支持按月查询**: `/api/dashboard-statistics/` 新增 `stat_month` 参数，支持返回指定月份的统计记录，未传参时仍默认返回最新一条
+
+## [2026-06-03] - 菜单图标不显示修复 + 云门户核查功能优化 + 聊天实时消息修复
+
+### 🔧 修复 (Bug Fixes)
+
+- **菜单图标不显示（核心修复）**: 图标渲染方案从 UnoCSS presetIcons（CSS类名方式）切换为 @iconify/vue + addCollection()（组件渲染方式）
+  - 根因：UnoCSS presetIcons 依赖构建时扫描CSS类名生成图标样式，但菜单图标名是从后端API动态获取的，构建时无法扫描到
+  - 修复：使用 addCollection() 将图标集JSON数据预加载到内存，@iconify/vue 的 Icon 组件运行时直接从内存查找SVG数据渲染，完全离线可用
+  - 安装缺失图标集：bi、radix-icons、ion、emojione-monotone、clarity、cib、bx、ri、ic、ci、eos-icons
+  - 移除无效的 UnoCSS presetIcons 配置和 @purge-icons/generated 残留导入
+
+- **其他用户无法实时收到大厅消息（核心修复）**: WebSocket连接鉴权通过后自动加入lobby房间，确保大厅消息可达所有在线用户
+- **broadcast_to_room房间不存在时消息丢失**: 聊天消息类型（chat_message/chat_message_deleted/chat_room_created）在房间不存在时降级为全前端广播，确保消息不丢失
+- **chat_message_deleted事件未传播到ChatWindow**: App.vue的onChat回调增加chat_message_deleted事件类型，删除消息实时同步到其他用户
+
+### 🆕 新增 (Features)
+
+- **broadcast_to_room日志增强**: 房间不存在时warn日志、降级广播时warn日志、广播完成时debug日志（含发送计数）
+- **介质类型填入备注**: 出口交易(ETC)、出口交易(其它)表格的介质类型列增加"填"按钮，点击将介质类型值追加到备注字段
+- **核查拆分为已拆时自动设置复核情况**: 核查通行标识核查成功后，核查拆分设为"已拆"的同时，复核情况自动设为"拆分正常"
+
+### 🔄 变更 (Changes)
+
+- **聊天输入区布局调整**: 将表情、上传文件、截图、语音消息工具栏按钮从textarea上方移到下方，与发送按钮合并为同一行（action-row），布局更紧凑
+- **AI稽核批量查询时间范围优化**: start_time和end_time统一基于门架通行时间计算，start_time = 门架通行时间 - 24h，end_time = 门架通行时间 + 24h
+- **门架交易/门架牌识截图方式调整**: 截图直接截取bodyWrapper元素（全部数据行，不含表头），其他表格保持截取可视区域
+
 ## [2026-06-02] - 聊天功能P0/P1修复（消息回显+实时广播+房间管理）
 
 ### 🔧 修复 (Bug Fixes)

@@ -160,8 +160,8 @@ class AIBatchQueryRequest(BaseModel):
     entry_time: str
     gate_time: str
     pass_id: Optional[str] = None
-    hours: Optional[int] = 5
-    rows: Optional[int] = 20
+    hours: Optional[int] = 24
+    rows: Optional[int] = 500
 
 
 class VehicleImagesRequest(BaseModel):
@@ -177,7 +177,7 @@ class GantryImagesRequest(BaseModel):
     station_id: str
     start_time: str
     end_time: str
-    rows: Optional[int] = 20
+    rows: Optional[int] = 500
     start: Optional[int] = 0
     sort: Optional[str] = "picTime DESC"
 
@@ -731,7 +731,7 @@ async def ai_audit_batch_query(req: AIBatchQueryRequest, user_id: Optional[int] 
                 "data": {
                     "success": False,
                     "hint": "请手动点击'自动登录'按钮登录云门户",
-                    "time_range": {"start_time": req.entry_time, "end_time": req.gate_time}
+                    "time_range": {"start_time": req.gate_time, "end_time": req.gate_time}
                 }
             }
 

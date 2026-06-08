@@ -1,7 +1,6 @@
 import 'vue/jsx'
 
-import '@purge-icons/generated'
-
+// 图标数据通过 @/icons 中的 addCollection() 预加载到内存
 import '@/icons'
 
 import '@/plugins/unocss'

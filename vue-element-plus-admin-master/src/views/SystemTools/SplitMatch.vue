@@ -1112,8 +1112,8 @@
                 <el-input-number
                   v-model="cloudPortalForm.rows"
                   :min="10"
-                  :max="100"
-                  :step="10"
+                  :max="500"
+                  :step="50"
                   size="small"
                   style="width: 80px"
                 />
@@ -1518,12 +1518,16 @@
                         <el-button
                           size="small"
                           type="primary"
+                          :loading="captureLoading"
+                          :disabled="captureLoading"
                           @click="captureTable('gantry_trade', 'image1')"
                           >截图到资料1</el-button
                         >
                         <el-button
                           size="small"
                           type="success"
+                          :loading="captureLoading"
+                          :disabled="captureLoading"
                           @click="captureTable('gantry_trade', 'image2')"
                           >截图到资料2</el-button
                         >
@@ -1661,12 +1665,16 @@
                         <el-button
                           size="small"
                           type="primary"
+                          :loading="captureLoading"
+                          :disabled="captureLoading"
                           @click="captureTable('gantry_plate', 'image1')"
                           >截图到资料1</el-button
                         >
                         <el-button
                           size="small"
                           type="success"
+                          :loading="captureLoading"
+                          :disabled="captureLoading"
                           @click="captureTable('gantry_plate', 'image2')"
                           >截图到资料2</el-button
                         >
@@ -1735,12 +1743,16 @@
                         <el-button
                           size="small"
                           type="primary"
+                          :loading="captureLoading"
+                          :disabled="captureLoading"
                           @click="captureTable('exit_trade_etc', 'image1')"
                           >截图到资料1</el-button
                         >
                         <el-button
                           size="small"
                           type="success"
+                          :loading="captureLoading"
+                          :disabled="captureLoading"
                           @click="captureTable('exit_trade_etc', 'image2')"
                           >截图到资料2</el-button
                         >
@@ -1814,11 +1826,21 @@
                         show-overflow-tooltip
                       />
                       <el-table-column prop="extime" label="出站时间" show-overflow-tooltip />
-                      <el-table-column
-                        prop="mediaTypeName"
-                        label="介质类型"
-                        show-overflow-tooltip
-                      />
+                      <el-table-column prop="mediaTypeName" label="介质类型" show-overflow-tooltip>
+                        <template #default="{ row }">
+                          <div style="display: flex; align-items: center; gap: 4px">
+                            <span>{{ row.mediaTypeName }}</span>
+                            <el-button
+                              v-if="row.mediaTypeName"
+                              size="small"
+                              type="primary"
+                              link
+                              @click="fillMediaTypeNameToRemark(row.mediaTypeName)"
+                              >填</el-button
+                            >
+                          </div>
+                        </template>
+                      </el-table-column>
                       <el-table-column prop="payfee" label="总应收金额(元)" show-overflow-tooltip>
                         <template #default="{ row }">{{ formatFee(row.payfee) }}</template>
                       </el-table-column>
@@ -1885,12 +1907,16 @@
                         <el-button
                           size="small"
                           type="primary"
+                          :loading="captureLoading"
+                          :disabled="captureLoading"
                           @click="captureTable('exit_trade_other', 'image1')"
                           >截图到资料1</el-button
                         >
                         <el-button
                           size="small"
                           type="success"
+                          :loading="captureLoading"
+                          :disabled="captureLoading"
                           @click="captureTable('exit_trade_other', 'image2')"
                           >截图到资料2</el-button
                         >
@@ -1964,11 +1990,21 @@
                         show-overflow-tooltip
                       />
                       <el-table-column prop="extime" label="出站时间" show-overflow-tooltip />
-                      <el-table-column
-                        prop="mediaTypeName"
-                        label="介质类型"
-                        show-overflow-tooltip
-                      />
+                      <el-table-column prop="mediaTypeName" label="介质类型" show-overflow-tooltip>
+                        <template #default="{ row }">
+                          <div style="display: flex; align-items: center; gap: 4px">
+                            <span>{{ row.mediaTypeName }}</span>
+                            <el-button
+                              v-if="row.mediaTypeName"
+                              size="small"
+                              type="primary"
+                              link
+                              @click="fillMediaTypeNameToRemark(row.mediaTypeName)"
+                              >填</el-button
+                            >
+                          </div>
+                        </template>
+                      </el-table-column>
                       <el-table-column prop="payfee" label="总应收金额(元)" show-overflow-tooltip>
                         <template #default="{ row }">{{ formatFee(row.payfee) }}</template>
                       </el-table-column>
@@ -2035,12 +2071,16 @@
                         <el-button
                           size="small"
                           type="primary"
+                          :loading="captureLoading"
+                          :disabled="captureLoading"
                           @click="captureTable('audit_order', 'image1')"
                           >截图到资料1</el-button
                         >
                         <el-button
                           size="small"
                           type="success"
+                          :loading="captureLoading"
+                          :disabled="captureLoading"
                           @click="captureTable('audit_order', 'image2')"
                           >截图到资料2</el-button
                         >
@@ -2417,10 +2457,12 @@
       v-model="gantryImagesDialogVisible"
       title="门架图库查询结果"
       width="900px"
+      top="5vh"
       destroy-on-close
       draggable
+      class="gantry-images-dialog"
     >
-      <div v-if="gantryImagesResult">
+      <div v-if="gantryImagesResult" style="max-height: 75vh; overflow-y: auto">
         <div style="margin-bottom: 15px; padding: 10px; background: #f5f7fa; border-radius: 4px">
           <div style="display: flex; gap: 30px; flex-wrap: wrap">
             <span><strong>门架名称:</strong> {{ gantryImagesResult.gantryName }}</span>
@@ -2448,12 +2490,13 @@
               fit="contain"
               :preview-src-list="gantryImagesPreviewList"
               :initial-index="idx"
+              @click="handleGantryImagePreview(img, idx)"
             />
             <div style="padding: 8px; font-size: 12px; background: #fafafa">
               <div style="margin-bottom: 4px">
                 <strong>时间:</strong> {{ formatPicTime(img.picTime) }}
               </div>
-              <div style="margin-bottom: 4px">
+              <div style="margin-bottom: 4px; display: flex; align-items: center; gap: 4px">
                 <strong>车牌:</strong>
                 <el-link
                   type="primary"
@@ -2461,6 +2504,14 @@
                   style="cursor: pointer"
                   >{{ img.vehPlate }}</el-link
                 >
+                <el-button
+                  type="primary"
+                  :icon="CopyDocument"
+                  size="small"
+                  link
+                  @click="handleCopy(img.vehPlate)"
+                  title="复制车牌"
+                />
               </div>
               <div style="margin-bottom: 8px"> <strong>门架:</strong> {{ img.stationName }} </div>
               <div style="display: flex; gap: 5px">
@@ -2495,94 +2546,314 @@
 
       <div v-else-if="vehicleDetailResult">
         <el-tabs v-model="vehicleDetailActiveTab">
+          <!-- 门架交易 -->
           <el-tab-pane label="门架交易" name="gantry_trade">
             <el-table
               :data="vehicleDetailResult.gantry_trade?.records || []"
               border
               size="small"
               max-height="400"
+              stripe
             >
-              <el-table-column prop="transTime" label="经过时间" width="160" />
-              <el-table-column prop="gantryName" label="门架名称" show-overflow-tooltip />
-              <el-table-column prop="fee" label="金额" width="100">
-                <template #default="{ row }">{{ formatFee(row.fee) }}</template>
+              <el-table-column
+                prop="vehiclePlate"
+                label="车牌号"
+                width="120"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="vehiclePlateColorName"
+                label="颜色"
+                width="85"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="passId" label="通行标识ID" width="330" show-overflow-tooltip />
+              <el-table-column
+                prop="gantryName"
+                label="门架名称"
+                width="260"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="gantryOrderNumName" label="门架顺序号" show-overflow-tooltip />
+              <el-table-column
+                prop="transTime"
+                label="经过时间"
+                width="180"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="enVehicleTypeName" label="入口车型" show-overflow-tooltip />
+              <el-table-column prop="feeVehicleTypeName" label="计费车型" show-overflow-tooltip />
+              <el-table-column
+                prop="obuVehicleTypeName"
+                label="OBU卡内车型"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="mediaTypeName" label="介质类型" show-overflow-tooltip />
+              <el-table-column prop="tradeStatusName" label="交易状态" show-overflow-tooltip />
+              <el-table-column prop="receivableFee" label="应收金额(元)" show-overflow-tooltip>
+                <template #default="{ row }">{{
+                  formatFee(row.receivableFee || row.fee)
+                }}</template>
               </el-table-column>
-              <el-table-column prop="vehiclePlateColorName" label="车牌颜色" width="100" />
-              <el-table-column prop="feeVehicleTypeName" label="计费车型" width="120" />
+              <el-table-column prop="actualFee" label="实收金额(元)" show-overflow-tooltip>
+                <template #default="{ row }">{{ formatFee(row.actualFee) }}</template>
+              </el-table-column>
+              <el-table-column prop="discountFee" label="优惠金额(元)" show-overflow-tooltip>
+                <template #default="{ row }">{{ formatFee(row.discountFee) }}</template>
+              </el-table-column>
+              <el-table-column prop="specialTypeName" label="特情" show-overflow-tooltip />
             </el-table>
             <div style="margin-top: 10px; color: #909399">
               共 {{ vehicleDetailResult.gantry_trade?.total || 0 }} 条记录
             </div>
           </el-tab-pane>
 
+          <!-- 门架牌识 -->
           <el-tab-pane label="门架牌识" name="gantry_plate">
             <el-table
               :data="vehicleDetailResult.gantry_plate?.records || []"
               border
               size="small"
               max-height="400"
+              stripe
             >
-              <el-table-column prop="picTime" label="拍摄时间" width="160" />
+              <el-table-column
+                prop="vehiclePlate"
+                label="车牌号"
+                width="120"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="picId" label="牌识流水" width="300" show-overflow-tooltip />
               <el-table-column prop="gantryName" label="门架名称" show-overflow-tooltip />
-              <el-table-column prop="vehicleTypeName" label="车型" width="120" />
-              <el-table-column prop="vehicleSpeed" label="车速" width="80" />
+              <el-table-column prop="gantryOrderNumName" label="门架顺序号" show-overflow-tooltip />
+              <el-table-column prop="picTime" label="经过时间" show-overflow-tooltip />
+              <el-table-column prop="vehicleTypeName" label="车型" show-overflow-tooltip />
+              <el-table-column prop="cameraId" label="相机编号" show-overflow-tooltip />
             </el-table>
             <div style="margin-top: 10px; color: #909399">
               共 {{ vehicleDetailResult.gantry_plate?.total || 0 }} 条记录
             </div>
           </el-tab-pane>
 
+          <!-- 出口交易(ETC) -->
           <el-tab-pane label="出口交易(ETC)" name="exit_trade_etc">
             <el-table
               :data="vehicleDetailResult.exit_trade_etc?.records || []"
               border
               size="small"
               max-height="400"
+              stripe
             >
-              <el-table-column prop="enTime" label="入口时间" width="160" />
-              <el-table-column prop="exTime" label="出口时间" width="160" />
-              <el-table-column prop="enStationName" label="入口站" show-overflow-tooltip />
-              <el-table-column prop="exStationName" label="出口站" show-overflow-tooltip />
-              <el-table-column prop="fee" label="金额" width="100">
+              <el-table-column prop="plateNumber" label="出口车牌" show-overflow-tooltip />
+              <el-table-column prop="enVehicleIdName" label="入口车牌" show-overflow-tooltip />
+              <el-table-column
+                prop="identifyVehicleIdName"
+                label="识别车牌"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="entollstationname" label="进站名" show-overflow-tooltip />
+              <el-table-column prop="entime" label="进站时间" show-overflow-tooltip />
+              <el-table-column prop="enVehicleTypeName" label="入口车型" show-overflow-tooltip />
+              <el-table-column prop="exVehicleTypeName" label="出口车型" show-overflow-tooltip />
+              <el-table-column prop="extollstationname" label="出站名" show-overflow-tooltip />
+              <el-table-column prop="extime" label="出站时间" show-overflow-tooltip />
+              <el-table-column prop="mediaTypeName" label="介质类型" show-overflow-tooltip />
+              <el-table-column prop="payfee" label="总应收金额(元)" show-overflow-tooltip>
+                <template #default="{ row }">{{ formatFee(row.payfee) }}</template>
+              </el-table-column>
+              <el-table-column prop="fee" label="总交易金额(元)" show-overflow-tooltip>
                 <template #default="{ row }">{{ formatFee(row.fee) }}</template>
               </el-table-column>
+              <el-table-column prop="discountfee" label="总优惠金额(元)" show-overflow-tooltip>
+                <template #default="{ row }">{{ formatFee(row.discountfee) }}</template>
+              </el-table-column>
+              <el-table-column prop="shortfee" label="最小费额交易金额(元)" show-overflow-tooltip>
+                <template #default="{ row }">{{ formatFee(row.shortfee) }}</template>
+              </el-table-column>
+              <el-table-column prop="FEEMILEAGE" label="计费总里程数(公里)" show-overflow-tooltip>
+                <template #default="{ row }">{{
+                  row.FEEMILEAGE ? (row.FEEMILEAGE / 1000).toFixed(2) : '-'
+                }}</template>
+              </el-table-column>
+              <el-table-column
+                prop="SHORTFEEMILEAGE"
+                label="最小费额里程数(公里)"
+                show-overflow-tooltip
+              >
+                <template #default="{ row }">{{
+                  row.SHORTFEEMILEAGE ? (row.SHORTFEEMILEAGE / 1000).toFixed(2) : '-'
+                }}</template>
+              </el-table-column>
+              <el-table-column prop="exitFeeTypeName" label="计费方式" show-overflow-tooltip />
+              <el-table-column prop="specialtype" label="特情" show-overflow-tooltip />
             </el-table>
             <div style="margin-top: 10px; color: #909399">
               共 {{ vehicleDetailResult.exit_trade_etc?.total || 0 }} 条记录
             </div>
           </el-tab-pane>
 
+          <!-- 出口交易(其它) -->
           <el-tab-pane label="出口交易(其它)" name="exit_trade_other">
             <el-table
               :data="vehicleDetailResult.exit_trade_other?.records || []"
               border
               size="small"
               max-height="400"
+              stripe
             >
-              <el-table-column prop="enTime" label="入口时间" width="160" />
-              <el-table-column prop="exTime" label="出口时间" width="160" />
-              <el-table-column prop="enStationName" label="入口站" show-overflow-tooltip />
-              <el-table-column prop="exStationName" label="出口站" show-overflow-tooltip />
-              <el-table-column prop="fee" label="金额" width="100">
+              <el-table-column prop="plateNumber" label="出口车牌" show-overflow-tooltip />
+              <el-table-column prop="enVehicleIdName" label="入口车牌" show-overflow-tooltip />
+              <el-table-column
+                prop="identifyVehicleIdName"
+                label="识别车牌"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="entollstationname" label="进站名" show-overflow-tooltip />
+              <el-table-column prop="entime" label="进站时间" show-overflow-tooltip />
+              <el-table-column prop="enVehicleTypeName" label="入口车型" show-overflow-tooltip />
+              <el-table-column prop="exVehicleTypeName" label="出口车型" show-overflow-tooltip />
+              <el-table-column prop="extollstationname" label="出站名" show-overflow-tooltip />
+              <el-table-column prop="extime" label="出站时间" show-overflow-tooltip />
+              <el-table-column prop="mediaTypeName" label="介质类型" show-overflow-tooltip />
+              <el-table-column prop="payfee" label="总应收金额(元)" show-overflow-tooltip>
+                <template #default="{ row }">{{ formatFee(row.payfee) }}</template>
+              </el-table-column>
+              <el-table-column prop="fee" label="总交易金额(元)" show-overflow-tooltip>
                 <template #default="{ row }">{{ formatFee(row.fee) }}</template>
               </el-table-column>
+              <el-table-column prop="discountfee" label="总优惠金额(元)" show-overflow-tooltip>
+                <template #default="{ row }">{{ formatFee(row.discountfee) }}</template>
+              </el-table-column>
+              <el-table-column prop="shortfee" label="最小费额交易金额(元)" show-overflow-tooltip>
+                <template #default="{ row }">{{ formatFee(row.shortfee) }}</template>
+              </el-table-column>
+              <el-table-column prop="FEEMILEAGE" label="计费总里程数(公里)" show-overflow-tooltip>
+                <template #default="{ row }">{{
+                  row.FEEMILEAGE ? (row.FEEMILEAGE / 1000).toFixed(2) : '-'
+                }}</template>
+              </el-table-column>
+              <el-table-column
+                prop="SHORTFEEMILEAGE"
+                label="最小费额里程数(公里)"
+                show-overflow-tooltip
+              >
+                <template #default="{ row }">{{
+                  row.SHORTFEEMILEAGE ? (row.SHORTFEEMILEAGE / 1000).toFixed(2) : '-'
+                }}</template>
+              </el-table-column>
+              <el-table-column prop="exitFeeTypeName" label="计费方式" show-overflow-tooltip />
+              <el-table-column prop="specialtype" label="特情" show-overflow-tooltip />
             </el-table>
             <div style="margin-top: 10px; color: #909399">
               共 {{ vehicleDetailResult.exit_trade_other?.total || 0 }} 条记录
             </div>
           </el-tab-pane>
 
+          <!-- 稽核工单 -->
           <el-tab-pane label="稽核工单" name="audit_order">
             <el-table
               :data="vehicleDetailResult.audit_order?.records || []"
               border
               size="small"
               max-height="400"
+              stripe
             >
-              <el-table-column prop="orderId" label="工单编号" show-overflow-tooltip />
-              <el-table-column prop="orderTypeName" label="工单类型" width="120" />
-              <el-table-column prop="createTime" label="创建时间" width="160" />
-              <el-table-column prop="orderStatusName" label="状态" width="100" />
+              <el-table-column
+                prop="order_id"
+                label="工单编号"
+                width="200"
+                show-overflow-tooltip
+                fixed="left"
+              >
+                <template #default="{ row }">
+                  <el-button
+                    type="primary"
+                    link
+                    size="small"
+                    @click="handleViewOrderDetail(row.order_id)"
+                  >
+                    {{ row.order_id }}
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column
+                prop="pass_id"
+                label="通行标识ID"
+                width="305"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="vehicle_no"
+                label="车牌号码"
+                width="98"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="plate_color_name" label="车牌颜色" width="80" />
+              <el-table-column
+                prop="en_station_name"
+                label="入口站名"
+                width="110"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="ex_station_name"
+                label="出口站名"
+                width="110"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="en_time" label="入口时间" width="160" show-overflow-tooltip />
+              <el-table-column prop="ex_time" label="出口时间" width="160" show-overflow-tooltip />
+              <el-table-column prop="en_vehicle_type_name" label="入口车型" width="100" />
+              <el-table-column prop="ex_vehicle_type_name" label="出口车型" width="100" />
+              <el-table-column prop="fee" label="通行费(分)" width="100">
+                <template #default="{ row }">{{ formatFee(row.fee) }}</template>
+              </el-table-column>
+              <el-table-column
+                prop="label_code_name"
+                label="标签名称"
+                width="130"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="order_status_name" label="工单状态" width="130">
+                <template #default="{ row }">
+                  <el-tag :type="getOrderStatusType(row.order_status)" size="small">{{
+                    row.order_status_name
+                  }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="toll_fee" label="通行费(分)" width="100">
+                <template #default="{ row }">{{ formatFee(row.toll_fee) }}</template>
+              </el-table-column>
+              <el-table-column prop="penalty_fee" label="补缴金额(分)" width="110">
+                <template #default="{ row }">{{ formatFee(row.penalty_fee) }}</template>
+              </el-table-column>
+              <el-table-column prop="total_fee" label="总金额(分)" width="100">
+                <template #default="{ row }">{{ formatFee(row.total_fee) }}</template>
+              </el-table-column>
+              <el-table-column prop="review_name" label="审核人" width="80" />
+              <el-table-column
+                prop="review_time"
+                label="审核时间"
+                width="160"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="operator_name" label="操作人" width="80" />
+              <el-table-column
+                prop="operate_time"
+                label="操作时间"
+                width="160"
+                show-overflow-tooltip
+              />
+              <el-table-column label="操作" width="80" fixed="right">
+                <template #default="{ row }">
+                  <el-button
+                    type="primary"
+                    size="small"
+                    @click="handleViewOrderDetail(row.order_id)"
+                    >查看</el-button
+                  >
+                </template>
+              </el-table-column>
             </el-table>
             <div style="margin-top: 10px; color: #909399">
               共 {{ vehicleDetailResult.audit_order?.total || 0 }} 条记录
@@ -3308,6 +3579,7 @@ import {
   unlockRow,
   getActiveLocks,
   getRowVersion,
+  getSingleRow,
   type LockResult,
   type ActiveLock,
   type RowVersion,
@@ -3539,6 +3811,9 @@ const checkSplitOptions = ref<string[]>([])
 
 const loadTableList = async () => {
   try {
+    // 清除表列表缓存，确保刷新时获取最新数据
+    request.clearCache('/api/split-match/tables/')
+
     const response = await getSplitMatchTables()
 
     if (response && response.code === 200 && Array.isArray(response.data)) {
@@ -3613,6 +3888,36 @@ const loadTableData = async () => {
     total.value = 0
   } finally {
     tableLoading.value = false
+  }
+}
+
+/**
+ * 局部更新表格中指定行的数据（无感更新，保留滚动位置、分页、筛选、排序、勾选状态）
+ * 用于：1) 当前用户保存后更新本地行  2) 收到row_updated协作事件时更新
+ */
+const updateSingleRowInTable = async (tableName: string, rowId: string) => {
+  try {
+    const resp = await getSingleRow(tableName, rowId)
+    if (resp?.code === 200 && resp.data) {
+      const rowIndex = tableData.value.findIndex(
+        (row: any) => String(row['通行标识ID']) === String(rowId)
+      )
+      if (rowIndex !== -1) {
+        // 保留图片字段（BLOB列不在single-row返回中），合并更新
+        const existingRow = tableData.value[rowIndex] as Record<string, unknown>
+        const newRow = { ...existingRow, ...resp.data }
+        // 保留图片字段：single-row排除BLOB列，若返回值中图片为null则保留原值
+        if (!newRow['查核资料1'] && existingRow['查核资料1']) {
+          newRow['查核资料1'] = existingRow['查核资料1']
+        }
+        if (!newRow['查核资料2'] && existingRow['查核资料2']) {
+          newRow['查核资料2'] = existingRow['查核资料2']
+        }
+        tableData.value[rowIndex] = newRow
+      }
+    }
+  } catch (e) {
+    console.error('局部更新行数据失败:', e)
   }
 }
 
@@ -4175,6 +4480,14 @@ const aiAuditCheckPassId = ref<string>('')
 const aiAuditSpecialSituation = ref<string>('')
 const aiAuditCheckSplit = ref<string>('')
 const aiAuditRemark = ref<string>('')
+
+/** 将介质类型值填入备注字段 */
+const fillMediaTypeNameToRemark = (mediaTypeName: string) => {
+  if (!mediaTypeName) return
+  aiAuditRemark.value = aiAuditRemark.value
+    ? `${aiAuditRemark.value} ${mediaTypeName}`
+    : mediaTypeName
+}
 
 const gantryImageLoading = ref<string>('')
 const gantryImagesDialogVisible = ref(false)
@@ -4828,7 +5141,7 @@ const queryGantryImagesForRow = async (row: AIAuditGantryTrade) => {
         station_id: row.gantryId,
         start_time: startTime,
         end_time: endTime,
-        rows: 50
+        rows: 500
       },
       userStore.getUserInfo?.id as number | undefined
     )
@@ -4863,6 +5176,38 @@ const selectGantryImageAsCheck = async (img: AIAuditGantryImage, target: 'image1
   })
 }
 
+/** 门架图库中点击图片预览高清原图 */
+const handleGantryImagePreview = async (img: AIAuditGantryImage, idx: number) => {
+  // 先用压缩图展示预览
+  gantryImagesPreviewList.value = gantryImagesResult.value
+    ? gantryImagesResult.value.images.map((i: AIAuditGantryImage) => getImageSrc(i.bigPositivePic))
+    : [getImageSrc(img.bigPositivePic)]
+
+  // 尝试加载高清原图
+  if (!img.picturePath) return
+
+  const cachedImage = originalImageCache.get(img.picturePath)
+  if (cachedImage) {
+    // 替换对应位置为高清图
+    const newList = [...gantryImagesPreviewList.value]
+    newList[idx] = getImageSrc(cachedImage)
+    gantryImagesPreviewList.value = newList
+    return
+  }
+
+  try {
+    const originalImage = await fetchOriginalImageWithRetry(img.picturePath, 2)
+    if (originalImage) {
+      setOriginalImageCache(img.picturePath, originalImage)
+      const newList = [...gantryImagesPreviewList.value]
+      newList[idx] = getImageSrc(originalImage)
+      gantryImagesPreviewList.value = newList
+    }
+  } catch {
+    // 加载失败保持压缩图
+  }
+}
+
 const queryVehicleDetail = async (plateNumber: string, picTime: string) => {
   if (!cloudPortalLoggedIn.value) {
     ElMessage.warning('请先登录云门户')
@@ -4888,7 +5233,7 @@ const queryVehicleDetail = async (plateNumber: string, picTime: string) => {
         entry_time: startTime,
         gate_time: endTime,
         hours: 48,
-        rows: 100
+        rows: 500
       },
       userStore.getUserInfo?.id as number | undefined
     )
@@ -4905,7 +5250,13 @@ const queryVehicleDetail = async (plateNumber: string, picTime: string) => {
   }
 }
 
+// 截图loading状态，防止重复点击
+const captureLoading = ref(false)
+
 const captureTable = async (tableName: string, targetImage: 'image1' | 'image2') => {
+  // 防止重复点击
+  if (captureLoading.value) return
+
   let tableRef: any = null
   let tableLabel = ''
 
@@ -4943,40 +5294,132 @@ const captureTable = async (tableName: string, targetImage: 'image1' | 'image2')
     return
   }
 
-  ElMessage.info(`正在截取${tableLabel}表格...`)
-
-  await nextTick()
-
-  const bodyWrapper = tableEl.querySelector('.el-table__body-wrapper') as HTMLElement | null
-  const savedMaxHeight = bodyWrapper?.style.maxHeight || ''
-  const savedOverflow = bodyWrapper?.style.overflow || ''
-  if (bodyWrapper) {
-    bodyWrapper.style.maxHeight = 'none'
-    bodyWrapper.style.overflow = 'visible'
+  // 覆盖前确认提示
+  const targetValue =
+    targetImage === 'image1' ? aiAuditSelectedImage1.value : aiAuditSelectedImage2.value
+  if (targetValue) {
+    try {
+      await ElMessageBox.confirm(
+        `查核资料${targetImage === 'image1' ? '1' : '2'}已有图片，截图将覆盖现有图片，是否继续？`,
+        '确认覆盖',
+        { confirmButtonText: '继续截图', cancelButtonText: '取消', type: 'warning' }
+      )
+    } catch {
+      return
+    }
   }
 
+  captureLoading.value = true
   const startTime = performance.now()
+  let screenshotStage: HTMLElement | null = null
 
   try {
-    console.log(`[Screenshot] 开始截取 ${tableLabel}...`)
+    const bodyWrapper = tableEl.querySelector('.el-table__body-wrapper') as HTMLElement | null
+    const scrollWrap =
+      tableRef?.refs?.scrollBarRef?.wrapRef ||
+      (tableEl.querySelector('.el-scrollbar__wrap') as HTMLElement | null)
+    const bodyTable = scrollWrap?.querySelector('.el-table__body') as HTMLElement | null
+    const scrollTop = scrollWrap?.scrollTop || 0
+    const scrollLeft = scrollWrap?.scrollLeft || 0
+    const viewWidth = scrollWrap?.clientWidth || bodyWrapper?.clientWidth || tableEl.clientWidth
+    const bodyHeight = scrollWrap?.clientHeight || bodyWrapper?.clientHeight || 0
+
+    if (!viewWidth || !bodyHeight || !bodyTable) {
+      ElMessage.warning('表格区域尺寸异常，请稍后重试')
+      return
+    }
+
+    const tableWidth = Math.max(
+      Math.ceil(bodyTable.scrollWidth || bodyTable.getBoundingClientRect().width || 0),
+      viewWidth + scrollLeft
+    )
+
+    const buildViewport = (
+      className: string,
+      width: number,
+      height: number,
+      offsetX: number,
+      offsetY: number,
+      sourceNode: HTMLElement
+    ) => {
+      const viewport = document.createElement('div')
+      viewport.className = className
+      viewport.style.width = `${width}px`
+      viewport.style.height = `${height}px`
+      viewport.style.overflow = 'hidden'
+      viewport.style.position = 'relative'
+      viewport.style.backgroundColor = '#ffffff'
+
+      const offsetLayer = document.createElement('div')
+      offsetLayer.style.position = 'relative'
+      offsetLayer.style.left = `${-offsetX}px`
+      offsetLayer.style.top = `${-offsetY}px`
+      offsetLayer.style.width = `${tableWidth}px`
+      offsetLayer.style.backgroundColor = '#ffffff'
+
+      const clonedNode = sourceNode.cloneNode(true) as HTMLElement
+      clonedNode.style.margin = '0'
+      clonedNode.style.transform = 'none'
+      clonedNode.style.width = sourceNode.style.width || `${tableWidth}px`
+      clonedNode.style.backgroundColor = '#ffffff'
+      offsetLayer.appendChild(clonedNode)
+      viewport.appendChild(offsetLayer)
+
+      return viewport
+    }
+
+    screenshotStage = document.createElement('div')
+    screenshotStage.style.position = 'fixed'
+    screenshotStage.style.left = '-100000px'
+    screenshotStage.style.top = '0'
+    screenshotStage.style.zIndex = '-1'
+    screenshotStage.style.pointerEvents = 'none'
+    screenshotStage.style.backgroundColor = '#ffffff'
+
+    const screenshotRoot = document.createElement('div')
+    screenshotRoot.className = tableEl.className
+    const dataPrefix = tableEl.getAttribute('data-prefix')
+    if (dataPrefix) {
+      screenshotRoot.setAttribute('data-prefix', dataPrefix)
+    }
+    screenshotRoot.style.width = `${viewWidth}px`
+    screenshotRoot.style.backgroundColor = '#ffffff'
+    screenshotRoot.style.overflow = 'hidden'
+
+    const innerWrapper = document.createElement('div')
+    innerWrapper.className = 'el-table__inner-wrapper'
+
+    innerWrapper.appendChild(
+      buildViewport(
+        'el-table__body-wrapper',
+        viewWidth,
+        bodyHeight,
+        scrollLeft,
+        scrollTop,
+        bodyTable
+      )
+    )
+
+    screenshotRoot.appendChild(innerWrapper)
+    screenshotStage.appendChild(screenshotRoot)
+    document.body.appendChild(screenshotStage)
 
     await nextTick()
 
-    const dataUrl = await domToPng(tableEl, {
-      scale: 1.2,
-      quality: 0.9,
+    const dataUrl = await domToPng(screenshotRoot, {
+      scale: 1.0,
       backgroundColor: '#ffffff',
-      width: tableEl.scrollWidth,
-      height: tableEl.scrollHeight,
+      width: viewWidth,
+      height: bodyHeight,
       style: {
-        overflow: 'visible !important'
+        overflow: 'hidden'
       },
       filter: (node) => {
         if (node.nodeType === Node.ELEMENT_NODE) {
           const el = node as Element
           if (el.classList?.contains('is-loading')) return false
-          if (el.tagName === 'BUTTON') return false
           if (el.classList?.contains('el-loading-mask')) return false
+          if (el.classList?.contains('el-scrollbar__bar')) return false
         }
         return true
       }
@@ -4987,7 +5430,8 @@ const captureTable = async (tableName: string, targetImage: 'image1' | 'image2')
 
     console.log(
       `[Screenshot] ${tableLabel} 截图完成 (${duration.toFixed(0)}ms)` +
-        `\n  - 元素尺寸: ${tableEl.scrollWidth}x${tableEl.scrollHeight}` +
+        `\n  - 数据区可视区域: ${viewWidth}x${bodyHeight}` +
+        `\n  - 滚动偏移: ${scrollTop}/${scrollLeft}` +
         `\n  - 数据大小: ${(dataUrl.length / 1024).toFixed(1)}KB`
     )
 
@@ -5003,10 +5447,8 @@ const captureTable = async (tableName: string, targetImage: 'image1' | 'image2')
     console.error(`[Screenshot] ${tableLabel} 截图失败 (${errorTime.toFixed(0)}ms):`, error)
     ElMessage.error(`截图失败: ${error.message || '未知错误'}`)
   } finally {
-    if (bodyWrapper) {
-      bodyWrapper.style.maxHeight = savedMaxHeight
-      bodyWrapper.style.overflow = savedOverflow
-    }
+    screenshotStage?.remove()
+    captureLoading.value = false
   }
 }
 
@@ -5069,7 +5511,8 @@ const saveImagesToDatabase = async () => {
 
       request.clearCache('/api/split-match/')
 
-      await loadTableData()
+      // 局部更新：仅刷新保存的行，保留滚动位置和分页状态
+      await updateSingleRowInTable(selectedTable.value, cloudPortalForm.value.passId)
 
       if (editedRow.value) {
         const updatedRow = tableData.value.find(
@@ -5169,6 +5612,7 @@ const handleVerifyPassId = async (passId: string, verifyType: string) => {
       if (result.exists) {
         ElMessage.success(`核查成功：找到 ${result.match_count} 条匹配记录`)
         aiAuditCheckSplit.value = '已拆'
+        aiAuditReviewStatus.value = '拆分正常'
 
         if (result.records && result.records.length > 0) {
           const record = result.records[0]
@@ -7032,7 +7476,8 @@ const handleSave = async () => {
 
         request.clearCache('/api/split-match/')
 
-        loadTableData().catch((e) => console.error('保存后刷新表格失败:', e))
+        // 局部更新：仅刷新当前编辑行，保留滚动位置、分页、筛选状态
+        updateSingleRowInTable(selectedTable.value, rowId)
 
         if (editedRow.value) {
           const currentImage1 = editedRow.value['查核资料1']
@@ -7062,7 +7507,8 @@ const handleSave = async () => {
             }
             currentRowLockedByMe.value = false
             request.clearCache('/api/split-match/')
-            loadTableData().catch((e) => console.error('保存后刷新表格失败:', e))
+            // 局部更新：仅刷新当前编辑行
+            updateSingleRowInTable(selectedTable.value, rowId)
           } else {
             ElMessage.error('强制覆盖保存失败')
           }
@@ -7112,24 +7558,10 @@ onMounted(() => {
         delete activeLocksMap.value[row_id]
       }
     } else if (message.type === 'row_updated' && message.data) {
-      const { row_id, changed_fields } = message.data
-      // 局部更新：仅更新表格中对应行的变更字段
-      if (row_id && changed_fields) {
-        const targetRow = tableData.value.find((r) => String(r['通行标识ID']) === String(row_id))
-        if (targetRow) {
-          const fieldMapping: Record<string, string> = {
-            review_status: '复核情况',
-            check_pass_id: '核查通行标识',
-            special_situation: '特情',
-            check_split: '核查拆分',
-            remark: '备注'
-          }
-          for (const [enField, cnField] of Object.entries(fieldMapping)) {
-            if (changed_fields[enField] !== undefined) {
-              targetRow[cnField] = changed_fields[enField]
-            }
-          }
-        }
+      const { row_id, table_name } = message.data
+      // 其他用户的行更新：通过getSingleRow获取完整数据，实现无感局部更新
+      if (row_id && table_name && table_name === selectedTable.value) {
+        updateSingleRowInTable(table_name, row_id)
       }
     }
   })

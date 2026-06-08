@@ -12,7 +12,7 @@ import logging
 
 from fastapi import FastAPI, Request, HTTPException, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -148,7 +148,14 @@ app.include_router(chat_router)
 
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
+    # 后端专用静态资源（如 chat_files）
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    # 前端构建产物的静态资源挂载
+    # index.html 中引用的路径为 /assets/js/...、/assets/css/...、/favicon.ico、/logo.png
+    assets_dir = os.path.join(static_dir, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="frontend-assets")
 else:
     logger.warning(f"静态文件目录不存在: {static_dir}")
 
@@ -360,13 +367,39 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
-# 根路径重定向到静态文件（如果存在）
+# SPA 前端路由 fallback：所有非 API、非 static 的 GET 请求返回 index.html
+# Vue Router 使用 history 模式，需要服务端将前端路由交由 index.html 处理
 static_index_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
 if os.path.exists(static_index_path):
     @app.get("/")
     async def root():
         """根路径返回静态首页"""
-        from fastapi.responses import FileResponse
+        return FileResponse(static_index_path)
+
+    # 前端入口文件引用的根级静态资源
+    @app.get("/favicon.ico")
+    async def favicon():
+        favicon_path = os.path.join(static_dir, "favicon.ico")
+        if os.path.exists(favicon_path):
+            return FileResponse(favicon_path)
+        raise HTTPException(status_code=404)
+
+    @app.get("/logo.png")
+    async def logo():
+        logo_path = os.path.join(static_dir, "logo.png")
+        if os.path.exists(logo_path):
+            return FileResponse(logo_path)
+        raise HTTPException(status_code=404)
+
+    @app.get("/{path:path}")
+    async def spa_fallback(request: Request, path: str):
+        """SPA 路由 fallback：非 API、非静态资源的请求返回 index.html"""
+        # API 请求和静态资源路径不拦截
+        if path.startswith("api/") or path.startswith("static/") or path.startswith("assets/"):
+            raise HTTPException(status_code=404)
+        # 带文件扩展名的请求（如 .js、.css、.png）不拦截
+        if "." in path.split("/")[-1]:
+            raise HTTPException(status_code=404)
         return FileResponse(static_index_path)
 
 

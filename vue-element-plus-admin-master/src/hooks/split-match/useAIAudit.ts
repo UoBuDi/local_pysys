@@ -1,6 +1,5 @@
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { domToPng } from 'modern-screenshot'
 import {
   aiAuditBatchQuery,
   aiAuditVehicleImages,
@@ -16,10 +15,6 @@ import {
 const ORIGINAL_IMAGE_CACHE_MAX_SIZE = 100
 const originalImageCache = new Map<string, string>()
 
-const SCREENSHOT_CACHE_MAX_SIZE = 10
-const screenshotCache = new Map<string, { dataUrl: string; timestamp: number }>()
-const SCREENSHOT_CACHE_TTL = 5 * 60 * 1000
-
 const setOriginalImageCache = (key: string, value: string) => {
   if (originalImageCache.size >= ORIGINAL_IMAGE_CACHE_MAX_SIZE) {
     const firstKey = originalImageCache.keys().next().value
@@ -32,58 +27,6 @@ const setOriginalImageCache = (key: string, value: string) => {
 
 const clearOriginalImageCache = () => {
   originalImageCache.clear()
-}
-
-const clearScreenshotCache = () => {
-  screenshotCache.clear()
-}
-
-const computeTableHash = async (el: HTMLElement): Promise<string> => {
-  const textContent = el.innerText || ''
-  const styleContent = Array.from(el.attributes)
-    .map((attr) => `${attr.name}=${attr.value}`)
-    .join('&')
-
-  const rawString = `${textContent}|${styleContent}|${el.children.length}`
-
-  const encoder = new TextEncoder()
-  const data = encoder.encode(rawString)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
-}
-
-const getCachedScreenshot = (cacheKey: string): string | null => {
-  const cached = screenshotCache.get(cacheKey)
-  if (!cached) return null
-
-  const now = Date.now()
-  if (now - cached.timestamp > SCREENSHOT_CACHE_TTL) {
-    screenshotCache.delete(cacheKey)
-    return null
-  }
-
-  return cached.dataUrl
-}
-
-const setCachedScreenshot = (cacheKey: string, dataUrl: string) => {
-  if (screenshotCache.size >= SCREENSHOT_CACHE_MAX_SIZE) {
-    let oldestKey: string | null = null
-    let oldestTime = Infinity
-
-    screenshotCache.forEach((value, key) => {
-      if (value.timestamp < oldestTime) {
-        oldestTime = value.timestamp
-        oldestKey = key
-      }
-    })
-
-    if (oldestKey) {
-      screenshotCache.delete(oldestKey)
-    }
-  }
-
-  screenshotCache.set(cacheKey, { dataUrl, timestamp: Date.now() })
 }
 
 export const useAIAudit = (isLoggedIn: () => boolean) => {
@@ -411,7 +354,7 @@ export const useAIAudit = (isLoggedIn: () => boolean) => {
         station_id: row.gantryId,
         start_time: startTime,
         end_time: endTime,
-        rows: 50
+        rows: 500
       })
 
       if (response && response.code === 200 && response.data?.success) {
@@ -479,7 +422,7 @@ export const useAIAudit = (isLoggedIn: () => boolean) => {
         entry_time: formatDateTimeForQuery(startDate),
         gate_time: formatDateTimeForQuery(endDate),
         hours: 48,
-        rows: 100
+        rows: 500
       })
 
       if (response && response.code === 200) {
@@ -491,128 +434,6 @@ export const useAIAudit = (isLoggedIn: () => boolean) => {
       ElMessage.error(error?.message || '查询车辆信息失败')
     } finally {
       vehicleDetailLoading.value = false
-    }
-  }
-
-  const captureTable = async (
-    tableEl: HTMLElement,
-    tableLabel: string,
-    targetImage: 'image1' | 'image2'
-  ) => {
-    if (!tableEl) {
-      ElMessage.warning('无法获取表格元素')
-      return
-    }
-
-    const bodyWrapper = tableEl.querySelector('.el-table__body-wrapper') as HTMLElement | null
-    const savedMaxHeight = bodyWrapper?.style.maxHeight || ''
-    const savedOverflow = bodyWrapper?.style.overflow || ''
-    if (bodyWrapper) {
-      bodyWrapper.style.maxHeight = 'none'
-      bodyWrapper.style.overflow = 'visible'
-    }
-
-    const startTime = performance.now()
-    ElMessage.info(`正在截取${tableLabel}表格...`)
-
-    await nextTick()
-
-    try {
-      const cacheKey = `${tableLabel}-${targetImage}`
-
-      const cachedDataUrl = getCachedScreenshot(cacheKey)
-      if (cachedDataUrl) {
-        const cacheHitTime = performance.now() - startTime
-
-        if (targetImage === 'image1') {
-          aiAuditSelectedImage1.value = cachedDataUrl
-        } else {
-          aiAuditSelectedImage2.value = cachedDataUrl
-        }
-
-        console.log(`[Screenshot] ${tableLabel} 缓存命中 (${cacheHitTime.toFixed(0)}ms)`)
-        ElMessage.success(
-          `${tableLabel}表格已截图到查核资料${targetImage === 'image1' ? '1' : '2'} (缓存)`
-        )
-        return
-      }
-
-      const tableHash = await computeTableHash(tableEl)
-      const fullCacheKey = `${cacheKey}-${tableHash}`
-
-      const hashCachedDataUrl = getCachedScreenshot(fullCacheKey)
-      if (hashCachedDataUrl) {
-        const cacheHitTime = performance.now() - startTime
-
-        if (targetImage === 'image1') {
-          aiAuditSelectedImage1.value = hashCachedDataUrl
-        } else {
-          aiAuditSelectedImage2.value = hashCachedDataUrl
-        }
-
-        setCachedScreenshot(cacheKey, hashCachedDataUrl)
-
-        console.log(`[Screenshot] ${tableLabel} Hash缓存命中 (${cacheHitTime.toFixed(0)}ms)`)
-        ElMessage.success(
-          `${tableLabel}表格已截图到查核资料${targetImage === 'image1' ? '1' : '2'} (缓存)`
-        )
-        return
-      }
-
-      console.log(`[Screenshot] 开始截取 ${tableLabel}...`)
-
-      await nextTick()
-
-      const dataUrl = await domToPng(tableEl, {
-        scale: 1.2,
-        quality: 0.9,
-        backgroundColor: '#ffffff',
-        width: tableEl.scrollWidth,
-        height: tableEl.scrollHeight,
-        style: {
-          overflow: 'visible !important'
-        },
-        filter: (node) => {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const el = node as Element
-            if (el.classList?.contains('is-loading')) return false
-            if (el.tagName === 'BUTTON') return false
-            if (el.classList?.contains('el-loading-mask')) return false
-          }
-          return true
-        }
-      })
-
-      const endTime = performance.now()
-      const duration = endTime - startTime
-
-      console.log(
-        `[Screenshot] ${tableLabel} 截图完成 (${duration.toFixed(0)}ms)` +
-          `\n  - 元素尺寸: ${tableEl.scrollWidth}x${tableEl.scrollHeight}` +
-          `\n  - 数据大小: ${(dataUrl.length / 1024).toFixed(1)}KB`
-      )
-
-      if (targetImage === 'image1') {
-        aiAuditSelectedImage1.value = dataUrl
-      } else {
-        aiAuditSelectedImage2.value = dataUrl
-      }
-
-      setCachedScreenshot(cacheKey, dataUrl)
-      setCachedScreenshot(fullCacheKey, dataUrl)
-
-      ElMessage.success(
-        `${tableLabel}表格已截图到查核资料${targetImage === 'image1' ? '1' : '2'} (${duration.toFixed(0)}ms)`
-      )
-    } catch (error: any) {
-      const errorTime = performance.now() - startTime
-      console.error(`[Screenshot] ${tableLabel} 截图失败 (${errorTime.toFixed(0)}ms):`, error)
-      ElMessage.error(`截图失败: ${error.message || '未知错误'}`)
-    } finally {
-      if (bodyWrapper) {
-        bodyWrapper.style.maxHeight = savedMaxHeight
-        bodyWrapper.style.overflow = savedOverflow
-      }
     }
   }
 
@@ -722,9 +543,7 @@ export const useAIAudit = (isLoggedIn: () => boolean) => {
     queryGantryImagesForRow,
     selectGantryImageAsCheck,
     queryVehicleDetail,
-    captureTable,
     saveImagesToDatabase,
-    clearOriginalImageCache,
-    clearScreenshotCache
+    clearOriginalImageCache
   }
 }

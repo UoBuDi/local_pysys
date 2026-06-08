@@ -614,10 +614,11 @@ def ai_audit_batch_query():
     entry_time = data.get('entry_time')
     gate_time = data.get('gate_time')
     pass_id = data.get('pass_id')
-    hours = data.get('hours', 5)
+    hours = data.get('hours', 24)
+    rows = data.get('rows', 500)
 
-    if not all([plate_number, entry_time, gate_time]):
-        return jsonify({'code': 400, 'message': '缺少必要参数: plate_number, entry_time, gate_time'}), 400
+    if not all([plate_number, gate_time]):
+        return jsonify({'code': 400, 'message': '缺少必要参数: plate_number, gate_time'}), 400
 
     access_token = data.get('access_token', '')
     ai_client = _create_temp_ai_client(access_token)
@@ -625,10 +626,10 @@ def ai_audit_batch_query():
     try:
         result = ai_client.batch_query_all(
             plate_number=plate_number,
-            entry_time=entry_time,
             gate_time=gate_time,
             pass_id=pass_id,
-            hours=hours
+            hours=hours,
+            rows=rows
         )
 
         response_data = {'code': 200, 'message': 'success', 'data': result}

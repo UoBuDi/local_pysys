@@ -490,10 +490,12 @@ async def update_split_match_data(request: UpdateMatchRequest, user: dict = Depe
 
                 affected_rows = cursor.rowcount
 
-        # 更新成功后递增版本号
+        # 更新成功后递增版本号，并获取新版本号
         username = user.get("username", "")
+        user_id = user.get("id")
+        new_version = None
         with get_db_connection("USER_DB", config) as conn:
-            with conn.cursor() as cursor:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute(
                     "UPDATE row_versions SET version = version + 1, updated_by = %s WHERE table_name = %s AND row_id = %s",
                     (username, request.table_name, request.row_id)
@@ -505,12 +507,44 @@ async def update_split_match_data(request: UpdateMatchRequest, user: dict = Depe
                         (request.table_name, request.row_id, username)
                     )
                     conn.commit()
+                    new_version = 2
+                else:
+                    cursor.execute(
+                        "SELECT version FROM row_versions WHERE table_name = %s AND row_id = %s",
+                        (request.table_name, request.row_id)
+                    )
+                    vr = cursor.fetchone()
+                    new_version = vr["version"] if vr else None
+
+        # 构建变更字段映射（英文字段名→新值），用于协作广播
+        changed_fields = {}
+        for db_field, req_field in field_mapping.items():
+            if req_field in request.data and request.data[req_field] is not None:
+                changed_fields[req_field] = request.data[req_field]
+
+        # 广播 row_updated 协作事件，通知同表房间其他用户局部更新
+        try:
+            from core.ws_manager_instance import status_manager
+            await status_manager.broadcast_collaboration_event(
+                table_name=request.table_name,
+                event_type="row_updated",
+                data={
+                    "table_name": request.table_name,
+                    "row_id": request.row_id,
+                    "username": username,
+                    "changed_fields": changed_fields
+                },
+                from_user_id=user_id
+            )
+        except Exception as broadcast_err:
+            logger.warning(f"广播row_updated事件失败（不影响业务）: {broadcast_err}")
 
         return {
             "code": 200,
             "message": f"成功更新 {affected_rows} 条记录",
             "data": {
-                "affectedRows": affected_rows
+                "affectedRows": affected_rows,
+                "version": new_version
             }
         }
 

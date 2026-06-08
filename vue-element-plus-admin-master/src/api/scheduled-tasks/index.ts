@@ -20,8 +20,11 @@ export const runScheduledTaskApi = (taskName: string) => {
   return request.post({ url: `/api/scheduled-tasks/${taskName}/run` })
 }
 
-export const getDashboardStatisticsApi = () => {
-  return request.get<DashboardStatistics>({ url: '/api/dashboard-statistics/' })
+export const getDashboardStatisticsApi = (statMonth?: string) => {
+  return request.get<DashboardStatistics>({
+    url: '/api/dashboard-statistics/',
+    params: statMonth ? { stat_month: statMonth } : undefined
+  })
 }
 
 export const getTaskExecutionHistoryApi = (taskName?: string, limit: number = 20) => {

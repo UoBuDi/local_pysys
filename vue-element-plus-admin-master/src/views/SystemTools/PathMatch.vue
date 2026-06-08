@@ -65,9 +65,8 @@
         <el-row :gutter="20">
           <el-col :xs="24" :sm="12">
             <el-form-item label="收费车型">
-              <el-select-v2
+              <el-select
                 v-model="selectedVehicleTypes"
-                :options="vehicleTypeOptions"
                 multiple
                 filterable
                 collapse-tags
@@ -86,7 +85,13 @@
                     全选
                   </el-checkbox>
                 </template>
-              </el-select-v2>
+                <el-option
+                  v-for="item in vehicleTypeOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -1314,7 +1319,7 @@ const exportExcel = () => {
     font-size: 14px;
   }
 
-  :deep(.el-select-v2__wrapper) {
+  :deep(.el-select__wrapper) {
     font-size: 14px;
   }
 

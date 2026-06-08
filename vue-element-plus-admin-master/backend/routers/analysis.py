@@ -9,7 +9,7 @@ import re
 from fastapi import APIRouter, Depends, Query
 from typing import Optional
 
-from core.dependencies import get_current_user
+from core.dependencies import get_current_user, get_optional_user
 from core.config import get_config as get_app_config
 from statistics_service import get_dashboard_statistics
 
@@ -151,15 +151,19 @@ async def get_monthly_sales(
 
 
 @router.post("/api/analytics/route")
-async def analytics_route(request: dict, user: dict = Depends(get_current_user)):
+async def analytics_route(request: dict, user: dict | None = Depends(get_optional_user)):
     """通用分析路由：接收路由导航日志或执行自定义分析
 
     [路由导航日志] 标记段 - 如需移除路由日志功能，删除本函数中 route_log 分支
+    使用可选认证：未登录用户也能正常访问页面，路由日志中 user_id 为 None
     """
     try:
         analysis_type = request.get('type', '')
 
         if analysis_type == 'custom':
+            # 自定义分析需要认证
+            if user is None:
+                return {"code": 401, "message": "需要登录"}
             params = request.get('params', {})
             result = await execute_custom_analysis(params)
             return {

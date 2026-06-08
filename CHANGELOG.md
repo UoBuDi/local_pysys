@@ -2,6 +2,180 @@
 
 ## [最新版本]
 
+### 2026-06-08 v2.36.0
+
+#### 功能优化
+- **图标系统完全离线化**：移除所有图标在线依赖，确保部署服务器无需外网即可正常显示图标
+  - `@iconify/iconify`（含在线API `api.iconify.design`）替换为 `@iconify/vue/offline`（纯离线版本，不包含任何网络请求逻辑）
+  - `@iconify/vue` 在线版替换为 `@iconify/vue/offline` 离线版，当本地无图标数据时不再尝试联网获取
+  - 移除已废弃的 `vite-plugin-purge-icons` 和 `@purge-icons/generated` 依赖
+  - 移除 `@iconify/iconify` 依赖（功能已由 `@iconify/vue/offline` 的 `addCollection` 覆盖）
+  - 构建产物验证：无 `api.iconify.design` 引用，无 `loadIcons`/`loadIcon` 在线加载函数
+  - 影响文件：src/icons/index.ts、src/components/Icon/src/Icon.vue、package.json、vite.config.ts
+
+### 2026-06-06 v2.35.0
+
+#### 功能优化
+- **分析页数据及图表展示优化**：
+  - 分析页改为统一基于 `dashboard-statistics` 真实统计数据渲染顶部卡片和三张图表，避免原先模板化分析接口与业务统计口径不一致
+  - 新增统计月份、更新时间、车型种类数、省份覆盖数摘要信息，提升数据来源和统计范围可读性
+  - 车型分布优化为环形图，通行介质优化为排序柱状图，省份统计优化为 Top10 省份排名图，更贴合当前业务数据结构
+  - 图表无数据时展示空状态，避免页面出现空白图表区域
+  - 分析页顶部卡片改为由父组件统一传入统计数据，减少重复请求并保证页面数据一致性
+  - 影响文件：Analysis.vue、PanelGroup.vue、zh-CN.ts、en.ts
+
+### 2026-06-06 v2.34.0
+
+#### 功能优化
+- **云门户人工核查-门架交易经过时间查询弹窗优化**：
+  - 调整弹窗高度自适应浏览器窗口（top=5vh，内容区max-height=75vh）
+  - 弹窗中图片点击后加载高清原图预览，支持缓存避免重复请求
+  - 车牌值后面增加"复制"按钮，点击将车牌号码复制到剪贴板
+  - 影响文件：SplitMatch.vue
+
+- **车辆详细信息窗口数据字段完善**：
+  - 门架交易：从5个字段扩展为15个字段（车牌号、颜色、通行标识ID、门架名称、门架顺序号、经过时间、入口车型、计费车型、OBU卡内车型、介质类型、交易状态、应收金额、实收金额、优惠金额、特情）
+  - 门架牌识：从4个字段扩展为7个字段（车牌号、牌识流水、门架名称、门架顺序号、经过时间、车型、相机编号）
+  - 出口交易(ETC)和出口交易(其它)：从5个字段扩展为18个字段（出口车牌、入口车牌、识别车牌、进站名、进站时间、入口车型、出口车型、出站名、出站时间、介质类型、总应收金额、总交易金额、总优惠金额、最小费额交易金额、计费总里程数、最小费额里程数、计费方式、特情）
+  - 稽核工单：参照云门户人工核查窗口完整字段（工单编号可点击查看详情、通行标识ID、车牌号码、车牌颜色、入口站名、出口站名、入口时间、出口时间、入口车型、出口车型、通行费、标签名称、工单状态带颜色标签、补缴金额、总金额、审核人、审核时间、操作人、操作时间、操作按钮）
+  - 影响文件：SplitMatch.vue、src/api/split-match/index.ts
+
+### 2026-06-06 v2.33.0
+
+#### Bug修复
+- **云门户人工核查截图策略收敛**：按用户确认改为只截当前数据区，不再包含表头，进一步降低截图错位复杂度
+  - 原因：表头需要单独处理横向偏移并与数据列宽严格同步，是截图首行和列位置错位的主要干扰项
+  - 修复：离屏截图视口仅保留数据表 `el-table__body`，按真实 `scrollTop` / `scrollLeft` 还原当前数据区可见内容后输出
+  - 效果：截图结果聚焦用户当前看到的数据行，避免表头参与带来的双层对齐误差
+  - 影响文件：SplitMatch.vue
+
+### 2026-06-06 v2.32.0
+
+#### Bug修复
+- **云门户人工核查截图滚动定位修复**：修复门架交易、门架牌识截图仍从表格顶部开始、未按当前可见首行输出的问题
+  - 根因：即使直接对 `el-table` 当前区域截图，`modern-screenshot` 在克隆 DOM 时仍会把内部 `el-scrollbar__wrap` 的滚动状态重置为顶部，导致截图结果与用户当前看到的首行不一致
+  - 修复：改为按真实 `scrollTop` / `scrollLeft` 构造离屏截图视口，分别克隆表头和数据表，再用位移还原用户当前看到的可视区域后截图
+  - 效果：截图首行、表头横向位置与用户当前窗口保持一致，满足“所见即所截”
+  - 影响文件：SplitMatch.vue
+
+### 2026-06-06 v2.31.0
+
+#### Bug修复
+- **云门户人工核查截图修复**：按当前可见区域直接截图，修复门架交易、门架牌识“截图到资料1/2”未跟随滚动位置的问题
+  - 根因：旧实现先展开整张表再按滚动偏移二次裁剪，但 `Element Plus 2.13.2` 的真实滚动层是 `ElScrollbar` 内部 `wrapRef`，代码却按 `.el-table__body-wrapper` 读取滚动位置并展开错误的 DOM 层，导致截图内容与用户当前所见不一致
+  - 修复：移除“展开整表 + Canvas 二次裁剪”逻辑，改为直接对 `el-table` 当前可见区域执行 `domToPng`
+  - 优化：过滤加载遮罩和 `el-scrollbar` 滚动条装饰元素，保留现有资料覆盖确认和保存流程
+  - 影响文件：SplitMatch.vue
+
+### 2026-06-06 v2.30.0
+
+#### Bug修复
+- **截图到资料功能修复**：修复 Canvas 二次裁剪法中可视区域尺寸测量错误导致截图仍为全表的问题
+  - 根因：`viewWidth`/`viewHeight`/`headerHeight` 在展开 DOM 之后测量，展开后 `tableEl.clientHeight` 变为全部行高（~2500px）而非可视区域（~450px），导致 Canvas 裁剪形同虚设
+  - 修复：所有尺寸（viewWidth、viewHeight、headerHeight、scrollTop、scrollLeft）在展开 DOM 之前测量，`viewHeight` 改用 `mainWrapper.clientHeight` 精确获取可视区域高度
+  - 修复：展开后隐藏固定列（`.el-table__fixed`/`.el-table__fixed-right`）避免内容重叠，截图后恢复
+  - 影响文件：SplitMatch.vue
+
+### 2026-06-06 v2.29.0
+
+#### Bug修复
+- **截图到资料功能修复**：修复截图内容与用户当前滚动位置看到的表格数据不一致的问题
+  - 根因：v2.28.0 对 `.el-table__body`（HTML `<table>` 元素）做 CSS `transform: translate()` 不可靠，截图库克隆DOM时 transform 效果丢失，截图仍从表格顶部开始
+  - 修复：改用 Canvas 二次裁剪法 — 先展开DOM截取完整表格大图，再用 `canvas.drawImage()` 从 `(scrollLeft, headerHeight+scrollTop)` 处精确裁剪出可视区域，表头单独裁剪（仅横向偏移），数据区按用户滚动位置裁剪
+  - 效果：截图内容与用户当前滚动位置看到的表格数据像素级一致（所见即所截）
+  - 影响文件：SplitMatch.vue
+
+### 2026-06-05 v2.28.0
+
+#### Bug修复
+- **截图到资料功能修复**：修复截图始终从表头+第一行开始、不跟随滚动位置的问题
+  - 根因：`modern-screenshot` 克隆DOM时 `scrollTop`/`scrollLeft` 被重置为0（滚动位置是JS属性非CSS属性，克隆时丢失），导致截图始终从第一行开始
+  - 修复：截图前重置滚动位置为0，对 `.el-table__body` 应用 `transform: translate(-scrollLeft, -scrollTop)` 将内容偏移到用户当前视口，对 `.el-table__header` 应用 `transform: translateX(-scrollLeft)` 同步横向滚动，对固定列仅应用 `translateY(-scrollTop)`，设置 `overflow: hidden` 裁剪溢出内容，截图后恢复所有修改
+  - 效果：截图内容与用户当前滚动位置看到的表格数据完全一致（所见即所截）
+  - 影响文件：SplitMatch.vue
+
+### 2026-06-05 v2.27.0
+
+#### Bug修复
+- **截图到资料功能重构**：重写 `captureTable` 截图逻辑，实现"所见即所截"精准截图
+  - 旧方案缺陷：截图前展开全部DOM（maxHeight=none, overflow=visible）再用 transform 偏移，导致横向截取全部列（scrollWidth）、纵向硬编码高度不精确、fixed列可能错位、大数据性能差
+  - 新方案：不修改任何DOM样式，直接使用 `clientWidth/clientHeight` 截取el-table当前可视区域，modern-screenshot自动裁剪overflow容器的溢出内容
+  - 纵向：只截可视行，滚动上方/下方不可见行不入图
+  - 横向：只截可视列，横向滚动外隐藏列不入图
+  - 固定列：无transform偏移，fixed列正常渲染无错位
+  - 移除 bodyWrapper 样式保存/恢复逻辑，移除 scrollTop 记录/transform 偏移逻辑，代码大幅简化
+  - 影响文件：SplitMatch.vue
+
+### 2026-06-05 v2.26.0
+
+#### Bug修复
+- **截图到资料功能修复**：修复云门户人工核查窗口"截图到资料1/2"截取的图片内容不是用户当前滚动位置看到的数据的问题
+  - 根因：`captureTable` 函数截图前将 bodyWrapper 的 `maxHeight` 设为 `none`、`overflow` 设为 `visible`，展开全部数据行后使用 `scrollHeight` 截取整表，忽略了用户滚动位置
+  - 修复：截图前记录 `scrollTop` 滚动位置，展开 bodyWrapper 后通过 `transform: translateY(-scrollTop)` 偏移到用户当前视口，截图高度限制为表头高度+可视区域高度（门架交易/牌识 450px，其余 300px）
+  - 效果：截图内容与用户当前看到的表格数据完全一致（所见即所得）
+  - 影响文件：SplitMatch.vue
+
+### 2026-06-05 v2.25.0
+
+#### Bug修复
+- **AI稽核批量查询数据完整性修复**：修复门架交易、门架牌识、出口交易等查询因 `length` 参数默认50导致数据截断的问题
+  - GUI服务 `api_server.py` 的 batch-query 端点未将前端传入的 `rows` 参数传递给 `batch_query_all`，导致 `rows=500` 被丢弃
+  - `ai_audit_client.py` 的 `batch_query_all` 调用 `query_gantry_trade/plate/exit_trade` 时未传递 `length` 参数，使用默认值50
+  - 云门户API实际返回63条门架交易记录，但仅获取前50条，导致 `ENTIME: 09:23:21` 等记录丢失
+  - 修复：`api_server.py` 读取并传递 `rows` 参数；`batch_query_all` 默认值从40改为500；所有分页查询传递 `length=rows`
+  - 影响文件：api_server.py, ai_audit_client.py
+
+### 2026-06-04 v2.24.0
+
+#### Bug修复
+- **截图功能修复**：修复云门户人工核查窗口"截图到资料1/2"截图内容与用户数据表区域不一致的问题
+  - 恢复 `style: { overflow: 'visible !important' }` 配置项（v2.2.0 中存在，后续版本遗漏），确保 `domToPng` 能渲染滚动区域外的内容
+  - 其他表格（出口交易ETC/其它、稽核工单）截图高度从 `offsetHeight`（仅可视区域）改为 `scrollHeight`（全部内容）
+  - 修复截图后 bodyWrapper 样式未恢复的 bug：截图前保存 `maxHeight`/`overflow` 原始值，截图后在 `finally` 块中恢复，避免截图后表格滚动条消失
+  - 移除未使用的 `headerWrapper` 变量
+  - 影响文件：SplitMatch.vue
+
+#### 功能优化
+- **刷新列表按钮修复**：修复拆分匹配页面"刷新列表"按钮因 GET 请求缓存导致无法获取最新数据的问题
+  - 调用 `getSplitMatchTables()` 前先清除 `/api/split-match/tables/` 的缓存
+  - 影响文件：SplitMatch.vue
+
+- **查询记录数上限提升**：解除 batch-query 的 rows 参数限制，默认值和兜底值从 20/50/100 统一提升为 500
+  - 后端 `AIBatchQueryRequest.rows` 默认值 20 → 500
+  - 后端 `GantryImagesRequest.rows` 默认值 20 → 500
+  - 前端表单默认值 50 → 500，输入框 max 从 100 提升为 500、step 从 10 改为 50
+  - 前端所有硬编码 rows 值（50/100）统一改为 500
+  - 影响文件：cloud_portal.py、useCloudPortal.ts、useAIAudit.ts、SplitMatch.vue
+
+### 2026-06-04 v2.22.0
+
+#### 功能优化
+- **数据表无感局部更新（F-03）**：拆分匹配页面保存数据后不再整表刷新，改为仅更新变更行，保留滚动位置、分页、筛选、排序、勾选状态
+  - 新增 `updateSingleRowInTable` 方法：调用 `getSingleRow` API 获取单行最新数据，原地替换 `tableData` 中对应行，保留图片字段（BLOB列不在single-row返回中）
+  - 3处保存后 `loadTableData()` 替换为 `updateSingleRowInTable`：主保存、强制覆盖保存、AI审计保存图片
+  - 协作事件 `row_updated` 处理增强：收到其他用户的更新事件时，通过 `getSingleRow` 获取完整行数据并局部替换，替代原来仅映射5个字段的 `changed_fields` 方案
+  - 保留整表刷新的场景：切换表、分页切换、筛选条件变更、执行匹配完成、导入数据、重置筛选
+  - 影响文件：SplitMatch.vue
+
+#### 后端优化
+- **update端点广播协作事件**：`POST /api/split-match/update/` 更新成功后通过 `status_manager.broadcast_collaboration_event` 广播 `row_updated` 事件，携带 `changed_fields` 和 `table_name`，通知同表房间其他用户局部更新
+  - 返回数据新增 `version` 字段，前端可直接获取新版本号无需额外查询
+  - 版本号递增后使用 DictCursor 查询并返回最新版本号
+  - 广播失败仅记录日志，不影响业务结果
+  - 影响文件：routers/split_match.py
+
+### 2026-06-04 v2.21.0
+
+#### Bug修复
+- **表格截图功能修复与优化**：修复云门户人工核查窗口中"截图到资料1/2"功能的多个问题
+  - 修复所有表格截图不全：截取前临时移除 bodyWrapper 的 max-height/overflow 限制，截取后恢复，确保滚动区域外的数据行也能被捕获
+  - 修复门架表格截图丢失表头：之前门架交易/牌识只截取 bodyWrapper（不含表头），现统一截取整个 el-table 元素（含表头+全部数据行）
+  - 新增截图 loading 状态：截图期间禁用所有截图按钮并显示 loading，防止重复点击
+  - 新增覆盖确认提示：目标资料槽位已有图片时弹出确认框，避免误覆盖
+  - 优化截图参数：scale 从 1.2 降为 1.0，移除 PNG 无效的 quality 参数，减小输出体积
+  - 清理死代码：删除 useAIAudit.ts 中未被调用的 captureTable、缓存相关函数（screenshotCache、computeTableHash、getCachedScreenshot、setCachedScreenshot、clearScreenshotCache）及 domToPng 导入
+  - 影响文件：SplitMatch.vue、useAIAudit.ts
+
 ### 2026-06-02 v2.20.1
 
 #### Bug修复
