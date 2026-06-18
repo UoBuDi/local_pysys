@@ -2,6 +2,288 @@
 
 ## [最新版本]
 
+### 2026-06-17 v2.51.0
+
+#### 功能新增
+- **云门户人工核查-车牌号码详单查询**：查询参数车牌号码后增加"查"按钮，点击后查询[DETAIL_QUERY]配置表中该车牌的所有数据
+  - 复用现有 `queryDetailData` API（`POST /api/detail-query/`），无需后端改动
+  - 弹出详单查询结果对话框，动态列生成，支持分页浏览
+  - 影响文件：SplitMatch.vue
+
+### 2026-06-17 v2.50.0
+
+#### 功能修复
+- **追查详单通行记录详情无数据**：修复点击行数据后通行记录详情弹窗无数据的问题
+  - 根因：`pass-records` 接口仅查询详单查询表（`202005-202311_cf_1215`，仅含2020-2023数据），追查详单的通行标识ID来源于2025年数据，在详单查询表中不存在
+  - 修复：改为多表联合查询策略——优先查详单查询表，无结果时从pass_id提取年月优先定位对应yc表（如`2025-01_yc`），仍无结果则遍历所有yc表
+  - 新增 `_extract_yc_month_from_pass_id`：从通行标识ID中正则提取日期定位yc表
+  - 新增 `_query_table_by_pass_id`：通用单表查询函数，检查列存在性后执行查询
+  - 新增 `_format_records`：统一格式化查询结果（bytes解码、时间格式化）
+  - 影响文件：routers/investigation.py
+
+### 2026-06-16 v2.49.0
+
+#### 功能修复
+- **追查详单表格组件不显示**：修复追查详单页面表格组件未渲染的问题（非数据为空，而是整个表格组件未加载）
+  - 根因：数据库 menus 表 path 为 `/data-query/investigation-detail`，后端 `component_mapping` 缺少该映射，导致前端动态路由解析组件路径失败（`modules['../views/data-query/investigation-detail.vue']` 找不到文件）
+  - 修复1：数据库 menus 表 path 从 `/data-query/investigation-detail` 改为 `/investigation-detail`
+  - 修复2：`users.py` 的 `component_mapping` 增加 `'investigation-detail': 'SystemTools/InvestigationDetail'`
+  - 修复3：`users.py` 的 `title_map` 增加 `'追查详单': 'router.investigationDetail'`
+  - 修复4：`SplitMatch.vue` 修复 `res.data?.code` → `res.code`（响应拦截器已解包一层）
+  - 影响文件：routers/users.py、SplitMatch.vue
+
+### 2026-06-16 v2.48.0
+
+#### 功能修复
+- **追查详单表格数据不显示**：修复前端API响应数据访问路径错误（axios拦截器已解包一层，代码中多套了一层`.data`），将 `res.data?.code` 改为 `res.code`，`res.data.data.records` 改为 `res.data.records`
+  - 影响文件：InvestigationDetail.vue
+
+#### 功能新增
+- **追查详单行点击详情弹窗**：点击追查详单表格行数据后弹出详情窗口，展示该通行标识ID在详单查询表中的所有相关通行记录
+  - 后端新增 `/api/investigation/pass-records` 接口，根据通行标识ID查询 `CHECK_DATA_DB` 详单查询表
+  - 弹窗上方显示追查基本信息（通行标识ID、车牌号码、加入时间、创建人、复核状态等）
+  - 弹窗下方动态列表格展示通行记录（字段根据详单查询表实际列动态生成）
+  - 操作列按钮添加 `@click.stop` 防止触发行点击事件
+  - 影响文件：routers/investigation.py、api/investigation/index.ts、InvestigationDetail.vue
+
+### 2026-06-16 v2.47.0
+
+#### 功能修复
+- **保存后行锁未实时释放**：保存成功后增加 `unlockRow` API调用 + 从 `activeLocksMap` 删除该行，确保后端释放内存锁并广播 `row_unlocked` 事件，其他用户表格实时显示解锁状态
+  - 主保存成功后：新增 unlockRow 调用 + delete activeLocksMap
+  - 强制覆盖保存成功后：同上
+  - 影响文件：SplitMatch.vue
+
+### 2026-06-16 v2.46.0
+
+#### 新增功能
+- **追查详单功能**：在"数据查询"菜单下新增"追查详单"子菜单，用于记录与显示追查详单数据
+  - 新增 `investigation_details` 数据表（通行标识ID、车牌号码、加入时间、创建人、复核结果、复核人、复核时间）
+  - 云门户人工核查窗口增加"加入追查"按钮，点击后将通行标识ID和车牌号码存入追查详单
+  - 追查详单页面支持分页查询、条件筛选（通行标识ID、车牌号码、创建人、复核状态、时间范围）
+  - 支持复核结果录入（最多200字符），自动记录复核人和复核时间
+  - 支持删除记录和导出Excel
+  - 权限控制：investigation:view/add/review/delete/export 五个权限点
+  - 新增文件：`backend/routers/investigation.py`、`src/api/investigation/index.ts`、`src/views/SystemTools/InvestigationDetail.vue`
+  - 修改文件：`backend/main.py`（注册路由）、`src/router/index.ts`（菜单项）、`src/views/SystemTools/SplitMatch.vue`（加入追查按钮）
+  - 数据库迁移：`backend/migrations/004_investigation_detail.sql`
+
+### 2026-06-16 v2.45.0
+
+#### 功能修复
+- **P0: lock/unlock端点添加协作事件广播**：加锁成功后广播 `row_locked` 事件，释放锁成功后广播 `row_unlocked` 事件，通知同表房间其他用户实时更新行级协作标记
+  - 影响文件：routers/split_match.py
+
+#### 功能补充
+- **P1: startup自动创建row_versions表**：后端启动时自动创建乐观锁版本管理表，与需求文档9.2节对齐
+  - 影响文件：main.py
+- **P3: 新增NotificationCenter通知中心前端组件**：通知铃铛图标 + 通知历史弹窗，支持未读计数、分页查询、类型标签
+  - 新增文件：src/components/NotificationCenter/index.vue、src/api/notifications/index.ts
+  - 修改文件：src/App.vue（注册NotificationCenter组件）
+
+### 2026-06-15 v2.44.0
+
+#### 功能优化
+- **拆分匹配复核情况多选筛选**：将"复核情况"筛选从文本输入框改为多选下拉框，支持同时选择"拆分正常"、"拆分异常"、"待删除"进行组合筛选
+  - 前端：`el-input` 替换为 `el-select multiple`，使用 `collapse-tags` 折叠显示已选标签
+  - 后端：`split_match.py` 路由层对"复核情况"数组值生成 `IN (...)` SQL 条件，其他字段保持原有精确匹配逻辑不变
+
+### 2026-06-10 v2.43.0
+
+#### Bug修复
+- **WebSocket 连接失败**：`config.ini` 中 `[WEBSOCKET] host = localhost`，前端通过 `/api/ws/config` 获取到 `ws://localhost:8001`，远程访问时 localhost 指向用户本机而非服务器，导致连接失败
+  - 修改 `config.ini` 的 `[WEBSOCKET] host` 为 `172.32.48.238`，前端将获取到 `ws://172.32.48.238:8001`
+- **Chat 会话列表 500 错误**：MySQL 8.0 不支持 `ALTER TABLE ADD COLUMN IF NOT EXISTS` 语法（MariaDB 专有），导致 `chat_sessions` 缺少 `is_pinned`/`is_muted` 列、`chat_messages` 缺少 `is_recalled`/`mentioned_user_ids`/`file_name` 列，SQL 查询报 `Unknown column` 异常
+  - 修改 `main.py` 启动时的 ALTER 逻辑：先查 `INFORMATION_SCHEMA.COLUMNS` 判断列是否存在，不存在才执行 ALTER
+  - 已手动补齐数据库缺失的 5 个列
+- **云门户数据同步 405 Method Not Allowed**：前端 `api/cloud-portal-data/index.ts` 已定义 3 个 API，但后端缺少对应路由端点
+  - 在 `cloud_portal.py` 中新增 3 个端点：
+    - `GET /api/cloud-portal-data/` — 获取已同步的云门户基础数据
+    - `POST /api/cloud-portal-data/sync` — 触发数据同步（300秒超时）
+    - `GET /api/cloud-portal-data/status` — 获取同步状态
+
+#### 核心功能修复
+- **A1 调度器启动**：`main.py` startup 事件中调用 `start_scheduler()`，shutdown 中调用 `stop_scheduler()`，修复定时任务从未自动执行的严重问题
+- **A2 执行历史记录**：每个定时任务执行时自动写入 `task_execution_history` 表（`start_task_execution` → `end_task_execution`），前端"历史"按钮可查看完整执行记录
+- **A3 next_run_time**：任务注册后从 APScheduler 获取 `job.next_run_time` 并更新到数据库，前端可展示下次执行时间
+- **A4 cloud_portal_data_sync 自动登录**：定时执行时自动使用 admin(user_id=1) 绑定的云门户账号密码进行自动登录获取 Token，无需手动登录；Token 过期自动重登录（含验证码 OCR 识别 + 3次重试）
+
+#### 架构优化
+- **B1 替换 schedule 为 APScheduler**：使用 `BackgroundScheduler` + `CronTrigger`，原生支持完整 5 字段 Cron 表达式（`*/30`、`1-5`、`1,15` 等），替换原有仅支持小时+分钟的 `schedule` 库
+- **B2 任务热更新**：修改 Cron 表达式或启用/禁用状态后，路由层自动调用 `reload_tasks()` 刷新调度器，无需重启后端服务
+- **B3 公共数据库连接工具**：新建 `core/db.py`，统一 `get_db_config`/`get_user_db_connection`/`get_check_data_connection`，消除 `statistics_service.py`、`init_statistics_tables.py`、`routers/scheduled_tasks.py` 三处重复代码
+- **B4 任务注册表机制**：`TASK_REGISTRY` + `@register_task` 装饰器，新增任务只需添加装饰器函数，调度器自动发现并注册，无需修改硬编码 `if task_name == 'xxx'` 逻辑
+
+#### 体验优化
+- **前端增加任务描述列**：从数据库 `config` JSON 提取 `description` 展示，同时增加"执行频率"中文描述列
+- **执行历史增加分页**：后端 `/api/task-execution-history/` 改为 `page`+`page_size` 分页查询，前端使用 `ElPagination` 组件支持翻页和每页条数切换
+- **手动执行改为异步**：后端 `/api/scheduled-tasks/{task_name}/run` 改为线程异步执行，立即返回 `run_id`；新增 `/api/scheduled-tasks/run-status/{run_id}` 轮询接口；前端每2秒轮询执行状态
+- **Cron 表达式可视化编辑器**：编辑对话框新增5种调度模式（每天/间隔/每周/每月/自定义），支持双向解析和实时预览
+- **任务执行失败告警**：连续失败 >= 3 次时在页面顶部显示红色 `ElAlert` 告警
+
+#### 后端新增端点
+- `GET /api/scheduled-tasks/run-status/{run_id}` — 查询异步任务执行状态
+- `GET /api/task-execution-history/` — 分页查询执行历史（原接口改为分页）
+
+#### 影响文件
+- 后端新建：`backend/core/db.py`
+- 后端重写：`backend/scheduler.py`（schedule → APScheduler）
+- 后端重构：`backend/statistics_service.py`、`backend/routers/scheduled_tasks.py`、`backend/init_statistics_tables.py`
+- 后端修改：`backend/main.py`（启动/停止调度器）、`backend/requirements.txt`（schedule → APScheduler）
+- 前端重写：`src/views/SystemTools/ScheduledTasks/ScheduledTasks.vue`
+- 前端修改：`src/api/scheduled-tasks/types.ts`、`src/api/scheduled-tasks/index.ts`
+
+### 2026-06-09 v2.42.0
+
+#### Bug修复
+- **路径匹配页面 405 Method Not Allowed**：前端 PathMatch.vue 已实现但后端缺少对应路由模块，导致所有 API 请求返回 405
+  - 新增 `backend/routers/path_match.py`，实现 4 个端点：
+    - `GET /api/path-match/tables/` — 获取可用数据表列表
+    - `POST /api/path-match/search` — 多条件路径匹配搜索（清分日、时间范围、车型、收费单元、排除绿通等）
+    - `POST /api/path-match/provinces` — 根据站点编码查询省份名称（内置编码映射表）
+    - `POST /api/path-match/detail` — 根据通行标识ID查询详情
+  - 搜索条件构建逻辑与前端 `buildPreviewSql` 一致，使用参数化查询防止 SQL 注入
+  - 搜索接口带 120 秒超时控制，复用 `CHECK_DATA_DB` 连接池，表名从 `config.ini` 的 `[PATH_MATCH]` 节读取
+
+#### 后端新增端点
+- `GET /api/path-match/tables/` — 获取路径匹配数据表列表
+- `POST /api/path-match/search` — 路径匹配搜索
+- `POST /api/path-match/provinces` — 省份编码查询
+- `POST /api/path-match/detail` — 路径匹配详情查询
+
+#### 影响文件
+- 后端新增：`backend/routers/path_match.py`
+- 后端修改：`backend/main.py`（注册 path_match 路由）
+
+### 2026-06-09 v2.41.0
+
+#### 功能新增
+- **F-07 双协议(ws/wss)配置管理**：管理员可一键切换 WebSocket 协议，无需重启服务
+  - `config.ini` 新增 `[WEBSOCKET]` 配置节（protocol/host/port/ssl_cert_path/ssl_key_path）
+  - 公共无鉴权接口 `GET /api/ws/config`：前端动态获取 WebSocket 连接配置，禁止硬编码协议/域名/端口
+  - 管理员接口 `POST /api/ws/config`：更新协议配置，保存后立即生效
+  - 协议变更后自动向所有在线客户端广播 `protocol_changed` 事件，客户端自动断开并用新配置重连
+  - 前端 `connect()` 改为 async，优先从服务端获取配置，获取失败时降级使用浏览器协议推断
+- **F-11 系统实时通知与管控**：全站弹窗通知、定向推送、踢人、强制刷新
+  - `POST /api/notifications/broadcast` — 全站广播通知（持久化到数据库 + WebSocket 实时推送）
+  - `POST /api/notifications/send` — 向指定用户推送通知
+  - `POST /api/notifications/kick-user` — 踢出指定在线用户（发送 kick_user 事件后延迟关闭连接）
+  - `POST /api/notifications/force-refresh` — 强制前端刷新权限和菜单（页面自动刷新）
+  - `GET /api/notifications/history` — 查询通知历史记录（分页）
+  - 前端 App.vue 处理 `system_notification`（ElNotification 弹窗）、`kick_user`（断开+登出）、`force_refresh`（页面刷新）
+- **ChatFloatingIcon 连接状态联动**：悬浮聊天图标与 F-08 连接状态同步
+  - 6种连接状态对应不同颜色和光晕效果（connected=绿/connecting=黄脉冲/error=橙/disconnected=灰）
+  - 鼠标悬停显示连接状态文字提示
+  - connecting/reconnecting 状态显示脉冲呼吸动画
+
+#### 后端新增端点
+- `GET /api/ws/config` — 获取 WebSocket 连接配置（公共无鉴权）
+- `POST /api/ws/config` — 更新 WebSocket 协议配置（需登录鉴权）
+- `POST /api/notifications/broadcast` — 全站广播通知
+- `POST /api/notifications/send` — 定向推送通知
+- `POST /api/notifications/kick-user` — 踢出指定用户
+- `POST /api/notifications/force-refresh` — 强制刷新前端权限
+- `GET /api/notifications/history` — 查询通知历史
+
+#### WebSocket 新增事件
+- `protocol_changed` — 协议变更通知（管理员切换 ws/wss 后广播）
+- `system_notification` — 系统通知推送（全站广播或定向推送）
+- `kick_user` — 踢出用户指令
+- `force_refresh` — 强制刷新权限指令
+
+#### 影响文件
+- 后端新增：`backend/routers/ws_config.py`、`backend/routers/notifications.py`
+- 后端修改：`backend/config.ini`（新增 [WEBSOCKET] 节）、`backend/main.py`（注册路由）
+- 前端修改：`src/utils/websocket.ts`（动态获取配置+协议变更处理）、`src/App.vue`（通知/踢人/刷新事件处理）、`src/components/ChatFloatingIcon/index.vue`（连接状态联动）
+
+### 2026-06-09 v2.40.0
+
+#### 功能新增
+- **字段级编辑标识**：多人协作编辑时，实时显示每个字段正在被谁编辑
+  - 用户聚焦可编辑字段时自动标记，失焦时自动清除
+  - 其他用户编辑中的字段显示橙色边框 + "XX 编辑中" 标签
+  - WebSocket 实时广播字段编辑状态变更
+- **数据差分更新**：多人编辑同一行时，仅同步变更字段，避免覆盖他人编辑
+  - 对话框 header 显示"已修改 N 个字段"指示
+  - 收到其他用户更新时，仅刷新非自己编辑中的字段
+  - 保存后自动更新原始数据基准
+- **光标位置同步**：实时显示其他用户在当前行的光标位置
+  - 对话框 header 显示其他用户的光标位置（"用户名 → 字段名"）
+  - 聚焦字段时自动上报光标位置
+  - 关闭对话框时自动清除光标位置
+
+#### 后端新增端点
+- `POST /api/split-match/field-editing/mark/` — 标记字段编辑
+- `POST /api/split-match/field-editing/unmark/` — 取消字段编辑标记
+- `GET /api/split-match/field-editing/active/` — 获取字段编辑状态
+- `POST /api/split-match/cursor-position/` — 更新光标位置
+- `GET /api/split-match/cursor-positions/` — 获取光标位置列表
+- `POST /api/split-match/cursor-clear/` — 清除光标位置
+
+#### WebSocket 新增事件
+- `field_editing` — 字段编辑状态变更（focus/blur）
+- `cursor_position` — 光标位置更新
+- `cursor_cleared` — 光标位置清除
+
+#### 影响文件
+- 后端：`backend/core/websocket_manager.py`、`backend/routers/split_match.py`
+- 前端：`src/views/SystemTools/SplitMatch.vue`、`src/api/split-match/index.ts`、`src/utils/websocket.ts`
+
+### 2026-06-09 v2.39.0
+
+#### 功能新增
+- **Chat.vue 业务页面 8 项功能全面开发**：
+  - **CH-01 聊天记录搜索**：支持按关键词搜索全部会话或指定房间的历史消息，点击结果跳转到对应房间
+  - **CH-02 群聊创建与管理**：支持创建群聊（群名+多选成员）、查看群成员列表、添加成员、修改群名称、退出群聊
+  - **CH-03 消息撤回**：2分钟内可撤回自己发送的消息，撤回后显示"XX撤回了一条消息"，支持 WebSocket 实时同步
+  - **CH-04 图片消息**：独立图片上传按钮，图片消息缩略图展示，点击查看大图预览弹窗，文件上传自动识别图片类型
+  - **CH-05 消息已读回执**：自己发送的消息显示已读人数/总人数，点击查看已读用户列表，支持 WebSocket 实时更新
+  - **CH-06 聊天记录导出**：支持导出为纯文本或 HTML 格式，包含时间戳、发送者、消息内容
+  - **CH-07 会话置顶/免打扰**：会话右键菜单支持置顶（排在列表顶部）和免打扰（隐藏未读角标），置顶/免打扰图标标识
+  - **CH-08 @提及**：输入`@`弹出成员选择下拉框，选择后插入`@username`，消息中 @提及高亮显示，被@者收到独立 WebSocket 通知
+
+#### 数据库变更
+- `chat_messages` 新增字段：`is_recalled`（撤回标记）、`mentioned_user_ids`（@提及用户列表）、`file_name`（文件原始名）
+- `chat_sessions` 新增字段：`is_pinned`（置顶）、`is_muted`（免打扰）
+- 新增表 `chat_group_members`：群聊成员管理（room_id, user_id, role）
+- 新增表 `chat_message_read`：消息已读记录（message_id, user_id）
+
+#### 后端新增端点
+- `GET /api/chat/search/` — 搜索聊天消息
+- `POST /api/chat/recall/{message_id}` — 撤回消息
+- `POST /api/chat/upload-image/` — 上传图片
+- `GET /api/chat/read-status/{room_id}` — 获取已读状态
+- `GET /api/chat/export/{room_id}` — 导出聊天记录
+- `PUT /api/chat/session-settings/` — 更新会话设置（置顶/免打扰）
+- `GET /api/chat/group-members/{room_id}` — 获取群成员列表
+- `POST /api/chat/add-group-members/` — 添加群成员
+- `PUT /api/chat/group-name/` — 修改群名称
+- `POST /api/chat/leave-group/{room_id}` — 退出群聊
+
+#### 影响文件
+- 后端：`backend/routers/chat.py`、`backend/main.py`、`backend/migrations/003_chat_enhancements.sql`
+- 前端：`src/views/SystemTools/Chat.vue`、`src/api/chat/index.ts`、`src/utils/websocket.ts`
+
+### 2026-06-08 v2.38.0
+
+#### Bug修复
+- **AI稽核批量查询门架交易数据行数不足**：前端 `cloudPortalForm.rows` 默认值从 50 改为 100，与云门户直接查询的 `length=100` 保持一致
+  - 修复前：AI稽核批量查询最多返回50条门架交易记录，云门户直接查询返回100条
+  - 修复后：两者均返回最多100条记录
+  - 影响文件：src/hooks/split-match/useCloudPortal.ts
+
+### 2026-06-08 v2.37.0
+
+#### 性能优化
+- **行级协作锁迁移为内存存储**：锁操作性能提升约500倍，零数据库压力
+  - `acquire_row_lock` / `release_row_lock` / `get_active_locks` 等方法从 MySQL `row_locks` 表迁移至内存字典
+  - 删除 `_get_db_conn()` / `_ensure_lock_table()` 数据库辅助方法
+  - 锁操作响应时间从 ~5ms（SQL查询）降至 ~0.01ms（字典操作）
+  - 惰性清理过期锁机制，无需定时任务
+  - 服务重启锁自动清除（可接受，锁为5分钟过期的临时状态，乐观锁仍在数据库兜底）
+  - 前端API接口格式不变，零改动
+  - 影响文件：backend/core/websocket_manager.py、backend/routers/split_match.py
+
 ### 2026-06-08 v2.36.0
 
 #### 功能优化

@@ -26,7 +26,7 @@ export const useSplitMatchTable = () => {
     通行标识ID: '',
     车牌号码: '',
     核查通行标识: '',
-    复核情况: '',
+    复核情况: [] as string[],
     备注: '',
     收费车型: '',
     特情: '',

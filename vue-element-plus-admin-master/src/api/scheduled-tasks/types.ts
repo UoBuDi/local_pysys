@@ -3,11 +3,13 @@ export interface ScheduledTask {
   task_name: string
   task_type: string
   cron_expression: string
+  description: string
   is_enabled: number
   last_run_time: string | null
   next_run_time: string | null
   last_run_status: string | null
   last_run_message: string | null
+  consecutive_failures: number
   created_at: string
   updated_at: string
 }
@@ -42,14 +44,27 @@ export interface TaskExecutionHistory {
   created_at: string
 }
 
+export interface ExecutionHistoryPage {
+  list: TaskExecutionHistory[]
+  total: number
+  page: number
+  page_size: number
+}
+
 export interface UpdateTaskRequest {
   is_enabled?: number
   cron_expression?: string
 }
 
 export interface RunTaskResponse {
-  success: boolean
+  run_id: string
+  task_name: string
+  status: string
+}
+
+export interface TaskRunStatus {
+  status: 'running' | 'success' | 'failed'
   message: string
-  data?: Record<string, any>
-  executed_at: string
+  duration?: number
+  completed_at?: string
 }

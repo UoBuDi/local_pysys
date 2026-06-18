@@ -100,12 +100,19 @@
             />
           </el-form-item>
           <el-form-item label="复核情况">
-            <el-input
+            <el-select
               v-model="filters.复核情况"
-              placeholder="请输入复核情况"
+              multiple
+              collapse-tags
+              collapse-tags-tooltip
+              placeholder="请选择复核情况"
               clearable
-              style="width: 150px"
-            />
+              style="width: 200px"
+            >
+              <el-option label="拆分正常" value="拆分正常" />
+              <el-option label="拆分异常" value="拆分异常" />
+              <el-option label="待删除" value="待删除" />
+            </el-select>
           </el-form-item>
           <el-form-item label="备注">
             <el-input
@@ -255,13 +262,31 @@
         ref="dialogRef"
       >
         <template #header>
-          <div style="display: flex; align-items: center; gap: 8px">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
             <span>详细信息</span>
             <el-tag v-if="currentRowLockedByMe" type="success" size="small"
               >已锁定（编辑中）</el-tag
             >
             <el-tag v-else-if="currentRowLockedBy" type="warning" size="small"
               >{{ currentRowLockedBy }} 正在编辑</el-tag
+            >
+            <!-- 其他用户光标位置指示 -->
+            <template
+              v-if="
+                editedRow && getOtherCursorsOnRow(String(editedRow['通行标识ID'] || '')).length > 0
+              "
+            >
+              <el-tag
+                v-for="cursor in getOtherCursorsOnRow(String(editedRow['通行标识ID'] || ''))"
+                :key="cursor.user_id"
+                type="info"
+                size="small"
+                >{{ cursor.username }} → {{ cursor.field_name }}</el-tag
+              >
+            </template>
+            <!-- 数据差分变更指示 -->
+            <el-tag v-if="getChangedFields().length > 0" type="danger" size="small"
+              >已修改 {{ getChangedFields().length }} 个字段</el-tag
             >
           </div>
         </template>
@@ -394,15 +419,32 @@
               <!-- 核查通行标识字段（特殊处理） -->
               <template v-else-if="key === '核查通行标识'">
                 <div style="display: flex; align-items: center; gap: 8px">
-                  <el-input
-                    v-model="editedRow[key]"
-                    type="text"
-                    :maxlength="40"
-                    show-word-limit
-                    placeholder="请输入核查通行标识"
-                    @input="handleCheckIdInput"
-                    style="flex: 1; min-width: 300px"
-                  />
+                  <div style="flex: 1; min-width: 300px; position: relative">
+                    <el-input
+                      v-model="editedRow[key]"
+                      type="text"
+                      :maxlength="40"
+                      show-word-limit
+                      placeholder="请输入核查通行标识"
+                      @input="handleCheckIdInput"
+                      @focus="handleFieldFocus(key)"
+                      @blur="handleFieldBlur(key)"
+                      :class="{ 'field-editing-by-other': !!getFieldEditor(key) }"
+                    />
+                    <el-tag
+                      v-if="getFieldEditor(key)"
+                      type="warning"
+                      size="small"
+                      style="
+                        position: absolute;
+                        right: 80px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        z-index: 1;
+                      "
+                      >{{ getFieldEditor(key) }} 编辑中</el-tag
+                    >
+                  </div>
                   <el-button
                     type="primary"
                     :icon="CopyDocument"
@@ -426,41 +468,77 @@
               </template>
               <!-- 复核情况字段（下拉选择） -->
               <template v-else-if="key === '复核情况'">
-                <el-select
-                  v-model="editedRow[key]"
-                  placeholder="请选择复核情况"
-                  style="width: 100%; min-width: 300px"
-                >
-                  <el-option label="拆分正常" value="拆分正常" />
-                  <el-option label="拆分异常" value="拆分异常" />
-                  <el-option label="待删除" value="待删除" />
-                </el-select>
+                <div style="position: relative">
+                  <el-select
+                    v-model="editedRow[key]"
+                    placeholder="请选择复核情况"
+                    style="width: 100%; min-width: 300px"
+                    @focus="handleFieldFocus(key)"
+                    @blur="handleFieldBlur(key)"
+                    :class="{ 'field-editing-by-other': !!getFieldEditor(key) }"
+                  >
+                    <el-option label="拆分正常" value="拆分正常" />
+                    <el-option label="拆分异常" value="拆分异常" />
+                    <el-option label="待删除" value="待删除" />
+                  </el-select>
+                  <el-tag
+                    v-if="getFieldEditor(key)"
+                    type="warning"
+                    size="small"
+                    style="position: absolute; right: -80px; top: 50%; transform: translateY(-50%)"
+                    >{{ getFieldEditor(key) }} 编辑中</el-tag
+                  >
+                </div>
               </template>
               <!-- 其他可编辑字段 -->
               <template v-else-if="['备注', '特情'].includes(key)">
-                <el-input
-                  v-model="editedRow[key]"
-                  type="textarea"
-                  :rows="3"
-                  :maxlength="2000"
-                  show-word-limit
-                  style="width: 100%; min-width: 300px"
-                />
+                <div style="position: relative">
+                  <el-input
+                    v-model="editedRow[key]"
+                    type="textarea"
+                    :rows="3"
+                    :maxlength="2000"
+                    show-word-limit
+                    style="width: 100%; min-width: 300px"
+                    @focus="handleFieldFocus(key)"
+                    @blur="handleFieldBlur(key)"
+                    :class="{ 'field-editing-by-other': !!getFieldEditor(key) }"
+                  />
+                  <el-tag
+                    v-if="getFieldEditor(key)"
+                    type="warning"
+                    size="small"
+                    style="position: absolute; right: 8px; top: 4px; z-index: 1"
+                    >{{ getFieldEditor(key) }} 编辑中</el-tag
+                  >
+                </div>
               </template>
               <!-- 核查拆分字段（支持编辑的下拉框） -->
               <template v-else-if="key === '核查拆分'">
-                <el-select
-                  v-model="editedRow[key]"
-                  placeholder="请选择或输入核查拆分状态"
-                  style="width: 260px"
-                  filterable
-                  allow-create
-                  :maxlength="100"
-                  show-word-limit
-                >
-                  <el-option label="已拆" value="已拆" />
-                  <el-option label="未拆" value="未拆" />
-                </el-select>
+                <div style="position: relative; display: inline-block">
+                  <el-select
+                    v-model="editedRow[key]"
+                    placeholder="请选择或输入核查拆分状态"
+                    style="width: 260px"
+                    filterable
+                    allow-create
+                    :maxlength="100"
+                    show-word-limit
+                    @focus="handleFieldFocus(key)"
+                    @blur="handleFieldBlur(key)"
+                    :class="{ 'field-editing-by-other': !!getFieldEditor(key) }"
+                  >
+                    <el-option label="已拆" value="已拆" />
+                    <el-option label="未拆" value="未拆" />
+                  </el-select>
+                  <el-tag
+                    v-if="getFieldEditor(key)"
+                    type="warning"
+                    size="small"
+                    style="margin-left: 8px"
+                    >{{ getFieldEditor(key) }} 编辑中</el-tag
+                  >
+                </div>
               </template>
               <!-- 其他只读字段 -->
               <template v-else>
@@ -542,12 +620,70 @@
         </div>
         <template #footer>
           <span class="dialog-footer">
+            <el-button @click="openEditHistory" link type="info">编辑历史</el-button>
             <el-button @click="dialogVisible = false">关闭</el-button>
             <el-button type="primary" @click="handleSave" v-hasPermi="'split-match:edit'"
               >保存</el-button
             >
           </span>
         </template>
+      </el-dialog>
+
+      <!-- F-05: 编辑历史对话框 -->
+      <el-dialog
+        v-model="editHistoryVisible"
+        title="编辑历史"
+        width="680px"
+        destroy-on-close
+        append-to-body
+      >
+        <el-table :data="editHistoryList" v-loading="editHistoryLoading" stripe max-height="400">
+          <el-table-column prop="username" label="操作人" width="90" />
+          <el-table-column prop="action" label="操作" width="100">
+            <template #default="{ row }">
+              <el-tag
+                :type="
+                  row.action === 'force_overwrite'
+                    ? 'danger'
+                    : row.action === 'import'
+                      ? 'warning'
+                      : 'primary'
+                "
+                size="small"
+              >
+                {{
+                  row.action === 'force_overwrite'
+                    ? '强制覆盖'
+                    : row.action === 'import'
+                      ? '导入'
+                      : '更新'
+                }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="版本" width="100">
+            <template #default="{ row }">
+              {{ row.version_before ?? '-' }} → {{ row.version_after ?? '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="变更字段" min-width="200">
+            <template #default="{ row }">
+              <div style="white-space: pre-line; font-size: 12px; line-height: 1.6">
+                {{ formatChangedFields(row.changed_fields) }}
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="created_at" label="时间" width="170" />
+        </el-table>
+        <div style="margin-top: 12px; text-align: right" v-if="editHistoryTotal > 10">
+          <el-pagination
+            :current-page="editHistoryPage"
+            :page-size="10"
+            :total="editHistoryTotal"
+            layout="prev, pager, next"
+            @current-change="(p: number) => loadEditHistory(p)"
+          />
+        </div>
       </el-dialog>
 
       <!-- 上传进度对话框 -->
@@ -1043,6 +1179,16 @@
                   link
                   title="复制车牌号码"
                 />
+                <el-button
+                  v-if="cloudPortalForm.plateNumber"
+                  type="success"
+                  :icon="Search"
+                  @click="handlePlateNumberDetailQuery"
+                  size="small"
+                  link
+                  title="查询详单"
+                  >查</el-button
+                >
               </div>
             </div>
             <div class="audit-param-item">
@@ -1131,6 +1277,19 @@
                 >
                 <span v-else class="audit-param-value">-</span>
               </div>
+            </div>
+            <!-- 加入追查按钮 -->
+            <div class="audit-param-item audit-param-item--full" style="margin-top: 8px">
+              <el-button
+                type="danger"
+                :icon="Plus"
+                @click="handleAddToInvestigation"
+                size="small"
+                :disabled="!cloudPortalForm.passId"
+                v-hasPermi="'investigation:add'"
+              >
+                加入追查
+              </el-button>
             </div>
           </div>
         </div>
@@ -2867,6 +3026,53 @@
       </div>
     </el-dialog>
 
+    <!-- 详单查询结果对话框 -->
+    <el-dialog
+      v-model="plateDetailQueryVisible"
+      :title="`详单查询 - ${plateDetailQueryPlate}`"
+      width="90%"
+      top="5vh"
+      destroy-on-close
+      draggable
+    >
+      <div v-if="plateDetailQueryLoading" style="text-align: center; padding: 50px">
+        <el-icon class="is-loading" style="font-size: 30px"><Loading /></el-icon>
+        <div style="margin-top: 10px">正在查询详单数据...</div>
+      </div>
+
+      <div v-else-if="plateDetailQueryData">
+        <div
+          style="
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <span>共 {{ plateDetailQueryTotal }} 条记录</span>
+          <el-pagination
+            v-if="plateDetailQueryTotal > plateDetailQueryPageSize"
+            v-model:current-page="plateDetailQueryPage"
+            :page-size="plateDetailQueryPageSize"
+            :total="plateDetailQueryTotal"
+            layout="prev, pager, next"
+            size="small"
+            @current-change="handlePlateDetailQueryPageChange"
+          />
+        </div>
+        <el-table :data="plateDetailQueryData" border size="small" max-height="65vh" stripe>
+          <el-table-column
+            v-for="col in plateDetailQueryColumns"
+            :key="col.prop"
+            :prop="col.prop"
+            :label="col.label"
+            :min-width="col.minWidth"
+            show-overflow-tooltip
+          />
+        </el-table>
+      </div>
+    </el-dialog>
+
     <!-- 工单详情对话框 -->
     <el-dialog
       v-model="showOrderDetailDialog"
@@ -3557,7 +3763,8 @@ import {
   Money,
   Camera,
   PictureFilled,
-  Lock
+  Lock,
+  Plus
 } from '@element-plus/icons-vue'
 import {
   getSplitMatchTables,
@@ -3580,15 +3787,27 @@ import {
   getActiveLocks,
   getRowVersion,
   getSingleRow,
+  markFieldEditing,
+  unmarkFieldEditing,
+  getActiveFieldEditors,
+  updateCursorPosition,
+  getCursorPositions,
+  clearCursorPosition,
   type LockResult,
   type ActiveLock,
   type RowVersion,
+  type FieldEditor,
+  type CursorPosition,
+  getEditHistory,
+  type EditHistoryRecord,
   type AIAuditVehicleImage,
   type AIAuditGantryImage,
   type AIAuditBatchQueryResult,
   type AIAuditGantryTrade,
   keepCloudPortalAlive
 } from '@/api/split-match'
+import { addToInvestigation } from '@/api/investigation'
+import { queryDetailData, type DetailQueryParams } from '@/api/detail-query'
 import { useWebSocket, type WsMessage } from '@/utils/websocket'
 import { useCloudPortal } from '@/hooks/split-match/useCloudPortal'
 import request from '@/axios'
@@ -3607,6 +3826,20 @@ const activeLocksMap = ref<Record<string, ActiveLock>>({})
 const currentRowVersion = ref<number | null>(null)
 const currentRowLockedByMe = ref(false)
 const currentRowLockedBy = ref<string | null>(null)
+
+// 字段级编辑标识：记录当前行每个字段正在被谁编辑
+const activeFieldEditors = ref<Record<string, FieldEditor[]>>({})
+// 光标位置同步：记录其他用户在当前表的光标位置
+const otherCursorPositions = ref<CursorPosition[]>([])
+// 数据差分：记录原始值用于对比变更字段
+const originalRowData = ref<Record<string, any> | null>(null)
+
+// F-05: 编辑历史
+const editHistoryVisible = ref(false)
+const editHistoryList = ref<EditHistoryRecord[]>([])
+const editHistoryTotal = ref(0)
+const editHistoryPage = ref(1)
+const editHistoryLoading = ref(false)
 
 interface MatchResult {
   matched_count: number
@@ -3800,7 +4033,7 @@ const filters = ref({
   通行标识ID: '',
   车牌号码: '',
   核查通行标识: '',
-  复核情况: '',
+  复核情况: [] as string[],
   备注: '',
   收费车型: '',
   特情: '',
@@ -4140,6 +4373,8 @@ const handleSplitDetailClick = async (row: Record<string, unknown>) => {
 const handleIdClick = async (row: Record<string, unknown>) => {
   selectedRow.value = row
   editedRow.value = { ...row, 查核资料1: null, 查核资料2: null }
+  // 数据差分：保存原始值用于对比
+  originalRowData.value = { ...row, 查核资料1: null, 查核资料2: null }
   imagePreviewList.value = { 查核资料1: [], 查核资料2: [] }
 
   // 获取行锁
@@ -4147,6 +4382,19 @@ const handleIdClick = async (row: Record<string, unknown>) => {
   currentRowLockedByMe.value = false
   currentRowLockedBy.value = null
   currentRowVersion.value = null
+
+  // 字段级编辑标识：加载当前行活跃编辑者
+  activeFieldEditors.value = {}
+  if (passId && selectedTable.value) {
+    try {
+      const fieldResp = await getActiveFieldEditors(selectedTable.value, passId)
+      if (fieldResp?.code === 200 && Array.isArray(fieldResp.data)) {
+        activeFieldEditors.value[passId] = fieldResp.data
+      }
+    } catch (e) {
+      console.error('获取字段编辑状态失败:', e)
+    }
+  }
 
   if (passId && selectedTable.value && checkPermission('split-match:lock-edit')) {
     try {
@@ -4304,6 +4552,29 @@ const handleDialogClose = () => {
 
   // 清空二进制数据存储
   imageBinaryData.value = {}
+
+  // 清除字段编辑标识和光标位置
+  if (editedRow.value && selectedTable.value) {
+    const rowId = String(editedRow.value['通行标识ID'] || '')
+    if (rowId) {
+      // 清除当前用户在该行的所有字段编辑标记
+      const currentFields = activeFieldEditors.value[rowId] || []
+      const myId = userStore.getUserInfo?.id
+      for (const fe of currentFields) {
+        if (fe.user_id === myId) {
+          unmarkFieldEditing({
+            table_name: selectedTable.value,
+            row_id: rowId,
+            field_name: fe.field_name
+          }).catch(() => {})
+        }
+      }
+    }
+    // 清除光标位置
+    clearCursorPosition({ table_name: selectedTable.value }).catch(() => {})
+  }
+  activeFieldEditors.value = {}
+  originalRowData.value = null
 
   // 释放行锁
   if (currentRowLockedByMe.value && editedRow.value && selectedTable.value) {
@@ -4506,6 +4777,16 @@ const vehicleDetailPlate = ref('')
 const vehicleDetailLoading = ref(false)
 const vehicleDetailResult = ref<AIAuditBatchQueryResult | null>(null)
 const vehicleDetailActiveTab = ref('gantry_trade')
+
+/** 详单查询相关状态 */
+const plateDetailQueryVisible = ref(false)
+const plateDetailQueryPlate = ref('')
+const plateDetailQueryLoading = ref(false)
+const plateDetailQueryData = ref<Record<string, unknown>[]>([])
+const plateDetailQueryColumns = ref<Array<{ prop: string; label: string; minWidth: number }>>([])
+const plateDetailQueryTotal = ref(0)
+const plateDetailQueryPage = ref(1)
+const plateDetailQueryPageSize = ref(50)
 
 const STORAGE_KEY_SPECIAL_SITUATION = 'split_match_special_situation_history'
 const STORAGE_KEY_REMARK = 'split_match_remark_history'
@@ -4817,6 +5098,31 @@ const handleOpenCloudPortal = async () => {
 
   if (!cloudPortalLoggedIn.value) {
     await refreshCaptcha()
+  }
+}
+
+/** 加入追查：将当前通行标识ID和车牌号码存入追查详单 */
+const handleAddToInvestigation = async () => {
+  const passId = cloudPortalForm.value.passId
+  const plateNumber = cloudPortalForm.value.plateNumber
+
+  if (!passId) {
+    ElMessage.warning('通行标识ID为空，无法加入追查')
+    return
+  }
+
+  try {
+    const res = await addToInvestigation({
+      pass_id: passId,
+      plate_number: plateNumber || ''
+    })
+    if (res.code === 200) {
+      ElMessage.success('已加入追查详单')
+    } else {
+      ElMessage.warning(res.message || '加入追查失败')
+    }
+  } catch (e: any) {
+    ElMessage.error('加入追查失败: ' + (e.message || '未知错误'))
   }
 }
 
@@ -5248,6 +5554,69 @@ const queryVehicleDetail = async (plateNumber: string, picTime: string) => {
   } finally {
     vehicleDetailLoading.value = false
   }
+}
+
+/** 车牌号码详单查询：查询[DETAIL_QUERY]配置表中该车牌的所有数据 */
+const handlePlateNumberDetailQuery = async () => {
+  const plateNumber = cloudPortalForm.value.plateNumber
+  if (!plateNumber) {
+    ElMessage.warning('车牌号码为空，无法查询')
+    return
+  }
+
+  plateDetailQueryPlate.value = plateNumber
+  plateDetailQueryLoading.value = true
+  plateDetailQueryVisible.value = true
+  plateDetailQueryPage.value = 1
+  plateDetailQueryData.value = []
+  plateDetailQueryColumns.value = []
+  plateDetailQueryTotal.value = 0
+
+  await executePlateDetailQuery(plateNumber, 1)
+}
+
+/** 执行详单查询请求 */
+const executePlateDetailQuery = async (plateNumber: string, page: number) => {
+  plateDetailQueryLoading.value = true
+  try {
+    const params: DetailQueryParams = {
+      plate_number: plateNumber,
+      page: page,
+      page_size: plateDetailQueryPageSize.value
+    }
+    const res: any = await queryDetailData(params)
+    if (res.code === 200) {
+      const data = res.data
+      plateDetailQueryData.value = data.list || []
+      plateDetailQueryTotal.value = data.total || 0
+      plateDetailQueryPage.value = data.page || page
+
+      // 首次查询时根据返回数据动态生成列
+      if (plateDetailQueryData.value.length > 0 && plateDetailQueryColumns.value.length === 0) {
+        const firstRow = plateDetailQueryData.value[0]
+        plateDetailQueryColumns.value = Object.keys(firstRow).map((key) => ({
+          prop: key,
+          label: key,
+          minWidth: 150
+        }))
+      }
+
+      if (plateDetailQueryTotal.value === 0) {
+        ElMessage.info('未查询到该车牌的详单数据')
+      }
+    } else {
+      ElMessage.error(res.message || '查询失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '查询详单失败')
+  } finally {
+    plateDetailQueryLoading.value = false
+  }
+}
+
+/** 详单查询分页切换 */
+const handlePlateDetailQueryPageChange = (page: number) => {
+  executePlateDetailQuery(plateDetailQueryPlate.value, page)
 }
 
 // 截图loading状态，防止重复点击
@@ -5710,7 +6079,7 @@ const handleResetFilter = () => {
     通行标识ID: '',
     车牌号码: '',
     核查通行标识: '',
-    复核情况: '',
+    复核情况: [] as string[],
     备注: '',
     收费车型: '',
     特情: '',
@@ -7471,8 +7840,14 @@ const handleSave = async () => {
           currentRowVersion.value = response.data.version
         }
 
-        // 释放行锁
+        // 释放行锁：通知后端释放 + 本地状态清除 + 从activeLocksMap移除
         currentRowLockedByMe.value = false
+        if (rowId) {
+          unlockRow({ table_name: selectedTable.value, row_id: rowId }).catch((e) =>
+            console.error('保存后释放行锁失败:', e)
+          )
+          delete activeLocksMap.value[rowId]
+        }
 
         request.clearCache('/api/split-match/')
 
@@ -7506,6 +7881,12 @@ const handleSave = async () => {
               currentRowVersion.value = forceResp.data.version
             }
             currentRowLockedByMe.value = false
+            if (rowId) {
+              unlockRow({ table_name: selectedTable.value, row_id: rowId }).catch((e) =>
+                console.error('强制覆盖后释放行锁失败:', e)
+              )
+              delete activeLocksMap.value[rowId]
+            }
             request.clearCache('/api/split-match/')
             // 局部更新：仅刷新当前编辑行
             updateSingleRowInTable(selectedTable.value, rowId)
@@ -7524,6 +7905,115 @@ const handleSave = async () => {
   } catch (error) {
     ElMessage.error('保存失败，请检查网络连接')
   }
+}
+
+// ==================== 字段级编辑标识 + 光标位置同步 ====================
+
+/** 可编辑字段列表（与 SAVE_FIELD_MAPPING 一致） */
+const EDITABLE_FIELDS = ['核查通行标识', '复核情况', '特情', '核查拆分', '备注']
+
+/** 字段聚焦：标记字段编辑 + 更新光标位置 */
+const handleFieldFocus = (fieldName: string) => {
+  if (!editedRow.value || !selectedTable.value) return
+  const rowId = String(editedRow.value['通行标识ID'] || '')
+  if (!rowId) return
+
+  // 标记字段编辑
+  markFieldEditing({
+    table_name: selectedTable.value,
+    row_id: rowId,
+    field_name: fieldName
+  }).catch((e) => console.error('标记字段编辑失败:', e))
+
+  // 更新光标位置
+  updateCursorPosition({
+    table_name: selectedTable.value,
+    row_id: rowId,
+    field_name: fieldName
+  }).catch((e) => console.error('更新光标位置失败:', e))
+}
+
+/** 字段失焦：取消字段编辑标记 */
+const handleFieldBlur = (fieldName: string) => {
+  if (!editedRow.value || !selectedTable.value) return
+  const rowId = String(editedRow.value['通行标识ID'] || '')
+  if (!rowId) return
+
+  unmarkFieldEditing({
+    table_name: selectedTable.value,
+    row_id: rowId,
+    field_name: fieldName
+  }).catch((e) => console.error('取消字段编辑标记失败:', e))
+}
+
+/** 获取字段正在被谁编辑（排除自己） */
+const getFieldEditor = (fieldName: string): string | null => {
+  if (!editedRow.value) return null
+  const rowId = String(editedRow.value['通行标识ID'] || '')
+  const editors = activeFieldEditors.value[rowId] || []
+  const myId = userStore.getUserInfo?.id
+  const editor = editors.find((e) => e.field_name === fieldName && e.user_id !== myId)
+  return editor ? editor.username : null
+}
+
+/** 数据差分：计算变更字段列表 */
+const getChangedFields = (): string[] => {
+  if (!editedRow.value || !originalRowData.value) return []
+  const changed: string[] = []
+  for (const key of EDITABLE_FIELDS) {
+    const current = editedRow.value[key]
+    const original = originalRowData.value[key]
+    if (String(current ?? '') !== String(original ?? '')) {
+      changed.push(key)
+    }
+  }
+  return changed
+}
+
+/** 获取其他用户在当前行的光标位置 */
+const getOtherCursorsOnRow = (rowId: string): CursorPosition[] => {
+  return otherCursorPositions.value.filter((cp) => cp.row_id === rowId)
+}
+
+// F-05: 编辑历史
+const loadEditHistory = async (page: number = 1) => {
+  if (!editedRow.value || !selectedTable.value) return
+  const rowId = String(editedRow.value['通行标识ID'] || '')
+  if (!rowId) return
+
+  editHistoryLoading.value = true
+  editHistoryPage.value = page
+  try {
+    const resp = await getEditHistory({
+      table_name: selectedTable.value,
+      row_id: rowId,
+      page,
+      page_size: 10
+    })
+    if (resp?.code === 200 && resp.data) {
+      editHistoryList.value = resp.data.records || []
+      editHistoryTotal.value = resp.data.total || 0
+    }
+  } catch (e) {
+    console.error('加载编辑历史失败:', e)
+  } finally {
+    editHistoryLoading.value = false
+  }
+}
+
+const openEditHistory = () => {
+  editHistoryVisible.value = true
+  loadEditHistory(1)
+}
+
+/** 格式化变更字段为可读文本 */
+const formatChangedFields = (
+  fields: Record<string, { old: string; new: string }> | null
+): string => {
+  if (!fields) return '-'
+  return Object.entries(fields)
+    .map(([k, v]) => `${k}: ${v.old || '(空)'} → ${v.new || '(空)'}`)
+    .join('\n')
 }
 
 onMounted(() => {
@@ -7558,11 +8048,53 @@ onMounted(() => {
         delete activeLocksMap.value[row_id]
       }
     } else if (message.type === 'row_updated' && message.data) {
-      const { row_id, table_name } = message.data
-      // 其他用户的行更新：通过getSingleRow获取完整数据，实现无感局部更新
+      const { row_id, table_name, changed_fields } = message.data
+      // 其他用户的行更新：差分更新，仅刷新变更字段
       if (row_id && table_name && table_name === selectedTable.value) {
-        updateSingleRowInTable(table_name, row_id)
+        // 如果当前正在编辑同一行，仅更新非编辑中的字段（差分更新）
+        if (editedRow.value && String(editedRow.value['通行标识ID']) === row_id) {
+          updateSingleRowInTable(table_name, row_id).then(() => {
+            // 更新后同步 editedRow 中非编辑字段的值
+            const myId = userStore.getUserInfo?.id
+            const myEditingFields = (activeFieldEditors.value[row_id] || [])
+              .filter((fe) => fe.user_id === myId)
+              .map((fe) => fe.field_name)
+            // 对非自己编辑的字段，用最新数据覆盖 editedRow
+            const targetRow = tableData.value.find((r: any) => String(r['通行标识ID']) === row_id)
+            if (targetRow && editedRow.value) {
+              for (const key of Object.keys(targetRow)) {
+                if (!myEditingFields.includes(key) && !['查核资料1', '查核资料2'].includes(key)) {
+                  editedRow.value[key] = targetRow[key]
+                }
+              }
+              // 更新原始数据基准
+              originalRowData.value = { ...editedRow.value, 查核资料1: null, 查核资料2: null }
+            }
+          })
+        } else {
+          updateSingleRowInTable(table_name, row_id)
+        }
       }
+    } else if (message.type === 'field_editing' && message.data) {
+      // 字段级编辑标识事件
+      const { row_id, active_fields } = message.data
+      if (row_id) {
+        activeFieldEditors.value[row_id] = active_fields || []
+      }
+    } else if (message.type === 'cursor_position' && message.data) {
+      // 光标位置同步事件
+      const { user_id, username, row_id, field_name } = message.data
+      const idx = otherCursorPositions.value.findIndex((cp) => cp.user_id === user_id)
+      const newPos = { user_id, username, row_id, field_name, updated_at: new Date().toISOString() }
+      if (idx >= 0) {
+        otherCursorPositions.value[idx] = newPos
+      } else {
+        otherCursorPositions.value.push(newPos)
+      }
+    } else if (message.type === 'cursor_cleared' && message.data) {
+      // 光标清除事件
+      const { user_id } = message.data
+      otherCursorPositions.value = otherCursorPositions.value.filter((cp) => cp.user_id !== user_id)
     }
   })
 })
@@ -8200,5 +8732,17 @@ onUnmounted(() => {
   color: #606266;
   max-height: 400px;
   overflow-y: auto;
+}
+
+/* 字段级编辑标识：其他用户正在编辑的字段高亮边框 */
+:deep(.field-editing-by-other .el-input__wrapper),
+:deep(.field-editing-by-other .el-textarea__inner) {
+  border-color: #e6a23c !important;
+  box-shadow: 0 0 0 1px #e6a23c inset !important;
+}
+
+:deep(.field-editing-by-other .el-select__wrapper) {
+  border-color: #e6a23c !important;
+  box-shadow: 0 0 0 1px #e6a23c inset !important;
 }
 </style>

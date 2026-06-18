@@ -124,6 +124,10 @@ app.include_router(split_match_router)
 from routers.detail_query import router as detail_query_router
 app.include_router(detail_query_router)
 
+# 路径匹配路由
+from routers.path_match import router as path_match_router
+app.include_router(path_match_router)
+
 # WebSocket 端点路由
 from routers.websocket_endpoints import router as websocket_router
 app.include_router(websocket_router)
@@ -142,6 +146,18 @@ app.include_router(cloud_portal_router)
 
 from routers.chat import router as chat_router
 app.include_router(chat_router)
+
+# WebSocket 双协议配置路由
+from routers.ws_config import router as ws_config_router
+app.include_router(ws_config_router)
+
+# 追查详单路由
+from routers.investigation import router as investigation_router
+app.include_router(investigation_router)
+
+# 系统通知与管控路由
+from routers.notifications import router as notifications_router
+app.include_router(notifications_router)
 
 
 # ==================== 静态文件服务 ====================
@@ -188,19 +204,14 @@ async def startup_event():
         else:
             logger.warning("无法加载配置文件，跳过连接池初始化")
         
-        # 启动后台任务（如统计任务、同步任务等）
+        # 启动定时任务调度器
         try:
-            from statistics_service import run_statistics_task
-            
-            # 在后台线程中启动统计任务
-            import threading
-            stats_thread = threading.Thread(target=run_statistics_task, daemon=True)
-            stats_thread.start()
-            logger.info("后台统计任务已启动")
-            
+            from scheduler import start_scheduler
+            start_scheduler()
+            logger.info("定时任务调度器已启动")
         except Exception as e:
-            logger.warning(f"启动后台任务失败: {e}")
-        
+            logger.warning(f"启动定时任务调度器失败: {e}")
+
         # 初始化云门户数据服务（延迟初始化策略）
         try:
             from cloud_portal_data_service import CloudPortalDataService
@@ -222,6 +233,7 @@ async def startup_event():
             from database import get_db_connection
             with get_db_connection("USER_DB", config) as conn:
                 with conn.cursor() as cursor:
+                    # CH-04: 图片消息支持 + CH-03: 撤回 + CH-08: @提及
                     cursor.execute("""
                         CREATE TABLE IF NOT EXISTS chat_messages (
                             id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -230,11 +242,15 @@ async def startup_event():
                             sender_name VARCHAR(100),
                             content_type VARCHAR(20) NOT NULL DEFAULT 'text',
                             content TEXT NOT NULL,
+                            is_recalled TINYINT NOT NULL DEFAULT 0 COMMENT '是否已撤回',
+                            mentioned_user_ids JSON DEFAULT NULL COMMENT '@提及用户ID列表',
+                            file_name VARCHAR(500) DEFAULT NULL COMMENT '文件原始名',
                             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                             INDEX idx_room_created (room_id, created_at),
                             INDEX idx_sender (sender_id)
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                     """)
+                    # CH-07: 置顶/免打扰
                     cursor.execute("""
                         CREATE TABLE IF NOT EXISTS chat_sessions (
                             id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -244,14 +260,120 @@ async def startup_event():
                             room_type VARCHAR(20) NOT NULL DEFAULT 'private',
                             last_message_id BIGINT DEFAULT NULL,
                             unread_count INT DEFAULT 0,
+                            is_pinned TINYINT NOT NULL DEFAULT 0 COMMENT '是否置顶',
+                            is_muted TINYINT NOT NULL DEFAULT 0 COMMENT '是否免打扰',
                             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                             UNIQUE KEY uk_user_room (user_id, room_id)
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                     """)
+                    # CH-02: 群聊成员表
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS chat_group_members (
+                            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                            room_id VARCHAR(100) NOT NULL,
+                            user_id INT NOT NULL,
+                            role VARCHAR(20) NOT NULL DEFAULT 'member',
+                            joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            UNIQUE KEY uk_room_user (room_id, user_id),
+                            INDEX idx_room_id (room_id)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """)
+                    # CH-05: 消息已读记录表
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS chat_message_read (
+                            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                            message_id BIGINT NOT NULL,
+                            user_id INT NOT NULL,
+                            read_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            UNIQUE KEY uk_msg_user (message_id, user_id),
+                            INDEX idx_message_id (message_id)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """)
+                    # 为旧表补充新字段（MySQL 8.0 不支持 ADD COLUMN IF NOT EXISTS，需先查 INFORMATION_SCHEMA）
+                    alter_columns = [
+                        ("chat_messages", "is_recalled", "TINYINT NOT NULL DEFAULT 0 COMMENT '是否已撤回'"),
+                        ("chat_messages", "mentioned_user_ids", "JSON DEFAULT NULL COMMENT '@提及用户ID列表'"),
+                        ("chat_messages", "file_name", "VARCHAR(500) DEFAULT NULL COMMENT '文件原始名'"),
+                        ("chat_sessions", "is_pinned", "TINYINT NOT NULL DEFAULT 0 COMMENT '是否置顶'"),
+                        ("chat_sessions", "is_muted", "TINYINT NOT NULL DEFAULT 0 COMMENT '是否免打扰'"),
+                    ]
+                    for table, column, definition in alter_columns:
+                        try:
+                            cursor.execute(
+                                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS "
+                                "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s",
+                                (table, column)
+                            )
+                            if not cursor.fetchone():
+                                cursor.execute(f"ALTER TABLE `{table}` ADD COLUMN `{column}` {definition}")
+                                logger.info(f"已为 {table} 表添加 {column} 列")
+                        except Exception as e:
+                            logger.warning(f"为 {table} 添加 {column} 列失败: {e}")
                     conn.commit()
-            logger.info("聊天表(chat_messages/chat_sessions)初始化完成")
+            logger.info("聊天表(chat_messages/chat_sessions/chat_group_members/chat_message_read)初始化完成")
         except Exception as e:
             logger.warning(f"初始化聊天表失败（非致命）: {e}")
+
+        # F-01: 乐观锁版本管理表 + F-05: 编辑历史表 + F-11: 通知表
+        try:
+            with get_db_connection("USER_DB", config) as conn:
+                with conn.cursor() as cursor:
+                    # F-01: 行版本管理表（乐观锁）
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS row_versions (
+                            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                            table_name VARCHAR(100) NOT NULL COMMENT '月度表名',
+                            row_id VARCHAR(100) NOT NULL COMMENT '通行标识ID',
+                            version INT NOT NULL DEFAULT 1 COMMENT '乐观锁版本号',
+                            updated_by VARCHAR(100) DEFAULT NULL COMMENT '最后修改者',
+                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                            UNIQUE KEY uk_table_row (table_name, row_id),
+                            INDEX idx_table_name (table_name),
+                            INDEX idx_updated_at (updated_at)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='行版本管理表（乐观锁）'
+                    """)
+                    # F-05: 编辑历史记录表
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS edit_history (
+                            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                            table_name VARCHAR(100) NOT NULL,
+                            row_id VARCHAR(100) NOT NULL,
+                            user_id INT NOT NULL,
+                            username VARCHAR(100) NOT NULL,
+                            action VARCHAR(20) NOT NULL DEFAULT 'update' COMMENT 'update/import/force_overwrite',
+                            version_before INT DEFAULT NULL,
+                            version_after INT DEFAULT NULL,
+                            changed_fields JSON DEFAULT NULL COMMENT '{"field": {"old": "x", "new": "y"}}',
+                            force_overwrite TINYINT(1) DEFAULT 0,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            INDEX idx_table_row (table_name, row_id),
+                            INDEX idx_user (user_id),
+                            INDEX idx_created_at (created_at)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='编辑历史记录'
+                    """)
+                    # F-11: 系统通知表
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS notifications (
+                            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                            type VARCHAR(20) NOT NULL DEFAULT 'system' COMMENT 'system/approval/alert',
+                            title VARCHAR(200) NOT NULL,
+                            content TEXT,
+                            sender_id INT DEFAULT NULL,
+                            target_type VARCHAR(20) DEFAULT 'all' COMMENT 'all/user/role/department',
+                            target_ids JSON DEFAULT NULL,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统通知'
+                    """)
+                    # 启动时自动清理过期数据
+                    try:
+                        cursor.execute("DELETE FROM edit_history WHERE created_at < NOW() - INTERVAL 90 DAY")
+                        cursor.execute("DELETE FROM notifications WHERE created_at < NOW() - INTERVAL 30 DAY")
+                    except Exception:
+                        pass
+                    conn.commit()
+            logger.info("版本表(row_versions)/编辑历史表(edit_history)/通知表(notifications)初始化完成")
+        except Exception as e:
+            logger.warning(f"初始化编辑历史/通知表失败（非致命）: {e}")
 
         logger.info("========================================")
         logger.info("FastAPI 应用启动完成！")
@@ -281,6 +403,14 @@ async def shutdown_event():
             from statistics_service import stop_all_tasks
             stop_all_tasks()
             logger.info("后台任务已停止")
+        except Exception:
+            pass
+
+        # 停止定时任务调度器
+        try:
+            from scheduler import stop_scheduler
+            stop_scheduler()
+            logger.info("定时任务调度器已停止")
         except Exception:
             pass
         

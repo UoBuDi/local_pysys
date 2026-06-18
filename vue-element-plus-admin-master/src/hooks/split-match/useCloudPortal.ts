@@ -45,7 +45,7 @@ export const useCloudPortal = () => {
     entryStationName: '',
     gantryNamesCombined: '',
     hours: 24,
-    rows: 50
+    rows: 100
   })
   const captchaImage = ref('')
   const captchaUuid = ref('')

@@ -17,10 +17,12 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 
 import requests as http_requests
-from fastapi import APIRouter, HTTPException, Query, Body
+from fastapi import APIRouter, HTTPException, Query, Body, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from core.config import get_config as get_app_config
+from core.dependencies import get_current_user
+from core.models import CloudPortalDataSyncRequest
 
 logger = logging.getLogger(__name__)
 
@@ -1090,7 +1092,83 @@ async def save_cloud_portal_account_v2(req: AccountSaveRequest, user_id: Optiona
 async def delete_cloud_portal_account_v2(user_id: Optional[int] = Query(None)):
     """删除云门户账号（前端兼容路径）"""
     _delete_account(user_id or 1)
-    return {"code": 200, "message": "账号已删除", "data": None}
+    return {"code": 200, "message": "未保存账号", "data": None}
+
+
+# ==================== 云门户基础数据同步（cloud-portal-data） ====================
+
+
+@router.get("/api/cloud-portal-data/")
+async def get_cloud_portal_data():
+    """获取已同步的云门户基础数据（从本地 JSON 文件加载）"""
+    try:
+        from cloud_portal_data_service import get_cloud_portal_data as _load_data
+        data = _load_data()
+        if data:
+            return {"code": 200, "message": "success", "data": data}
+        return {"code": 200, "message": "暂无数据，请先执行同步", "data": None}
+    except Exception as e:
+        logger.error(f"获取云门户数据失败: {e}")
+        return {"code": 500, "message": f"获取云门户数据失败: {str(e)}"}
+
+
+@router.post("/api/cloud-portal-data/sync")
+async def sync_cloud_portal_data(req: CloudPortalDataSyncRequest, user: dict = Depends(get_current_user)):
+    """触发云门户基础数据同步（分中心、路段、门架）"""
+    try:
+        from cloud_portal_data_service import run_cloud_portal_data_sync
+        import asyncio
+        from concurrent.futures import ThreadPoolExecutor
+
+        loop = asyncio.get_event_loop()
+        executor = ThreadPoolExecutor(max_workers=1)
+        try:
+            result = await asyncio.wait_for(
+                loop.run_in_executor(executor, run_cloud_portal_data_sync, req.access_token),
+                timeout=300
+            )
+            return result
+        except asyncio.TimeoutError:
+            return {"code": 504, "message": "同步超时（限制300秒），请稍后重试"}
+        finally:
+            executor.shutdown(wait=False)
+    except Exception as e:
+        logger.error(f"云门户数据同步失败: {e}")
+        return {"code": 500, "message": f"云门户数据同步失败: {str(e)}"}
+
+
+@router.get("/api/cloud-portal-data/status")
+async def get_cloud_portal_data_status():
+    """获取云门户数据同步状态（是否有数据、最后更新时间、统计信息）"""
+    try:
+        from cloud_portal_data_service import get_cloud_portal_data as _load_data
+        data = _load_data()
+        if data:
+            return {
+                "code": 200,
+                "message": "success",
+                "data": {
+                    "has_data": True,
+                    "last_update": data.get("last_update"),
+                    "total_centers": data.get("total_centers", 0),
+                    "total_road_sections": data.get("total_road_sections", 0),
+                    "total_gantries": data.get("total_gantries", 0)
+                }
+            }
+        return {
+            "code": 200,
+            "message": "success",
+            "data": {
+                "has_data": False,
+                "last_update": None,
+                "total_centers": 0,
+                "total_road_sections": 0,
+                "total_gantries": 0
+            }
+        }
+    except Exception as e:
+        logger.error(f"获取云门户数据状态失败: {e}")
+        return {"code": 500, "message": f"获取状态失败: {str(e)}"}
 
 
 @router.get("/api/cloud-portal-account/credentials")

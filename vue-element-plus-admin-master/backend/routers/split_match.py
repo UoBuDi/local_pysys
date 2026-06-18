@@ -122,8 +122,14 @@ async def get_split_match_data(
                         if not validate_column_name(key):
                             logger.warning(f"跳过非法列名: {key}")
                             continue
-                        where_clauses.append(f"`{key}` = %s")
-                        params.append(str(value).strip())
+                        # 复核情况支持多选筛选，值为数组时使用 IN 查询
+                        if key == '复核情况' and isinstance(value, list) and len(value) > 0:
+                            placeholders = ', '.join(['%s'] * len(value))
+                            where_clauses.append(f"`{key}` IN ({placeholders})")
+                            params.extend([str(v).strip() for v in value])
+                        else:
+                            where_clauses.append(f"`{key}` = %s")
+                            params.append(str(value).strip())
 
                 where_sql = ""
                 if where_clauses:
@@ -459,20 +465,35 @@ async def update_split_match_data(request: UpdateMatchRequest, user: dict = Depe
                             }
                         }
 
+        # 字段映射：数据库字段名 → 前端请求字段名
+        field_mapping = {
+            '查核资料1': 'image1_base64',
+            '查核资料2': 'image2_base64',
+            '复核情况': 'review_status',
+            '核查通行标识': 'check_pass_id',
+            '特情': 'special_situation',
+            '核查拆分': 'check_split',
+            '备注': 'remark'
+        }
+
+        # F-05: 在 UPDATE 之前查询旧值快照，确保记录的是真正的更新前数据
+        old_values = {}
+        with get_db_connection("CHECK_DATA_DB", config) as check_conn:
+            with check_conn.cursor(pymysql.cursors.DictCursor) as check_cursor:
+                check_cursor.execute(
+                    f"SELECT * FROM `{request.table_name}` WHERE `通行标识ID` = %s",
+                    (request.row_id,)
+                )
+                old_row = check_cursor.fetchone()
+                if old_row:
+                    for db_field, req_field in field_mapping.items():
+                        if req_field in request.data and request.data[req_field] is not None:
+                            old_values[db_field] = old_row.get(db_field)
+
         with get_db_connection("CHECK_DATA_DB", config) as conn:
             with conn.cursor() as cursor:
                 update_fields = []
                 params = []
-
-                field_mapping = {
-                    '查核资料1': 'image1_base64',
-                    '查核资料2': 'image2_base64',
-                    '复核情况': 'review_status',
-                    '核查通行标识': 'check_pass_id',
-                    '特情': 'special_situation',
-                    '核查拆分': 'check_split',
-                    '备注': 'remark'
-                }
 
                 for db_field, req_field in field_mapping.items():
                     if req_field in request.data and request.data[req_field] is not None:
@@ -538,6 +559,33 @@ async def update_split_match_data(request: UpdateMatchRequest, user: dict = Depe
             )
         except Exception as broadcast_err:
             logger.warning(f"广播row_updated事件失败（不影响业务）: {broadcast_err}")
+
+        # F-05: 记录编辑历史（使用 UPDATE 之前保存的 old_values 快照）
+        try:
+            with get_db_connection("USER_DB", config) as conn:
+                with conn.cursor() as cursor:
+                    # 构建 changed_fields JSON（旧值→新值），old_values 已在 UPDATE 前获取
+                    history_changed = {}
+                    for db_field, req_field in field_mapping.items():
+                        if req_field in request.data and request.data[req_field] is not None:
+                            history_changed[db_field] = {
+                                "old": str(old_values.get(db_field, "")),
+                                "new": str(request.data[req_field])
+                            }
+
+                    action = "force_overwrite" if request.force_overwrite else "update"
+                    cursor.execute(
+                        "INSERT INTO edit_history "
+                        "(table_name, row_id, user_id, username, action, version_before, version_after, changed_fields, force_overwrite) "
+                        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                        (request.table_name, request.row_id, user_id, username,
+                         action, request.version, new_version,
+                         json.dumps(history_changed, ensure_ascii=False) if history_changed else None,
+                         1 if request.force_overwrite else 0)
+                    )
+                    conn.commit()
+        except Exception as hist_err:
+            logger.warning(f"记录编辑历史失败（不影响业务）: {hist_err}")
 
         return {
             "code": 200,
@@ -773,12 +821,11 @@ async def get_split_statistics(request: SplitStatisticsRequest):
         return {"code": 500, "message": f"获取拆分统计失败: {str(e)}"}
 
 
-LOCK_EXPIRE_MINUTES = 5
 
 
 @router.post("/api/split-match/lock/")
 async def lock_row(request: dict, user: dict = Depends(get_current_user)):
-    """获取行锁（使用数据库 row_locks 表）"""
+    """获取行锁（内存存储，零SQL开销）"""
     table_name = request.get("table_name", "")
     row_id = request.get("row_id", "")
     if not table_name or not row_id:
@@ -788,58 +835,27 @@ async def lock_row(request: dict, user: dict = Depends(get_current_user)):
     username = user.get("username", "")
 
     try:
-        config = get_app_config()
-        from database import get_db_connection
+        from core.ws_manager_instance import status_manager
+        result = status_manager.acquire_row_lock(table_name, row_id, user_id, username)
 
-        with get_db_connection("USER_DB", config) as conn:
-            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                now = datetime.now()
-
-                # 清理该行的过期锁
-                cursor.execute(
-                    "DELETE FROM row_locks WHERE table_name = %s AND row_id = %s AND expires_at < %s",
-                    (table_name, row_id, now)
+        # 加锁成功时广播row_locked事件，通知同表房间其他用户
+        if result.get("locked") and result.get("own_lock"):
+            try:
+                await status_manager.broadcast_collaboration_event(
+                    table_name=table_name,
+                    event_type="row_locked",
+                    data={
+                        "table_name": table_name,
+                        "row_id": row_id,
+                        "user_id": user_id,
+                        "username": username
+                    },
+                    from_user_id=user_id
                 )
-                conn.commit()
+            except Exception as broadcast_err:
+                logger.warning(f"广播row_locked事件失败（不影响业务）: {broadcast_err}")
 
-                # 查询当前有效锁
-                cursor.execute(
-                    "SELECT user_id, username, expires_at FROM row_locks WHERE table_name = %s AND row_id = %s",
-                    (table_name, row_id)
-                )
-                existing = cursor.fetchone()
-
-                if existing:
-                    if existing["user_id"] == user_id:
-                        # 当前用户已持有锁，续期
-                        new_expires = now + timedelta(minutes=LOCK_EXPIRE_MINUTES)
-                        cursor.execute(
-                            "UPDATE row_locks SET expires_at = %s WHERE table_name = %s AND row_id = %s AND user_id = %s",
-                            (new_expires, table_name, row_id, user_id)
-                        )
-                        conn.commit()
-                        return {"code": 200, "data": {"locked": True, "own_lock": True}}
-                    else:
-                        # 被其他用户锁定
-                        return {
-                            "code": 200,
-                            "data": {
-                                "locked": False,
-                                "own_lock": False,
-                                "locked_by": existing["username"],
-                                "user_id": existing["user_id"]
-                            }
-                        }
-
-                # 无锁，新建
-                expires_at = now + timedelta(minutes=LOCK_EXPIRE_MINUTES)
-                cursor.execute(
-                    "INSERT INTO row_locks (table_name, row_id, user_id, username, locked_at, expires_at) VALUES (%s, %s, %s, %s, %s, %s)",
-                    (table_name, row_id, user_id, username, now, expires_at)
-                )
-                conn.commit()
-                return {"code": 200, "data": {"locked": True, "own_lock": True}}
-
+        return {"code": 200, "data": result}
     except Exception as e:
         logger.error(f"获取行锁失败: {e}")
         return {"code": 500, "message": f"获取行锁失败: {str(e)}"}
@@ -847,25 +863,32 @@ async def lock_row(request: dict, user: dict = Depends(get_current_user)):
 
 @router.post("/api/split-match/unlock/")
 async def unlock_row(request: dict, user: dict = Depends(get_current_user)):
-    """释放行锁（使用数据库 row_locks 表）"""
+    """释放行锁（内存存储，零SQL开销）"""
     table_name = request.get("table_name", "")
     row_id = request.get("row_id", "")
     user_id = user.get("id", 0)
 
     try:
-        config = get_app_config()
-        from database import get_db_connection
+        from core.ws_manager_instance import status_manager
+        released = status_manager.release_row_lock(table_name, row_id, user_id)
 
-        with get_db_connection("USER_DB", config) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    "DELETE FROM row_locks WHERE table_name = %s AND row_id = %s AND user_id = %s",
-                    (table_name, row_id, user_id)
+        # 释放锁成功时广播row_unlocked事件，通知同表房间其他用户
+        if released:
+            try:
+                await status_manager.broadcast_collaboration_event(
+                    table_name=table_name,
+                    event_type="row_unlocked",
+                    data={
+                        "table_name": table_name,
+                        "row_id": row_id,
+                        "user_id": user_id
+                    },
+                    from_user_id=user_id
                 )
-                conn.commit()
-                released = cursor.rowcount > 0
-                return {"code": 200, "message": "success", "data": {"released": released}}
+            except Exception as broadcast_err:
+                logger.warning(f"广播row_unlocked事件失败（不影响业务）: {broadcast_err}")
 
+        return {"code": 200, "message": "success", "data": {"released": released}}
     except Exception as e:
         logger.error(f"释放行锁失败: {e}")
         return {"code": 500, "message": f"释放行锁失败: {str(e)}"}
@@ -876,38 +899,11 @@ async def get_active_locks(
     table_name: str = Query(..., description="表名"),
     user: dict = Depends(get_current_user)
 ):
-    """获取指定表的活跃行锁列表（使用数据库 row_locks 表）"""
+    """获取指定表的活跃行锁列表（内存存储，零SQL开销）"""
     try:
-        config = get_app_config()
-        from database import get_db_connection
-
-        with get_db_connection("USER_DB", config) as conn:
-            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                now = datetime.now()
-
-                # 清理过期锁
-                cursor.execute(
-                    "DELETE FROM row_locks WHERE table_name = %s AND expires_at < %s",
-                    (table_name, now)
-                )
-                conn.commit()
-
-                # 查询活跃锁
-                cursor.execute(
-                    "SELECT row_id, user_id, username, expires_at FROM row_locks WHERE table_name = %s AND expires_at >= %s",
-                    (table_name, now)
-                )
-                locks = []
-                for row in cursor.fetchall():
-                    expires_at = row["expires_at"]
-                    locks.append({
-                        "row_id": row["row_id"],
-                        "user_id": row["user_id"],
-                        "username": row["username"],
-                        "expires_at": expires_at.isoformat() if isinstance(expires_at, datetime) else str(expires_at)
-                    })
-                return {"code": 200, "message": "success", "data": locks}
-
+        from core.ws_manager_instance import status_manager
+        locks = status_manager.get_active_locks(table_name)
+        return {"code": 200, "message": "success", "data": locks}
     except Exception as e:
         logger.error(f"获取活跃锁列表失败: {e}")
         return {"code": 500, "message": f"获取活跃锁列表失败: {str(e)}"}
@@ -1007,3 +1003,284 @@ async def get_single_row(
     except Exception as e:
         logger.error(f"获取单行数据失败: {e}")
         return {"code": 500, "message": f"获取单行数据失败: {str(e)}"}
+
+
+# ==================== 字段级编辑标识 ====================
+
+@router.post("/api/split-match/field-editing/mark/")
+async def mark_field_editing(request: dict, user: dict = Depends(get_current_user)):
+    """标记字段正在被编辑（字段级编辑标识）"""
+    table_name = request.get("table_name", "")
+    row_id = request.get("row_id", "")
+    field_name = request.get("field_name", "")
+    if not all([table_name, row_id, field_name]):
+        return {"code": 400, "message": "table_name、row_id、field_name 不能为空"}
+
+    user_id = user.get("id", 0)
+    username = user.get("username", "")
+
+    try:
+        from core.ws_manager_instance import status_manager
+        result = status_manager.mark_field_editing(table_name, row_id, field_name, user_id, username)
+
+        # 广播字段编辑事件给同房间其他用户
+        await status_manager.broadcast_collaboration_event(
+            table_name=table_name,
+            event_type="field_editing",
+            data={
+                "table_name": table_name,
+                "row_id": row_id,
+                "field_name": field_name,
+                "user_id": user_id,
+                "username": username,
+                "action": "focus",
+                "active_fields": result["active_fields"]
+            },
+            from_user_id=user_id
+        )
+        return {"code": 200, "data": result}
+    except Exception as e:
+        logger.error(f"标记字段编辑失败: {e}")
+        return {"code": 500, "message": f"标记字段编辑失败: {str(e)}"}
+
+
+@router.post("/api/split-match/field-editing/unmark/")
+async def unmark_field_editing(request: dict, user: dict = Depends(get_current_user)):
+    """取消字段编辑标记"""
+    table_name = request.get("table_name", "")
+    row_id = request.get("row_id", "")
+    field_name = request.get("field_name", "")
+    if not all([table_name, row_id, field_name]):
+        return {"code": 400, "message": "table_name、row_id、field_name 不能为空"}
+
+    user_id = user.get("id", 0)
+
+    try:
+        from core.ws_manager_instance import status_manager
+        released = status_manager.unmark_field_editing(table_name, row_id, field_name, user_id)
+
+        # 获取取消后的活跃字段列表
+        active_fields = status_manager.get_row_field_editors(table_name, row_id)
+
+        # 广播字段编辑取消事件
+        await status_manager.broadcast_collaboration_event(
+            table_name=table_name,
+            event_type="field_editing",
+            data={
+                "table_name": table_name,
+                "row_id": row_id,
+                "field_name": field_name,
+                "user_id": user_id,
+                "action": "blur",
+                "active_fields": active_fields
+            },
+            from_user_id=user_id
+        )
+        return {"code": 200, "data": {"released": released, "active_fields": active_fields}}
+    except Exception as e:
+        logger.error(f"取消字段编辑标记失败: {e}")
+        return {"code": 500, "message": f"取消字段编辑标记失败: {str(e)}"}
+
+
+@router.get("/api/split-match/field-editing/active/")
+async def get_active_field_editors(
+    table_name: str = Query(..., description="表名"),
+    row_id: str = Query(..., description="行标识ID"),
+    user: dict = Depends(get_current_user)
+):
+    """获取某行正在编辑的字段列表"""
+    try:
+        from core.ws_manager_instance import status_manager
+        active_fields = status_manager.get_row_field_editors(table_name, row_id)
+        return {"code": 200, "data": active_fields}
+    except Exception as e:
+        logger.error(f"获取字段编辑状态失败: {e}")
+        return {"code": 500, "message": f"获取字段编辑状态失败: {str(e)}"}
+
+
+# ==================== 光标位置同步 ====================
+
+@router.post("/api/split-match/cursor-position/")
+async def update_cursor_position(request: dict, user: dict = Depends(get_current_user)):
+    """更新用户光标位置（光标位置同步）"""
+    table_name = request.get("table_name", "")
+    row_id = request.get("row_id", "")
+    field_name = request.get("field_name", "")
+    if not all([table_name, row_id, field_name]):
+        return {"code": 400, "message": "table_name、row_id、field_name 不能为空"}
+
+    user_id = user.get("id", 0)
+    username = user.get("username", "")
+
+    try:
+        from core.ws_manager_instance import status_manager
+        result = status_manager.update_cursor_position(table_name, user_id, username, row_id, field_name)
+
+        # 广播光标位置给同房间其他用户
+        await status_manager.broadcast_collaboration_event(
+            table_name=table_name,
+            event_type="cursor_position",
+            data={
+                "table_name": table_name,
+                "user_id": user_id,
+                "username": username,
+                "row_id": row_id,
+                "field_name": field_name
+            },
+            from_user_id=user_id
+        )
+        return {"code": 200, "data": result}
+    except Exception as e:
+        logger.error(f"更新光标位置失败: {e}")
+        return {"code": 500, "message": f"更新光标位置失败: {str(e)}"}
+
+
+@router.get("/api/split-match/cursor-positions/")
+async def get_cursor_positions(
+    table_name: str = Query(..., description="表名"),
+    user: dict = Depends(get_current_user)
+):
+    """获取某表所有用户的光标位置"""
+    try:
+        from core.ws_manager_instance import status_manager
+        user_id = user.get("id", 0)
+        positions = status_manager.get_cursor_positions(table_name, exclude_user_id=user_id)
+        return {"code": 200, "data": positions}
+    except Exception as e:
+        logger.error(f"获取光标位置失败: {e}")
+        return {"code": 500, "message": f"获取光标位置失败: {str(e)}"}
+
+
+@router.post("/api/split-match/cursor-clear/")
+async def clear_cursor_position(request: dict, user: dict = Depends(get_current_user)):
+    """清除用户光标位置（关闭编辑对话框时调用）"""
+    table_name = request.get("table_name", "")
+    if not table_name:
+        return {"code": 400, "message": "table_name 不能为空"}
+
+    user_id = user.get("id", 0)
+
+    try:
+        from core.ws_manager_instance import status_manager
+        # 清除光标位置
+        status_manager.clear_cursor_position(table_name, user_id)
+        # 清除该用户在该表所有行的字段编辑标记
+        # 遍历 field_editing 查找该用户的标记
+        keys_to_delete = [
+            k for k, v in status_manager.field_editing.items()
+            if k.startswith(f"{table_name}:") and v["user_id"] == user_id
+        ]
+        for k in keys_to_delete:
+            del status_manager.field_editing[k]
+
+        # 广播清除事件
+        await status_manager.broadcast_collaboration_event(
+            table_name=table_name,
+            event_type="cursor_cleared",
+            data={
+                "table_name": table_name,
+                "user_id": user_id
+            },
+            from_user_id=user_id
+        )
+        return {"code": 200, "data": {"cleared": True}}
+    except Exception as e:
+        logger.error(f"清除光标位置失败: {e}")
+        return {"code": 500, "message": f"清除光标位置失败: {str(e)}"}
+
+
+# ==================== F-05: 编辑历史 ====================
+
+@router.get("/api/split-match/edit-history/")
+async def get_edit_history(
+    table_name: str = Query(..., description="表名"),
+    row_id: Optional[str] = Query(None, description="行标识ID（可选，不传则查全表）"),
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页条数"),
+    user: dict = Depends(get_current_user)
+):
+    """查询编辑历史记录（F-05）"""
+    try:
+        config = get_app_config()
+        from database import get_db_connection
+
+        with get_db_connection("USER_DB", config) as conn:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                where = "WHERE table_name = %s"
+                params: list = [table_name]
+
+                if row_id:
+                    where += " AND row_id = %s"
+                    params.append(row_id)
+
+                # 查询总数
+                cursor.execute(f"SELECT COUNT(*) AS total FROM edit_history {where}", tuple(params))
+                total = cursor.fetchone()["total"]
+
+                # 分页查询
+                offset = (page - 1) * page_size
+                cursor.execute(
+                    f"SELECT id, table_name, row_id, user_id, username, action, "
+                    f"version_before, version_after, changed_fields, force_overwrite, created_at "
+                    f"FROM edit_history {where} ORDER BY created_at DESC LIMIT %s OFFSET %s",
+                    tuple(params) + (page_size, offset)
+                )
+                rows = cursor.fetchall()
+
+                # 解析 changed_fields JSON
+                for row in rows:
+                    if row.get("changed_fields") and isinstance(row["changed_fields"], str):
+                        try:
+                            row["changed_fields"] = json.loads(row["changed_fields"])
+                        except Exception:
+                            pass
+                    if row.get("created_at"):
+                        row["created_at"] = row["created_at"].isoformat()
+
+                return {
+                    "code": 200,
+                    "data": {
+                        "total": total,
+                        "page": page,
+                        "page_size": page_size,
+                        "records": rows
+                    }
+                }
+    except Exception as e:
+        logger.error(f"查询编辑历史失败: {e}")
+        return {"code": 500, "message": f"查询编辑历史失败: {str(e)}"}
+
+
+@router.post("/api/system/cleanup/")
+async def manual_cleanup(
+    days: int = Query(90, ge=1, description="清理多少天前的数据"),
+    user: dict = Depends(get_current_user)
+):
+    """手动触发数据清理（管理员，F-05/F-11）"""
+    try:
+        # 仅管理员可操作
+        if user.get("role", "") != "admin":
+            return {"code": 403, "message": "仅管理员可执行数据清理"}
+
+        config = get_app_config()
+        from database import get_db_connection
+
+        with get_db_connection("USER_DB", config) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM edit_history WHERE created_at < NOW() - INTERVAL %s DAY", (days,))
+                edit_deleted = cursor.rowcount
+                cursor.execute("DELETE FROM notifications WHERE created_at < NOW() - INTERVAL %s DAY", (days,))
+                notif_deleted = cursor.rowcount
+                conn.commit()
+
+        return {
+            "code": 200,
+            "data": {
+                "edit_history_deleted": edit_deleted,
+                "notifications_deleted": notif_deleted,
+                "days": days
+            }
+        }
+    except Exception as e:
+        logger.error(f"数据清理失败: {e}")
+        return {"code": 500, "message": f"数据清理失败: {str(e)}"}

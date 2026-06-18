@@ -728,6 +728,15 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
           title: 'router.detailQuery',
           icon: 'vi-ant-design:file-search-outlined'
         }
+      },
+      {
+        path: 'investigation-detail',
+        component: () => import('@/views/SystemTools/InvestigationDetail.vue'),
+        name: 'InvestigationDetail',
+        meta: {
+          title: 'router.investigationDetail',
+          icon: 'vi-ant-design:search-outlined'
+        }
       }
     ]
   },

@@ -3,26 +3,11 @@ import configparser
 import os
 from datetime import datetime
 
-config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.ini")
-config = configparser.ConfigParser()
-config.read(config_file, encoding='utf-8')
+from core.db import get_db_config, get_user_db_connection
 
-def get_db_config(db_section):
-    return {
-        'host': config.get(db_section, 'host'),
-        'port': config.getint(db_section, 'port'),
-        'user': config.get(db_section, 'user'),
-        'password': config.get(db_section, 'password'),
-        'database': config.get(db_section, 'database'),
-        'charset': config.get(db_section, 'charset', fallback='utf8mb4'),
-        'cursorclass': pymysql.cursors.DictCursor
-    }
 
 def create_tables():
-    try:
-        conn = pymysql.connect(**get_db_config('USER_DB'))
-    except:
-        conn = pymysql.connect(**get_db_config('LOCAL_DB'))
+    conn = get_user_db_connection()
     
     try:
         with conn.cursor() as cursor:

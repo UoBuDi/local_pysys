@@ -258,6 +258,7 @@ export default {
     dataQuery: 'Data Query',
     splitMatch: 'Split Match',
     detailQuery: 'Detail Query',
+    investigationDetail: 'Investigation Detail',
     pathMatch: 'Path Match',
     dbConfig: 'Database Configuration',
     remoteDbConfig: 'Remote Database Config',

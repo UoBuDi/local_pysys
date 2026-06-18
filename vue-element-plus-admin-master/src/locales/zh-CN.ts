@@ -244,6 +244,7 @@ export default {
     dataQuery: '数据查询',
     splitMatch: '拆分匹配',
     detailQuery: '详单查询',
+    investigationDetail: '追查详单',
     pathMatch: '路径匹配',
     profile: '个人资料',
     password: '密码修改',

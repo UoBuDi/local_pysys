@@ -904,3 +904,121 @@ export const getSingleRow = (tableName: string, rowId: string) => {
     params: { table_name: tableName, row_id: rowId }
   })
 }
+
+// ==================== 字段级编辑标识 API ====================
+
+export interface FieldEditor {
+  field_name: string
+  user_id: number
+  username: string
+}
+
+/** 标记字段正在被编辑 */
+export const markFieldEditing = (data: {
+  table_name: string
+  row_id: string
+  field_name: string
+}) => {
+  return request.post<{ marked: boolean; active_fields: FieldEditor[] }>({
+    url: '/api/split-match/field-editing/mark/',
+    data
+  })
+}
+
+/** 取消字段编辑标记 */
+export const unmarkFieldEditing = (data: {
+  table_name: string
+  row_id: string
+  field_name: string
+}) => {
+  return request.post<{ released: boolean; active_fields: FieldEditor[] }>({
+    url: '/api/split-match/field-editing/unmark/',
+    data
+  })
+}
+
+/** 获取某行正在编辑的字段列表 */
+export const getActiveFieldEditors = (tableName: string, rowId: string) => {
+  return request.get<FieldEditor[]>({
+    url: '/api/split-match/field-editing/active/',
+    params: { table_name: tableName, row_id: rowId }
+  })
+}
+
+// ==================== 光标位置同步 API ====================
+
+export interface CursorPosition {
+  user_id: number
+  username: string
+  row_id: string
+  field_name: string
+  updated_at: string
+}
+
+/** 更新用户光标位置 */
+export const updateCursorPosition = (data: {
+  table_name: string
+  row_id: string
+  field_name: string
+}) => {
+  return request.post<{ updated: boolean }>({
+    url: '/api/split-match/cursor-position/',
+    data
+  })
+}
+
+/** 获取某表所有用户的光标位置 */
+export const getCursorPositions = (tableName: string) => {
+  return request.get<CursorPosition[]>({
+    url: '/api/split-match/cursor-positions/',
+    params: { table_name: tableName }
+  })
+}
+
+/** 清除用户光标位置（关闭编辑对话框时调用） */
+export const clearCursorPosition = (data: { table_name: string }) => {
+  return request.post<{ cleared: boolean }>({
+    url: '/api/split-match/cursor-clear/',
+    data
+  })
+}
+
+// ==================== F-05: 编辑历史 API ====================
+
+export interface EditHistoryRecord {
+  id: number
+  table_name: string
+  row_id: string
+  user_id: number
+  username: string
+  action: string
+  version_before: number | null
+  version_after: number | null
+  changed_fields: Record<string, { old: string; new: string }> | null
+  force_overwrite: boolean
+  created_at: string
+}
+
+export const getEditHistory = (params: {
+  table_name: string
+  row_id?: string
+  page?: number
+  page_size?: number
+}) => {
+  return request.get<{
+    total: number
+    page: number
+    page_size: number
+    records: EditHistoryRecord[]
+  }>({
+    url: '/api/split-match/edit-history/',
+    params
+  })
+}
+
+export const manualCleanup = (days: number = 90) => {
+  return request.post({
+    url: '/api/system/cleanup/',
+    params: { days }
+  })
+}
