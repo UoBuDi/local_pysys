@@ -1,0 +1,140 @@
+# 1. 项目构建输出 (你的核心大文件)
+cloud_portal_service/build/
+cloud_portal_service/dist/
+cloud_portal_service/.nuitka-cache/
+
+# 2. Python 缓存 & 编译文件 (status 里大量的 __pycache__)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# 3. 可执行文件/安装包
+*.exe
+*.pkg
+*.dll
+*.dmg
+*.bat
+
+# 4. 废弃目录 (你已经删除的整个文件夹)
+newversion/
+
+# 5. 日志 & 临时文件
+logs/
+*.log
+*.tmp
+*.temp
+nuitka-crash-report.xml
+
+# 6. 虚拟环境 & 工具缓存
+.venv/
+node_modules/
+.DS_Store
+
+# 7. 前端打包/临时文件
+vue-element-plus-admin-master/backend/core/
+vue-element-plus-admin-master/backend/__pycache__/
+cloud_portal_service/.nuitka_cache/
+deploy/
+service_manager/
+vue-element-plus-admin-master/.env
+vue-element-plus-admin-master/.env.gitee
+vue-element-plus-admin-master/.env.test
+vue-element-plus-admin-master/.env.pro
+vue-element-plus-admin-master/.env.dev
+vue-element-plus-admin-master/.env.base
+pysys-v2.7.0-deploy-package/
+pysys-v2.11.1-deploy-package/
+pysys-v2.11.0-deploy-package/
+pysys-*-deploy-package.zip
+pysys-prod-*-deploy-package.zip
+pysys-*-deploy.zip
+数据包.txt
+Requirement/绿通查验.txt
+
+# 8. 临时脚本与工具（根目录 + backend）
+deploy_fix.py
+test_extract.py
+final_check_report.py
+deep_check_pass_id.py
+check_table_structure.py
+clean_logs.py
+execute_sql.py
+test_db.py
+test_vehicle_data.py
+vehicle_data_restore.py
+check_correct_table.py
+mysql_sync_tool.py
+# backend 临时诊断/测试脚本
+vue-element-plus-admin-master/backend/analyze_imports.py
+vue-element-plus-admin-master/backend/backend_gui.py
+vue-element-plus-admin-master/backend/check_roles.py
+vue-element-plus-admin-master/backend/check_tables.py
+vue-element-plus-admin-master/backend/deep_verify_update.py
+vue-element-plus-admin-master/backend/diagnose_update.py
+vue-element-plus-admin-master/backend/final_verify.py
+vue-element-plus-admin-master/backend/init_route_logs_table.py
+vue-element-plus-admin-master/backend/init_scheduling_tables.py
+vue-element-plus-admin-master/backend/reset_password.py
+vue-element-plus-admin-master/backend/run_migration.py
+vue-element-plus-admin-master/backend/save_captcha_image.py
+vue-element-plus-admin-master/backend/test_captcha_ocr.py
+vue-element-plus-admin-master/backend/test_captcha_image.jpg
+vue-element-plus-admin-master/backend/test_menu_api.py
+vue-element-plus-admin-master/backend/test_migration.py
+vue-element-plus-admin-master/backend/test_token_mechanism.py
+vue-element-plus-admin-master/backend/verify_update_status.py
+vue-element-plus-admin-master/backend/health_check.py
+vue-element-plus-admin-master/backend/check_correct_table.py
+vue-element-plus-admin-master/backend/deep_check_pass_id.py
+vue-element-plus-admin-master/backend/final_check_report.py
+vue-element-plus-admin-master/backend/mysql_sync_tool.py
+# cloud_portal_service 临时测试脚本
+cloud_portal_service/test_backend_config.py
+cloud_portal_service/test_enhanced_features.py
+cloud_portal_service/test_new_session.py
+
+# 9. 临时数据文件
+POST_token.txt
+add_roles.sql
+mcp_config.json
+menus.json
+menus_updated.json
+*.txt
+!vue-element-plus-admin-master/requirements.txt
+!cloud_portal_service/requirements.txt
+!gui_app/requirements.txt
+!Requirement/绿通查验.txt
+
+# 10. 临时分析报告文档
+Excel图片解析改进方案.md
+GUI服务自动保持在线方案.md
+WebSocket连接分析报告.md
+cellimages_xml结构分析文档.md
+project_analysis_report.md
+table_analysis_report.md
+xlsx_image_analysis_report.md
+路径匹配功能实现差异报告.md
+精准提取图片ID对应的单元格位置（G3）完整方案.md
+前端Excel图片提取与位置预览功能开发提示词.md
+工单详情.txt
+工单问题定位.txt
+测试日志.txt
+部署日志.txt
+内网云门户查询.txt
+云门户自动登陆及续期.txt
+项目端口列表.md
+湖南高速统一认证与业务接口全流程分析及Token更新操作手册.md
+
+# 11. 安装包与大文件
+*.msi
+*.iso
+
+# 12. 独立项目（不属于本仓库）
+mcp_btpanel/
+
+# 13. PowerShell 部署/打包脚本
+pack.ps1
+sync_deploy.ps1

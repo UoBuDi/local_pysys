@@ -1,0 +1,31 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+/dist*
+pnpm-debug
+stats.html
+.idea
+
+# Log files
+*.log
+logs/
+backend/logs/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.py[cod]
+*$py.class
+
+# Static files for deployment
+backend/static/
+backend/backend.zip
+
+# Environment files
+.env.local
+.env.*.local
